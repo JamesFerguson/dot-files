@@ -17,9 +17,9 @@ alias migrate='rake db:migrate db:test:prepare'
 alias testsuite='rake cucumber spec'
 
 # rails aliases
-alias console='rails --version | grep 2.3 && script/console || rails console'
+alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias serve='script/server || unicorn_rails || thin start || rails server'
-alias generate='rails --version | grep 2 && script/generate || rails generate'
+alias generate='rails --version | grep 2.3 > /dev/null && script/generate || rails generate'
 alias bx='bundle exec'
 alias cuc='bundle exec cucumber'
 alias rake='bundle exec rake'
