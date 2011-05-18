@@ -31,7 +31,7 @@ PR_NO_COLOR="%{$terminfo[sgr0]%}"
 CLICOLOR=1 # colorize ls and others
 
 # Terminal prompt
-PS1="[$PR_MAGENTA%n$PR_NO_COLOR@$PR_GREEN%U%m%u$PR_NO_COLOR:$PR_RED%2c$PR_NO_COLOR]%(!.#.$) "
+#PS1="[$PR_MAGENTA%n$PR_NO_COLOR@$PR_GREEN%U%m%u$PR_NO_COLOR:$PR_RED%2c$PR_NO_COLOR]%(!.#.$) "
 RPS1="$PR_MAGENTA(%D{%m-%d %H:%M})$PR_NO_COLOR"
 DISPLAY=:0
 
