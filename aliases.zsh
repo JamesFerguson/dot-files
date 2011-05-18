@@ -30,4 +30,4 @@ alias git='git-achievements'
 # blake aliases
 alias dbhack='cp config/database.yml.local config/database.yml'
 alias reg='cd ~/blake/readingeggs'
-alias rex='cd ~/blake/reading-express-student'
+alias rex='cd ~/blake/rex-student'
