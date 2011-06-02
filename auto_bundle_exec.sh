@@ -1,4 +1,4 @@
-bundle_commands=( spec rspec cucumber cap watchr rails rackup )
+bundle_commands=( spec rspec cucumber cap watchr rails rackup rake )
  
 function run_bundler_cmd () {
     if [ -e ./Gemfile ]; then
