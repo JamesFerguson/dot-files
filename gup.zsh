@@ -46,10 +46,16 @@ function gup
       git rebase -p "$UPSTREAM"
   
       # restore any stashed changed
-      [ "$HAVE_STASH" -ne 0 ] && git stash pop -q && echo "Popped stash."
+      if [ "$HAVE_STASH" -ne 0 ]
+      then
+        echo "Popping stash."
+        git stash pop
+      else
+        echo "Nothing stashed."
+      fi
     
     else
-      echo "Nothing to update"
+      echo "Nothing to update, no need to stash/rebase."
     fi
     
     # if [ -f config/database.yml.local ]
@@ -57,7 +63,5 @@ function gup
     #   echo "Restoring config/database.yml.local"
     #   dbhack
     # fi 
-    
-    git s
   )
 }
