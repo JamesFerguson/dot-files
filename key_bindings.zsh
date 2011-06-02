@@ -1,4 +1,4 @@
-stty erase ^H &>/dev/null
+# stty erase ^H &>/dev/null # breaks delete in vi
 bindkey "^[[3~" delete-char
 
 autoload -U compinit
