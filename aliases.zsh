@@ -8,6 +8,8 @@ alias ls='ls -lah@eF'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
+# TextMate doesn't cope with crontab files (cron wants them edited in place)
+alias crontab='EDITOR=vi crontab'
 
 # More specific ones
 alias du_podcasts='du ~/Music/iTunes/iTunes\ Music/Podcasts | rev | sed -E s/\([^0-9]{1}\)\([0-9]{4}\)$/\\1\\2\ \ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{5}\)$/\\1\\2\ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{6}\)$/\\1\\2\ / | rev | sort'
