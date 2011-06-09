@@ -15,7 +15,7 @@ SAVEHIST=1000
 HOSTNAME="`hostname`"
 
 PAGER='less'
-EDITOR='/usr/local/bin/mate -w'
+EDITOR='/Users/jim/bin/mate_wait'
 
 # Colour vars
 autoload colors zsh/terminfo
