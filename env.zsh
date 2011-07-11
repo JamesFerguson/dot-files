@@ -1,6 +1,6 @@
 setopt ALL_EXPORT
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/git/bin:/usr/local/mysql/bin:/usr/local/pgsql/bin:/Users/jim/Coding/homebrew/bin:/Users/jim/Coding/git-achievements:/usr/texbin:/usr/X11/bin:$PATH"
+PATH="/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/git/bin:/usr/local/mysql/bin:/usr/local/pgsql/bin:/Users/jim/Coding/homebrew/bin:/Users/jim/Coding/git-achievements:/usr/texbin:/usr/X11/bin:/usr/local/lib/node:$PATH"
 
 # Locale
 LC_ALL='en_US.UTF-8'
