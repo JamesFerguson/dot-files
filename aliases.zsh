@@ -27,6 +27,9 @@ alias rake='bundle exec rake'
 # git aliases
 alias git='git-achievements'
 
+# personal project aliases
+alias tv='cd ~/Coding/tv-shows'
+
 # blake aliases
 alias dbhack='cp config/database.yml.local config/database.yml'
 alias regalt='cd ~/blake/readingeggs_alternate'
