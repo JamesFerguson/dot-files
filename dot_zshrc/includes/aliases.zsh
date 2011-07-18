@@ -25,7 +25,7 @@ alias cuc='bundle exec cucumber'
 alias rake='bundle exec rake'
 
 # git aliases
-alias git='git-achievements'
+alias git='nocorrect git-achievements'
 
 # personal project aliases
 alias tv='cd ~/Coding/tv-shows'
