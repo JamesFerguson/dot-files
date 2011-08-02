@@ -24,8 +24,10 @@ alias bx='bundle exec'
 alias cuc='bundle exec cucumber'
 alias rake='bundle exec rake'
 
-# git aliases
+# disable zsh corrections for some commands
 alias git='nocorrect git-achievements'
+alias mvim='nocorrect mvim'
+alias guard='nocorrect guard'
 
 # personal project aliases
 alias tv='cd ~/Coding/tv-shows'
