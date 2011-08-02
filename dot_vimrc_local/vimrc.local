@@ -1,0 +1,2 @@
+" set the <Leader> binding to something easy to reach
+let mapleader = ","

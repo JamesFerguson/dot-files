@@ -1,0 +1,11 @@
+load '/etc/irbrc'
+
+puts "Loading ~/.irbrc"
+
+INCLUDE_DIR = "#{File.expand_path(File.dirname(__FILE__))}/dot-files/dot_irbrc/includes"
+
+require 'rubygems'
+Dir["#{INCLUDE_DIR}/*.rb"].each do |f|
+  puts "Requiring #{f}"
+  require f
+end
