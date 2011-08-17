@@ -12,7 +12,7 @@ setopt EXTENDED_HISTORY		# puts timestamps in the history
 # setopt HASH_CMDS		# turns on hashing
 setopt HIST_ALLOW_CLOBBER
 setopt HIST_REDUCE_BLANKS
-setopt INC_APPEND_HISTORY SHARE_HISTORY
+# setopt INC_APPEND_HISTORY SHARE_HISTORY
 setopt MENUCOMPLETE
 
 # Set/unset  shell options
