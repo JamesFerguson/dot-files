@@ -16,9 +16,6 @@ set guioptions-=T
 " Sets the font and size
 set guifont=Bitstream\ Vera\ Sans\ Mono:h14
 
-" Sets the percent transparency
-set transparency=10
-
 " Write file when a buffer is closed
 set autowrite
 
