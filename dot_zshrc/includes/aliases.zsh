@@ -13,16 +13,15 @@ alias dmesg="sudo dmesg"
 alias du_podcasts='du ~/Music/iTunes/iTunes\ Music/Podcasts | rev | sed -E s/\([^0-9]{1}\)\([0-9]{4}\)$/\\1\\2\ \ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{5}\)$/\\1\\2\ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{6}\)$/\\1\\2\ / | rev | sort'
 
 # rake aliases
-alias migrate='rake db:migrate db:test:prepare'
-alias testsuite='rake cucumber spec'
+alias migrate='run_bundler_cmd rake db:migrate db:test:prepare'
+alias testsuite='run_bundler_cmd rake cucumber spec'
 
 # rails aliases
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias serve='script/server || unicorn_rails || thin start || rails server'
 alias generate='rails --version | grep 2.3 > /dev/null && script/generate || rails generate'
 alias bx='bundle exec'
-alias cuc='bundle exec cucumber'
-alias rake='bundle exec rake'
+alias cuc='run_bundler_cmd cucumber'
 
 # disable zsh corrections for some commands
 alias git='nocorrect git-achievements'
