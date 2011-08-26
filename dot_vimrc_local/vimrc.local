@@ -1,2 +1,5 @@
 " set the <Leader> binding to something easy to reach
 let mapleader = ","
+
+" Ensure vim edits these files in place as required by crontab
+set backupskip=/tmp/*,/private/tmp/*" 
