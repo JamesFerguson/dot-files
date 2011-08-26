@@ -2,4 +2,5 @@
 
 chmod +x mvimf
 cd /usr/bin/local/
-ln -s ~/dot-files/tweaks/mvimf
+echo "sudo ln -s ~/dot-files/tweaks/mvimf"
+sudo ln -s ~/dot-files/tweaks/mvimf
