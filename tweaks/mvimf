@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Run mvim with the -f (no fork/foreground) flag. Does this in a script so the flag doesn't freak
+#  zsh or crontab one of which breaks when calling crontab -e with EDITOR set to mvim -f
+/usr/local/bin/mvim -f "$@"
