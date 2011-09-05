@@ -32,10 +32,11 @@ alias guard='nocorrect guard'
 alias tv='cd ~/Coding/tv-shows'
 
 # blake aliases
-alias dbhack='cp config/database.yml.local config/database.yml'
-alias regalt='cd ~/blake/readingeggs_alternate'
 alias reg='cd ~/blake/readingeggs'
 alias reg2='cd ~/blake/readingeggs2'
 alias rexs='cd ~/blake/rex-student'
 alias rex='cd ~/blake/rex-student'
 alias rexd='cd ~/blake/rex-dashboard'
+alias mh='cd ~/blake/media-hub'
+alias ed='cd ~/blake/eggspress-data'
+alias fth='cd ~/blake/fth'
