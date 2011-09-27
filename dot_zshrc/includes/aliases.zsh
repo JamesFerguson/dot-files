@@ -27,6 +27,9 @@ alias cuc='run_bundler_cmd cucumber'
 alias git='nocorrect git-achievements'
 alias mvim='nocorrect mvim'
 alias guard='nocorrect guard'
+alias heroku='nocorrect heroku'
+alias github='nocorrect github'
+alias gh='nocorrect gh'
 
 # personal project aliases
 alias tv='cd ~/Coding/tv-shows'
