@@ -2,4 +2,6 @@
 let mapleader = ","
 
 " Ensure vim edits these files in place as required by crontab
-set backupskip=/tmp/*,/private/tmp/*" 
+set backupskip=/tmp/*,/private/tmp/*"
+
+" set list listchars=tab:▶,eol:¶
