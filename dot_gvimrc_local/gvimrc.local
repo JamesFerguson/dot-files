@@ -20,5 +20,5 @@ set guifont=Bitstream\ Vera\ Sans\ Mono:h14
 set autowrite
 
 " write files when mVim loses focus (prob gui only; some cli versions can detect this too)
-au FocusLost * w
+au FocusLost * silent! wa
 
