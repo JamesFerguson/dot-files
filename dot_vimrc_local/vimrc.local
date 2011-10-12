@@ -4,4 +4,7 @@ let mapleader = ","
 " Ensure vim edits these files in place as required by crontab
 set backupskip=/tmp/*,/private/tmp/*"
 
+" Autoclose
+let g:AutoClosePairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'", '#{': '}', '|':'|' }
+let g:AutoCloseProtectedRegions = ["Character"]
 " set list listchars=tab:▶,eol:¶
