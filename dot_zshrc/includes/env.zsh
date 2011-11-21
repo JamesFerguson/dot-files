@@ -38,4 +38,7 @@ DISPLAY=:0
 # Tell PostgreSQL where to find its data
 PGDATA=/Library/PostgreSQL/8.4/data/
 
+# Localise rails
+CUCUMBER_FORMAT=fuubar
+
 unsetopt ALL_EXPORT
