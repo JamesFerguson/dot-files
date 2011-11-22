@@ -17,7 +17,7 @@ function gup
       echo "\"$BRANCH\" is a tracking branch, using it."
     fi
     
-    TEMPFILE="`mktemp -t gup.XXXXXX`"
+    TEMPFILE=$(mktemp -u -t "gup.XXXXXX")
     echo "Created a temp file, \"$TEMPFILE\", for capturing command output, will delete on exit."
     trap '{ rm -f "$TEMPFILE"; echo "Deleted $TEMPFILE" }' EXIT
     
@@ -57,11 +57,5 @@ function gup
     else
       echo "Nothing to update, no need to stash/rebase."
     fi
-    
-    # if [ -f config/database.yml.local ]
-    # then
-    #   echo "Restoring config/database.yml.local"
-    #   dbhack
-    # fi 
   )
 }
