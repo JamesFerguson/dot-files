@@ -39,6 +39,6 @@ DISPLAY=:0
 PGDATA=/Library/PostgreSQL/8.4/data/
 
 # Localise rails
-CUCUMBER_FORMAT=fuubar
+CUCUMBER_FORMAT="Cucumber::Formatter::Fuubar"
 
 unsetopt ALL_EXPORT
