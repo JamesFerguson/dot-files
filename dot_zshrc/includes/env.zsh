@@ -38,6 +38,9 @@ DISPLAY=:0
 # Tell PostgreSQL where to find its data
 PGDATA=/Library/PostgreSQL/8.4/data/
 
+# Ensure node finds npm modules
+NODE_PATH=/usr/local/lib/node_modules
+
 # Localise rails
 CUCUMBER_FORMAT="Cucumber::Formatter::Fuubar"
 
