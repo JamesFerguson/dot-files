@@ -11,4 +11,7 @@ let g:AutoCloseProtectedRegions = ["Character"]
 " Use Node.js for JS interpreter - fix JSLint whine
 let $JS_CMD='node'
 
+" Swap file malarky annoys me
+set noswapfile
+
 " set list listchars=tab:▶,eol:¶
