@@ -44,7 +44,4 @@ rescue LoadError => e
   end
 end
 
-
-
 require('rubygems') unless defined?(Gem)
-
