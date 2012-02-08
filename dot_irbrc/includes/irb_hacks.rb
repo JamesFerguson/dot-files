@@ -27,4 +27,4 @@ irb> p interesting_variable
 }
 ]
 
-require 'irb_hacks'
+IRB.gem('irb_hacks')

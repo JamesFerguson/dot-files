@@ -10,7 +10,7 @@ irb> poc x # => list all constants in 'x', sorted
 }
 ]
 
-require 'wirble'
+IRB.gem 'wirble'
 
 @colors = {
   # delimiter colors

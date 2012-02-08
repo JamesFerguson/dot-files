@@ -22,4 +22,4 @@ irb> String.ri //, :access => "::" # specify an option on regexp, this is class 
 }
 ]
 
-require 'ori'
+IRB.gem 'ori'
