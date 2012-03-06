@@ -5,7 +5,7 @@ function gup
   # subshell for `set -e` and `trap`
   (
     set -e # fail immediately if there's a problem
-    
+
     echo "Fetching upstream changes"
     git fetch
     BRANCH=$(git describe --contains --all HEAD)
@@ -16,35 +16,35 @@ function gup
     else
       echo "\"$BRANCH\" is a tracking branch, using it."
     fi
-    
+
     TEMPFILE=$(mktemp -u -t "gup.XXXXXX")
     echo "Created a temp file, \"$TEMPFILE\", for capturing command output, will delete on exit."
     trap '{ rm -f "$TEMPFILE"; echo "Deleted $TEMPFILE" }' EXIT
-    
+
     if git status | grep "# Your branch" > "$TEMPFILE"
     then
       # extract tracking branch from message
       UPSTREAM=$(cat "$TEMPFILE" | cut -d "'" -f 2)
       echo "We're behind upstream, \"$UPSTREAM\", we need to update."
-      
+
       if [ -z "$UPSTREAM" ]
       then
         echo Could not detect upstream branch >&2
         exit 1
       fi
-  
+
       # stash any uncommitted changes
       git stash | tee "$TEMPFILE"
       [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
-  
+
       # take note if anything was stashed
       HAVE_STASH=0
       grep -q "No local changes" "$TEMPFILE" || HAVE_STASH=1
-  
+
       echo "Rebasing our changes on top of upstream, but keeping any merges."
       echo "git rebase -p \"$UPSTREAM\""
       git rebase -p "$UPSTREAM"
-  
+
       # restore any stashed changed
       if [ "$HAVE_STASH" -ne 0 ]
       then
@@ -53,7 +53,13 @@ function gup
       else
         echo "Nothing stashed."
       fi
-    
+
+      echo "Bundling in case of Gemfile changes"
+      bundle
+
+      echo "Running any new migrations and updating test db..."
+      (rake db:abort_if_pending_migrations && echo "No new migrations.") || (echo "Migrations found..." && rake db:migrate db:test:prepare)
+
     else
       echo "Nothing to update, no need to stash/rebase."
     fi
