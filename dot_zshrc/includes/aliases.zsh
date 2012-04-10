@@ -34,6 +34,7 @@ alias gh='nocorrect gh'
 # personal project aliases
 alias tv='cd ~/Coding/tv-shows'
 alias dot='cd ~/dot-files'
+alias todos='cd ~/Coding/todos'
 
 # blake aliases
 alias reg='cd ~/blake/readingeggs'
