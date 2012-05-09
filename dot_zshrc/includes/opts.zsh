@@ -15,9 +15,13 @@ setopt HIST_REDUCE_BLANKS
 # setopt INC_APPEND_HISTORY SHARE_HISTORY
 setopt MENUCOMPLETE
 
-# Set/unset  shell options
-setopt   notify globdots correct pushdtohome cdablevars autolist
+# Set/unset shell options
+setopt   notify globdots correct pushdtohome cdablevars # autolist
 setopt   correctall autocd recexact longlistjobs
 setopt   autoresume histignoredups pushdsilent noclobber
 setopt   autopushd pushdminus extendedglob rcquotes mailwarning
 unsetopt bgnice autoparamslash
+
+# Mine
+
+setopt interactivecomments # allow comments in interactive/terminal sessions
