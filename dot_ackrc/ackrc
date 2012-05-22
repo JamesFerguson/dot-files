@@ -1,0 +1,21 @@
+# case sensitive if caps used
+--smart-case
+--colour
+# --follow
+
+# add markdown, textile, and reStructuredText
+--type-set=plaintext=.md,.mdown,.markdown,.mkdn,.textile,.rst,.txt
+--type-add=js=.coffee
+--type-add=ruby=.haml,.rake
+--type-add=css=.less,.sass
+
+--css
+--html
+--js
+--rake
+--ruby
+--shell
+--sql
+--plaintext
+--xml
+--yaml
