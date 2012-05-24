@@ -15,3 +15,6 @@ let $JS_CMD='node'
 set noswapfile
 
 " set list listchars=tab:▶,eol:¶
+
+" add an actionscript syntax highlighter
+au BufNewFile,BufRead *.as set filetype=actionscript
