@@ -1,3 +1,5 @@
+[include]
+	path = /Users/jim/dot-files/dot_gitconfig/credentials
 [color]
 	diff = auto
 	status = auto
@@ -45,5 +47,3 @@
   pl = pull
   sh = stash
   uiau = update-index --assume-unchanged
-[include]
-	path = /Users/jim/dot-files/dot_gitconfig/credentials
