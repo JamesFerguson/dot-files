@@ -27,11 +27,11 @@
   b = branch
   co = checkout
   ch = checkout
-  df = diff
-  d = diff
+  df = diff --word-diff
+  d = diff --word-diff
   lg = log
   l = log
-  lgp = log -p
+  lgp = log -p --word-diff
   lggo = log --graph --decorate --pretty=oneline --abbrev-commit
   lggoa = log --graph --decorate --pretty=oneline --abbrev-commit --all
   wc = whatchanged
