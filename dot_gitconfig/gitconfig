@@ -57,4 +57,5 @@
   unfi = update-index --no-assume-unchanged
   ls-force-ignored = !git ls-files -v | grep ^[a-z]
   lsfi = !git ls-files -v | grep ^[a-z]
+  ls-assume-unchanged = !git ls-files -v | grep ^[a-z]
   lsau = !git ls-files -v | grep ^[a-z]
