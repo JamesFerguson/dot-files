@@ -2,7 +2,7 @@
 set number
 
 " Change colorscheme
-colorscheme neon
+colorscheme autumn
 
 " Turns on the tab bar always
 set showtabline=2
