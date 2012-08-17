@@ -1,5 +1,5 @@
 [include]
-	path = /Users/jim/dot-files/dot_gitconfig/credentials
+	path = /Users/jim/codez/dot-files/dot_gitconfig/credentials
 [color]
 	diff = auto
 	status = auto
