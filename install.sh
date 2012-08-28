@@ -12,14 +12,15 @@ ln -fs ~/codez/dot-files/dot_ackrc/ackrc ~/.ackrc
 ln -fs ~/codez/dot-files/dot_gitconfig/gitconfig ~/.gitconfig
 
 # powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/readingeggs/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/readingeggs2/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/rex-student/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/blake-admin/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/eggspress-data/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/media-hub/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/blake/Plastic-Chefs/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Coding/tv-shows/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Coding/todos/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Coding/ranker/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/readingeggs/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/readingeggs2/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/rex-student/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/blake-admin/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/eggspress-data/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/media-hub/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/Plastic-Chefs/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/mathseeds/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/tv-shows/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/todos/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/ranker/.powrc
 
