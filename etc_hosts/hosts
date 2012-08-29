@@ -1,0 +1,24 @@
+##
+# Host Database
+#
+# localhost is used to configure the loopback interface
+# when the system is booting. Do not change this entry.
+##
+127.0.0.1	localhost
+127.0.0.1	blake-admin.dev	#powder
+127.0.0.1	eggspress-data.dev	#powder
+127.0.0.1	mathseeds.dev	#powder
+127.0.0.1	media-hub.dev	#powder
+127.0.0.1	ranker.dev	#powder
+127.0.0.1	readingeggs.dev	#powder
+127.0.0.1	readingeggs2.dev	#powder
+127.0.0.1	rex-dashboard.dev	#powder
+127.0.0.1	rex-student.dev	#powder
+127.0.0.1	todos.dev	#powder
+127.0.0.1	tv-shows.dev	#powder
+127.0.0.1	typo.dev	#powder
+255.255.255.255	broadcasthost
+::1 localhost
+fe80::1%lo0	localhost
+
+127.0.0.1 reci-ext
