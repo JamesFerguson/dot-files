@@ -1,6 +1,7 @@
 #!/bin/bash
 
-chmod +x mvimf
-cd /usr/bin/local/
-echo "sudo ln -s ~/dot-files/tweaks/mvimf"
-sudo ln -s ~/dot-files/tweaks/mvimf
+cd ~/codez/dot-files/tweaks && \
+chmod +x mvimf && \
+cd /usr/local/bin && \
+echo "sudo ln -s ~/codez/dot-files/tweaks/mvimf" && \
+sudo ln -s ~/codez/dot-files/tweaks/mvimf
