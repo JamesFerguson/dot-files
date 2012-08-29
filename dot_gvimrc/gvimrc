@@ -1,24 +1,4 @@
-" Turn on line numbers
-set number
-
-" Change colorscheme
-colorscheme autumn
-
-" Turns on the tab bar always
-set showtabline=2
-
-" Number of horizontal lines on the screen
-set lines=60
-
-" GUI Option to remove the Toolbar (T)
-set guioptions-=T
-
-" Sets the font and size
-set guifont=Bitstream\ Vera\ Sans\ Mono:h14
-
-" Write file when a buffer is closed
-set autowrite
-
-" write files when mVim loses focus (prob gui only; some cli versions can detect this too)
-au FocusLost * silent! wa
-
+" pull in includes
+for f in split(glob('~/codez/dot-files/dot_gvimrc/includes/*.vim'), '\n')
+    exe 'source' f
+endfor
