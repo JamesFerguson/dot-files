@@ -5,6 +5,7 @@ Bundle 'ack.vim'
 
 " Changing things
 Bundle 'scrooloose/nerdcommenter'
+Bundle 'SuperTab-continued.'
 
 " Syntax
 " didn't work
