@@ -62,3 +62,8 @@ zstyle ':completion:*:ssh:*' tag-order \
 zstyle ':completion:*:ssh:*' group-order \
    hosts-domain hosts-host users hosts-ipaddr
 zstyle '*' single-ignored show
+
+
+
+# Because we alias git to git-achievements we need the following.
+compdef _git git-achievements=git
