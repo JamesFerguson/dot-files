@@ -30,3 +30,7 @@ let macvim_hig_shift_movement = 1
 " % to bounce from do to end etc.
 runtime! macros/matchit.vim
 
+" Use very magic mode (start regexes with /\v...) for all regexes
+"  Switch off anywhere in a regex with \V.
+nnoremap / /\v
+vnoremap / /\v
