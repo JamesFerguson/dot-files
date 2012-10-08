@@ -22,7 +22,6 @@ alias serve='script/server || unicorn_rails || thin start || rails server'
 alias generate='rails --version | grep 2.3 > /dev/null && script/generate || rails generate'
 alias bx='bundle exec'
 alias cuc='run_bundler_cmd cucumber'
-alias bundle='echo "Restarting Pow instance..." && touch tmp/restart.txt && bundle'
 
 # disable zsh corrections for some commands
 alias git='nocorrect git-achievements'
