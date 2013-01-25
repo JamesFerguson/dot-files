@@ -3,3 +3,5 @@
 dot_vim/bundle
 dot_vim/.netrwhist
 *.swp
+.DS_store
+schedule/log
