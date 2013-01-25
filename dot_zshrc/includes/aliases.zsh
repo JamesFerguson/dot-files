@@ -34,6 +34,7 @@ alias guard='nocorrect guard'
 alias heroku='nocorrect heroku'
 alias github='nocorrect github'
 alias gh='nocorrect gh'
+alias grb='nocorrect grb'
 
 # personal project aliases
 alias tv='cd ~/codez/tv-shows'
