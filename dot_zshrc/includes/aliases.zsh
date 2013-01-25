@@ -9,6 +9,10 @@ alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
 
+# the silver searcher
+alias ag="nocorrect noglob ag --smart-case -C 2"
+alias ack="nocorrect noglob ag --smart-case -C 2"
+
 # More specific ones
 alias du_podcasts='du ~/Music/iTunes/iTunes\ Music/Podcasts | rev | sed -E s/\([^0-9]{1}\)\([0-9]{4}\)$/\\1\\2\ \ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{5}\)$/\\1\\2\ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{6}\)$/\\1\\2\ / | rev | sort'
 
