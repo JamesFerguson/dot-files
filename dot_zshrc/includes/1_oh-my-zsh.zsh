@@ -42,6 +42,7 @@ plugins=(\
   git\
   git-flow\
   github\
+  git_remote_branch\
   heroku\
   node\
   npm\
