@@ -6,6 +6,7 @@ $HOME/.rvm/gems/ruby-1.9.2-p320@global/bin:\
 $HOME/.rvm/rubies/ruby-1.9.2-p320/bin:\
 $HOME/.rvm/bin:\
 $HOME/codez/git-achievements:\
+$HOME/Dropbox/Blake/sync/bin:\
 /usr/local/bin:\
 /usr/local/sbin:\
 /usr/bin:\
