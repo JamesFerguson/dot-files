@@ -1,17 +1,19 @@
 #!/bin/bash
 
-ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
-ln -fs ~/codez/dot-files/dot_powconfig/powconfig ~/.powconfig
-ln -fs ~/codez/dot-files/dot_inputrc/inputrc ~/.inputrc
-ln -fs ~/codez/dot-files/dot_irbrc/irbrc ~/.irbrc
-ln -fs ~/codez/dot-files/dot_gvimrc/gvimrc ~/.gvimrc
-ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
-ln -fs ~/codez/dot-files/reci_sh/reci.sh ~/reci.sh
-ln -fs ~/codez/dot-files/production_slave_sh/production_slave.sh ~/production_slave.sh
 ln -fs ~/codez/dot-files/dot_ackrc/ackrc ~/.ackrc
 ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
-ln -fs ~/codez/dot-files/dot_gitconfig/gitconfig ~/.gitconfig
 ln -fs ~/codez/dot-files/dot_editrc/editrc ~/.editrc
+ln -fs ~/codez/dot-files/dot_gitconfig/gitconfig ~/.gitconfig
+ln -fs ~/codez/dot-files/dot_gvimrc/gvimrc ~/.gvimrc
+ln -fs ~/codez/dot-files/dot_inputrc/inputrc ~/.inputrc
+ln -fs ~/codez/dot-files/dot_irbrc/irbrc ~/.irbrc
+ln -fs ~/codez/dot-files/dot_powconfig/powconfig ~/.powconfig
+# powrc below \/
+ln -fs ~/codez/dot-files/dot_rdebugrc/rdebugrc ~/.rdebugrc
+ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
+ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
+ln -fs ~/codez/dot-files/production_slave_sh/production_slave.sh ~/production_slave.sh
+ln -fs ~/codez/dot-files/reci_sh/reci.sh ~/reci.sh
 sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
 
 # powrc
