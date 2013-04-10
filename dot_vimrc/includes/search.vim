@@ -11,6 +11,8 @@ set noequalalways
 
 " Command-T configuration
 let g:CommandTMaxHeight=20
+let g:CommandTMaxFiles=25000
+set wildignore+=.git,.svn,.o,.obj,app/assets/fonts,app/assets/images,public,tmp,log,*swp
 
 " ZoomWin configuration
 map <Leader><Leader> :ZoomWin<CR>
