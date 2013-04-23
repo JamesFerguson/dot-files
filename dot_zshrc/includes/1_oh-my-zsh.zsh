@@ -39,6 +39,7 @@ plugins=(\
   extract\
   gem\
   git\
+  git-extras\
   git-flow\
   git-remote-branch\
   github\
