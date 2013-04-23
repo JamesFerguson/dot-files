@@ -67,3 +67,6 @@ zstyle '*' single-ignored show
 
 # Because we alias git to git-achievements we need the following.
 compdef _git git-achievements=git
+
+# Apparently commands like this in oh-my-zsh plugins are ignored ???
+compdef _git_remote_branch grb

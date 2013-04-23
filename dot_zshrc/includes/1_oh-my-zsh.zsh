@@ -40,8 +40,8 @@ plugins=(\
   gem\
   git\
   git-flow\
+  git-remote-branch\
   github\
-  git_remote_branch\
   heroku\
   node\
   npm\
