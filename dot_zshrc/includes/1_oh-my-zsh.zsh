@@ -53,6 +53,7 @@ plugins=(\
   redis-cli\
   screen\
   vundle\
+  zeus\
   autojump)
 
 source $ZSH/oh-my-zsh.sh
