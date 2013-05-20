@@ -2,4 +2,4 @@
 au BufReadPost * %s/\s\+$//e
 
 " Kill hashrockets with fire
-au BufReadPost *.rb %s/:\(\w\+\) =>/\1:/ge
+au BufReadPost *.rb %s/\([^:]\):\(\w\+\) =>/\1\2:/ge
