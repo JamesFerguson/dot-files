@@ -1,4 +1,8 @@
 export RE="http://re.dev"
+export REX="http://rex-student.dev"
+export REX_STUDENT="http://rex-student.dev"
+export ED="http://eggspress-data.dev"
+export EGGSPRESS_DATA="http://eggspress-data.dev"
 
 if [ -f "$rvm_path/scripts/rvm" ] && [ -f ".ruby-version" ] && [ -f ".ruby-gemset" ]; then
   source "$rvm_path/scripts/rvm"
