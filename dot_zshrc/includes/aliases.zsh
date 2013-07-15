@@ -24,7 +24,6 @@ alias testsuite='run_bundler_cmd rake cucumber spec'
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias serve='script/server || unicorn_rails || thin start || rails server'
 alias generate='rails --version | grep 2.3 > /dev/null && script/generate || rails generate'
-alias bx='bundle exec'
 alias cuc='run_bundler_cmd cucumber'
 
 # disable zsh corrections for some commands
