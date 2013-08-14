@@ -1,9 +1,9 @@
 setopt ALL_EXPORT
 
 export PATH=\
-$HOME/.rvm/gems/ruby-1.9.2-p320/bin:\
-$HOME/.rvm/gems/ruby-1.9.2-p320@global/bin:\
-$HOME/.rvm/rubies/ruby-1.9.2-p320/bin:\
+$HOME/.rvm/gems/ruby-2.0.0-p247/bin:\
+$HOME/.rvm/gems/ruby-2.0.0-p2470@global/bin:\
+$HOME/.rvm/rubies/ruby-2.0.0-p247/bin:\
 $HOME/.rvm/bin:\
 $HOME/codez/git-achievements:\
 $HOME/Dropbox/Blake/sync/bin:\
