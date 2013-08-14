@@ -13,6 +13,7 @@
 	autocrlf = input
 	editor = mvimf
 	whitespace = fix
+	excludesfile = /Users/jim/.gitignore_global
 [push]
 	default = tracking
 [achievement]
