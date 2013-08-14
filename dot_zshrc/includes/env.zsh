@@ -7,6 +7,7 @@ $HOME/.rvm/rubies/ruby-1.9.2-p320/bin:\
 $HOME/.rvm/bin:\
 $HOME/codez/git-achievements:\
 $HOME/Dropbox/Blake/sync/bin:\
+/usr/local/share/npm/bin:\
 /usr/local/bin:\
 /usr/local/sbin:\
 /usr/bin:\
