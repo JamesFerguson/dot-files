@@ -17,7 +17,7 @@ alias ack="nocorrect noglob ag --smart-case -C 2"
 alias du_podcasts='du ~/Music/iTunes/iTunes\ Music/Podcasts | rev | sed -E s/\([^0-9]{1}\)\([0-9]{4}\)$/\\1\\2\ \ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{5}\)$/\\1\\2\ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{6}\)$/\\1\\2\ / | rev | sort'
 
 # rake aliases
-alias migrate='run_bundler_cmd rake db:migrate db:test:prepare && DATABASE=$CUCUMBER_DATABASE rake db:test:prepare'
+alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:prepare && DATABASE=$CUCUMBER_DATABASE rake db:test:prepare'
 alias testsuite='run_bundler_cmd rake cucumber spec'
 
 # rails aliases
