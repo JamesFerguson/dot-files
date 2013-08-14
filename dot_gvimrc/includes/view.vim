@@ -10,7 +10,7 @@ colorscheme autumn2
 " Turns on the tab bar always
 set showtabline=2
 
-" Sets the font and size
-set guifont=Bitstream\ Vera\ Sans\ Mono:h14
+" Sets the font and size - use :set gfn=* to see a font window
+set guifont=Courier\ New:h16
 
 
