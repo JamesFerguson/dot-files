@@ -7,7 +7,7 @@ function gup
     set -e # fail immediately if there's a problem
 
     echo "Fetching upstream changes"
-    git fetch
+    git fetch --prune
     BRANCH=$(git describe --contains --all HEAD)
     if [ -z "$(git config branch.$BRANCH.remote)" -o -z "$(git config branch.$BRANCH.merge)" ]
     then
