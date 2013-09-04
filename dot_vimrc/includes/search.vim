@@ -19,7 +19,7 @@ map <Leader><Leader> :ZoomWin<CR>
 
 " NERDTree configuration
 let NERDTreeIgnore=['\.pyc$', '\.rbc$', '\~$']
-map <Leader>n :NERDTreeToggle<CR>
+map <Leader>n <plug>NERDTreeMirrorToggle<CR>
 
 " Use ag for ack.vim
 let g:ackprg = 'ag --nogroup --nocolor --column'

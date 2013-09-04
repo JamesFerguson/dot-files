@@ -6,7 +6,7 @@ map <leader>s :mksession! session.vis<CR>
 au BufRead *.vis so %
 
 " work around nerdtree/sessions bug by closing nerdtree before VimLeave
-au VimLeavePre * silent! :NERDTreeClose
+au VimLeavePre * silent! :NERDTreeTabsClose
 
 " write session when mVim loses focus and when it closes
 au FocusLost * silent! :mksession! session.vis
