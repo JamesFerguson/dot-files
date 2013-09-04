@@ -1,6 +1,7 @@
 " Finding things
 Bundle 'wincent/Command-T'
 Bundle 'scrooloose/nerdtree'
+Bundle 'jistr/vim-nerdtree-tabs'
 Bundle 'ack.vim'
 
 " Changing things
@@ -8,12 +9,15 @@ Bundle 'scrooloose/nerdcommenter'
 Bundle 'SuperTab-continued.'
 
 " Syntax
-" didn't work
-Bundle 'rainbow-end'
 Bundle 'rainbow_parentheses.vim'
 
 " Syntax - lang specific
 Bundle 'vim-coffee-script'
+Bundle 'coffee-check.vim'
+Bundle 'tpope/vim-git'
+
+" Integration
+ Bundle 'tpope/vim-fugitive'
 
 " Colors
 "
