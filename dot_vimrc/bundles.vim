@@ -15,6 +15,7 @@ Bundle 'rainbow_parentheses.vim'
 Bundle 'vim-coffee-script'
 Bundle 'coffee-check.vim'
 Bundle 'tpope/vim-git'
+Bundle 'heartsentwined/vim-emblem'
 
 " Integration
  Bundle 'tpope/vim-fugitive'

@@ -31,6 +31,9 @@ au FileType python set softtabstop=4 tabstop=4 shiftwidth=4 textwidth=79
 " add an actionscript syntax highlighter
 au BufNewFile,BufRead *.as set filetype=actionscript
 
+" emblem syntax
+au BufNewFile, BufRead *.emblem set filetype=emblem
+
 " Enable syntastic syntax checking
 let g:syntastic_enable_signs=1
 let g:syntastic_quiet_warnings=1
