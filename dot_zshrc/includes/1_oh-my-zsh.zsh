@@ -34,6 +34,7 @@ plugins=(\
   brew\
   bundler\
   cap\
+  cp\
   dircycle\
   encode64\
   extract\
@@ -47,11 +48,13 @@ plugins=(\
   node\
   npm\
   osx\
+  postgres\
   powder\
   rails3\
   rake\
   redis-cli\
   screen\
+  urltools\
   vundle\
   zeus\
   autojump)
