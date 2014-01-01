@@ -55,11 +55,13 @@ function gup
       fi
 
       if [ -f "Gemfile" ]
+      then
         echo "Bundling in case of Gemfile changes"
         bundle
       fi
 
       if [ -d "db" ]
+      then
         echo "Running any new migrations and updating test db..."
         (rake db:abort_if_pending_migrations && echo "No new migrations.") || (echo "Migrations found, migrating and preparing test..." && rake db:migrate && rake db:test:prepare && echo "Migrating cucumber env..." && DATABASE=$CUCUMBER_DATABASE rake db:test:prepare)
       fi
