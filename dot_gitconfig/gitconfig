@@ -60,3 +60,8 @@
   lsfi = !git ls-files -v | grep ^[a-z]
   ls-assume-unchanged = !git ls-files -v | grep ^[a-z]
   lsau = !git ls-files -v | grep ^[a-z]
+[git-up "bundler"]
+	check = true
+	autoinstall = true
+[git-up "fetch"]
+	prune = true
