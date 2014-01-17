@@ -59,6 +59,3 @@ alias dsource='cd ~/Blake/blake-data-source'
 alias hu='cd ~/Blake/hubot'
 alias detgup='cd ~/Blake/detachment && git rebase -p redev/master'
 alias bgup='cd ~/Blake/bootstrap && git rebase -p redev/master'
-
-# Blake sub tool, bx
-eval "$($HOME/Blake/bx/bin/bx init -)"
