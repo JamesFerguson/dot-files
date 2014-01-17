@@ -50,7 +50,7 @@ plugins=(\
   osx\
   postgres\
   powder\
-  rails3\
+  rails\
   rake\
   redis-cli\
   screen\
