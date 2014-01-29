@@ -65,3 +65,5 @@
 	autoinstall = true
 [git-up "fetch"]
 	prune = true
+[user]
+	email = james.ferguson7@gmail.com
