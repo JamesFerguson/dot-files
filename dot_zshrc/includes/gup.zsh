@@ -58,6 +58,8 @@ function gup
       then
         echo "Bundling in case of Gemfile changes"
         bundle
+        echo "Cleaning bundle"
+        bundle clean --force
       fi
 
       if [ -d "db" ]
