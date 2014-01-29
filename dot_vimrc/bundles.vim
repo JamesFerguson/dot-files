@@ -10,6 +10,7 @@ Bundle 'SuperTab-continued.'
 
 " Syntax
 Bundle 'rainbow_parentheses.vim'
+Bundle 'scrooloose/syntastic'
 
 " Syntax - lang specific
 Bundle 'vim-coffee-script'
