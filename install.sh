@@ -11,6 +11,8 @@ ln -fs ~/codez/dot-files/dot_irbrc/irbrc ~/.irbrc
 ln -fs ~/codez/dot-files/dot_powconfig/powconfig ~/.powconfig
 # powrc below \/
 ln -fs ~/codez/dot-files/dot_rdebugrc/rdebugrc ~/.rdebugrc
+ln -fs ~/codez/dot-files/dot_screenrc/screenrc ~/.screenrc
+ln -fs ~/codez/dot-files/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
 ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
 ln -fs ~/codez/dot-files/production_slave_sh/production_slave.sh ~/production_slave.sh
