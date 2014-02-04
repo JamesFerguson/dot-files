@@ -1,2 +1,2 @@
 " Use zsh for shell
-set shell="zsh --login"
+set shell=zsh\ --login
