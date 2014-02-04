@@ -8,7 +8,7 @@ startup_message off
 defscrollback = 100000
 
 # Dynamic window titled for running program
-shelltitle '$ |bash'
+#shelltitle '$ |zsh'
 
 # Turn off the annoying whole-screen-flash-on-tab-complete "feature"
 vbell off
