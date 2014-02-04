@@ -65,13 +65,13 @@ function gup
       if [ -d "db" ]
       then
         echo "Running any new migrations and updating test db..."
-        rake db:abort_if_pending_migrations 
+        rake db:abort_if_pending_migrations
 
-        if [ $? -eq 0]
+        if [ $? -eq 0 ]
         then
           echo "No new migrations."
         else
-          echo "Migrations found, migrating and preparing test..." 
+          echo "Migrations found, migrating and preparing test..."
           rake db:migrate
           rake db:test:prepare
           #echo "Migrating cucumber env..."
