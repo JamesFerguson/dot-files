@@ -4,4 +4,6 @@ AllCops:
 LineLength:
   Max: 90
 
-
+# Single Quotes
+StringLiterals:
+  Enabled: false
