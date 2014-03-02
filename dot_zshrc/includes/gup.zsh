@@ -65,10 +65,12 @@ function gup
       if [ -d "db" ]
       then
         echo "Running any new migrations and updating test db..."
-        HAVE_MIGRATIONS=0
-        rake db:abort_if_pending_migrations || HAVE_MIGRATIONS=1
 
-        if [ HAVE_MIGRATIONS -neq 0 ]
+        rake db:abort_if_pending_migrations
+        HAVE_MIGRATIONS=$?
+
+        echo "HAVE_MIGRATIONS is '$HAVE_MIGRATIONS'"
+        if [ $HAVE_MIGRATIONS -ne 1 ]
         then
           echo "No new migrations."
         else
