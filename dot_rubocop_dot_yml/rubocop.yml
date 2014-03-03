@@ -7,3 +7,6 @@ LineLength:
 # Single Quotes
 StringLiterals:
   Enabled: false
+
+DotPosition:
+  EnforcedStyle: trailing
