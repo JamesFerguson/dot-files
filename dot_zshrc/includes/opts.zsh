@@ -45,4 +45,4 @@ unsetopt BG_NICE # do NOT nice bg commands
 # unsetopt HUP # send the HUP signal to running jobs when the shell exits
 setopt LONG_LIST_JOBS # list jobs in long format
 setopt NOTIFY # report bg job status immediately, not when next printing a prompt (default: on)
-setopt VI
+#setopt VI
