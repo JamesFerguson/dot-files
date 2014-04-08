@@ -19,12 +19,12 @@ env 'MAILTO', "jim"
 
 set :output, "~/codez/dot-files/schedule/log/cron.log"
 
-every :weekday, :at => '8:45am' do
-  command "cd ~ && open -a Flowdock && open -g \"/Applications/Time\ Out\ Free.app\""
+every :weekday, at: '8:45am' do
+  command "cd ~ && open -a Flowdock"
 end
 
-every :weekday, :at => '4:30pm' do
-  command "cd ~ && killall Flowdock && killall \"Time\ Out\ Free\""
+every :weekday, at: '4:30pm' do
+  command "cd ~ && killall Flowdock"
 end
 
 
