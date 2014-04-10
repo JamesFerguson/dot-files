@@ -1,4 +1,4 @@
-bundle_commands=( spec rspec cucumber cap watchr guard rails rackup rake jammit compass rdebug )
+bundle_commands=( spec rspec cucumber cap watchr guard rails rackup rake jammit compass rdebug spring )
 
 function run_bundler_cmd () {
     if [ -e ./Gemfile ]; then
@@ -9,7 +9,7 @@ function run_bundler_cmd () {
         $@
     fi
 }
- 
+
 for cmd in $bundle_commands
 do
     alias $cmd="run_bundler_cmd $cmd"
