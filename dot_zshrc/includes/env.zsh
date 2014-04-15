@@ -16,6 +16,9 @@ $HOME/Dropbox/Blake/sync/bin:\
 /sbin:\
 $PATH
 
+# RE setting
+RETRIES=1
+
 # Locale
 LC_ALL='en_US.UTF-8'
 LANG='en_US.UTF-8'
