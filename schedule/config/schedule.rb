@@ -19,12 +19,12 @@ env 'MAILTO', "jim"
 
 set :output, "~/codez/dot-files/schedule/log/cron.log"
 
-every :weekday, at: '8:45am' do
-  command "cd ~ && open -a Flowdock"
+every :weekday, at: ['8:05am', '8:35am'] do
+  command 'cd ~ && open -a Flowdock && open -a "Vitamin-R 2"'
 end
 
 every :weekday, at: '4:30pm' do
-  command "cd ~ && killall Flowdock"
+  command 'cd ~ && killall Flowdock && killall "Vitamin-R 2"'
 end
 
 
