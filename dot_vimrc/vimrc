@@ -5,7 +5,7 @@ set rtp+=~/.vim/bundle/vundle/
 call vundle#rc()
 
 " let Vundle manage Vundle
-" required! 
+" required!
 Bundle 'gmarik/vundle'
 
 source ~/codez/dot-files/dot_vimrc/bundles.vim
@@ -15,5 +15,5 @@ filetype plugin indent on     " required!
 set encoding=utf-8
 
 for f in split(glob('~/codez/dot-files/dot_vimrc/includes/*.vim'), '\n')
-    exe 'source' f
+  exe 'source' f
 endfor

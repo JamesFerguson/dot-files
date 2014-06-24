@@ -1,5 +1,5 @@
 " Finding things
-Bundle 'wincent/Command-T'
+Bundle 'ctrlp.vim'
 Bundle 'scrooloose/nerdtree'
 Bundle 'jistr/vim-nerdtree-tabs'
 Bundle 'ack.vim'
