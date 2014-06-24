@@ -3,6 +3,7 @@ Bundle 'ctrlp.vim'
 Bundle 'scrooloose/nerdtree'
 Bundle 'jistr/vim-nerdtree-tabs'
 Bundle 'ack.vim'
+Bundle 'rails.vim'
 
 " Changing things
 Bundle 'scrooloose/nerdcommenter'
