@@ -3,3 +3,8 @@ au BufReadPost * %s/\s\+$//e
 
 " Kill hashrockets with fire
 au BufReadPost *.rb %s/\([^:]\):\(\w\+\) =>/\1\2:/ge
+
+" Indentation
+set smartindent
+set autoindent
+filetype indent on
