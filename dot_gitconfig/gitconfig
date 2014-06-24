@@ -70,3 +70,5 @@
 	prune = true
 [user]
 	email = james.ferguson7@gmail.com
+[mergetool]
+	keepBackup = false
