@@ -4,7 +4,7 @@ set incsearch
 set ignorecase
 set smartcase
 
-set wildignore+=.git,.svn,.o,.obj,app/assets/fonts,app/assets/images,lib/legacy-plugins,spec/vcr_cassettes,public,tmp,log,*swp
+set wildignore+=*/tmp/*,*.so,*.swp,*.zip,.git,.svn,.o,.obj,app/assets/fonts,app/assets/images,lib/legacy-plugins,spec/vcr_cassettes,public,tmp,log,*swp
 
 " NERDTree configuration
 let NERDTreeIgnore=['\.pyc$', '\.rbc$', '\~$']
