@@ -4,6 +4,7 @@ export REX_STUDENT="http://rex-student.dev"
 export ED="http://eggspress-data.dev"
 export EGGSPRESS_DATA="http://eggspress-data.dev"
 export APP_SERVER="http://readingeggs.dev"
+export MS_STUDENT="http://mathseeds.dev"
 
 if [ -f "$rvm_path/scripts/rvm" ]; then
   source "$rvm_path/scripts/rvm"

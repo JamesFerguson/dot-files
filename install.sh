@@ -26,5 +26,5 @@ ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/eggspress-data/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/media-hub/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/mathseeds/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/tv-shows/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/todos/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/ranker/.powrc
+ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/blake-admin/.powrc
+
