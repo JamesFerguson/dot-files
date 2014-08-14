@@ -1,4 +1,5 @@
 " Searching
+set tags+=gems.tags
 set hlsearch
 set incsearch
 set ignorecase
