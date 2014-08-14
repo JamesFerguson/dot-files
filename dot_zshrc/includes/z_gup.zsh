@@ -58,8 +58,11 @@ function gup
       then
         echo "Bundling in case of Gemfile changes"
         bundle
-        echo "Cleaning bundle"
-        bundle clean --force
+
+        if [[ $(($RANDOM % 10)) -eq 1 ]]; then
+          echo "Cleaning bundle"
+          bundle clean --force
+        fi
       fi
 
       if [ -d "db" ]
