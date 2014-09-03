@@ -22,7 +22,6 @@ alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:l
 # rails aliases
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias generate='rails --version | grep 2.3 > /dev/null && script/generate || rails generate'
-alias cuc='run_bundler_cmd cucumber'
 
 # disable zsh corrections for some commands
 alias git='nocorrect git-achievements'
