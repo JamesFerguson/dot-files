@@ -18,7 +18,6 @@ alias du_podcasts='du ~/Music/iTunes/iTunes\ Media/Podcasts | rev | sed -E s/\([
 
 # rake aliases
 alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:prepare && DATABASE=$CUCUMBER_DATABASE rake db:test:prepare'
-alias testsuite='run_bundler_cmd rake cucumber spec'
 
 # rails aliases
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
