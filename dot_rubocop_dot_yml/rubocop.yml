@@ -9,4 +9,4 @@ StringLiterals:
   Enabled: false
 
 DotPosition:
-  EnforcedStyle: trailing
+  EnforcedStyle: leading
