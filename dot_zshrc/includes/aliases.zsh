@@ -16,9 +16,6 @@ alias ack="nocorrect noglob ag --smart-case -C 2"
 # More specific ones
 alias du_podcasts='du ~/Music/iTunes/iTunes\ Media/Podcasts | rev | sed -E s/\([^0-9]{1}\)\([0-9]{4}\)$/\\1\\2\ \ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{5}\)$/\\1\\2\ \ / | sed -E s/\([^0-9]{1}\)\([0-9]{6}\)$/\\1\\2\ / | rev | sort'
 
-# bundler
-alias bi='bundle install --jobs=3 --retry=3'
-
 # rake aliases
 alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:load'
 
