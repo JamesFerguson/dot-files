@@ -58,4 +58,7 @@ PGDATA=/Library/PostgreSQL/8.4/data/
 # Ensure node finds npm modules
 NODE_PATH=/usr/local/lib/node_modules
 
+# Can't set redis up in pow
+REDIS_URL="redis://127.0.0.1:6379/"
+
 unsetopt ALL_EXPORT
