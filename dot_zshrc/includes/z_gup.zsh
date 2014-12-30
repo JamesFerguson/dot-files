@@ -21,7 +21,7 @@ function gup
     echo "Created a temp file, \"$TEMPFILE\", for capturing command output, will delete on exit."
     trap '{ rm -f "$TEMPFILE"; echo "Deleted $TEMPFILE" }' EXIT
 
-    if git status | grep "# Your branch" > "$TEMPFILE"
+    if git status | grep "Your branch is behind" > "$TEMPFILE"
     then
       # extract tracking branch from message
       UPSTREAM=$(cat "$TEMPFILE" | cut -d "'" -f 2)
