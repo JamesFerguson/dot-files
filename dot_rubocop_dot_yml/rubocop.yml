@@ -1,12 +1,1 @@
-AllCops:
-  RunRailsCops: true
-
-LineLength:
-  Max: 90
-
-# Single Quotes
-StringLiterals:
-  Enabled: false
-
-DotPosition:
-  EnforcedStyle: leading
+/Users/jim/Blake/guides/style/rubocop.yml
