@@ -6,8 +6,15 @@ function gup
   (
     set -e # fail immediately if there's a problem
 
+    # use `git-up` if installed
+    if type git-up > /dev/null 2>&1
+    then
+      exec git-up
+    fi
+
     echo "Fetching upstream changes"
-    git fetch --prune
+    git fetch
+
     BRANCH=$(git describe --contains --all HEAD)
     if [ -z "$(git config branch.$BRANCH.remote)" -o -z "$(git config branch.$BRANCH.merge)" ]
     then
@@ -21,17 +28,20 @@ function gup
     echo "Created a temp file, \"$TEMPFILE\", for capturing command output, will delete on exit."
     trap '{ rm -f "$TEMPFILE"; echo "Deleted $TEMPFILE" }' EXIT
 
-    if git status | grep "Your branch is behind" > "$TEMPFILE"
+    if git status | grep "Your branch" > "$TEMPFILE" # 'is behind.*|and .* have diverged'
     then
       # extract tracking branch from message
       UPSTREAM=$(cat "$TEMPFILE" | cut -d "'" -f 2)
-      echo "We're behind upstream, \"$UPSTREAM\", we need to update."
-
       if [ -z "$UPSTREAM" ]
       then
         echo Could not detect upstream branch >&2
         exit 1
       fi
+      echo "We're behind upstream, \"$UPSTREAM\", we need to update."
+
+      # can we fast-forward?
+      CAN_FF=1
+      grep -q "can be fast-forwarded" "$TEMPFILE" || CAN_FF=0
 
       # stash any uncommitted changes
       git stash | tee "$TEMPFILE"
@@ -41,9 +51,16 @@ function gup
       HAVE_STASH=0
       grep -q "No local changes" "$TEMPFILE" || HAVE_STASH=1
 
-      echo "Rebasing our changes on top of upstream, but keeping any merges."
-      echo "git rebase -p \"$UPSTREAM\""
-      git rebase -p "$UPSTREAM"
+      if [ "$CAN_FF" -ne 0 ]
+      then
+        echo "Nothing has changed locally, just fast foward."
+        echo "git merge --ff \"$UPSTREAM\""
+        git merge --ff "$UPSTREAM"
+      else
+        echo "Rebasing our changes on top of upstream, but keeping any merges."
+        echo "git rebase -p \"$UPSTREAM\""
+        git rebase -p "$UPSTREAM"
+      fi
 
       # restore any stashed changed
       if [ "$HAVE_STASH" -ne 0 ]
