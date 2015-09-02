@@ -2,6 +2,7 @@
 
 ln -fs ~/codez/dot-files/dot_ackrc/ackrc ~/.ackrc
 ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
+ln -fs ~/codez/dot-files/dot_ctags/ctags ~/.ctags
 ln -fs ~/codez/dot-files/dot_editrc/editrc ~/.editrc
 ln -fs ~/codez/dot-files/dot_gitconfig/gitconfig ~/.gitconfig
 ln -fs ~/codez/dot-files/dot_gitignore_global/gitignore_global ~/.gitignore_global
