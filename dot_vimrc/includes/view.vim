@@ -1,6 +1,9 @@
 set number
 set ruler
 
+" Change colorscheme
+colorscheme neon
+
 " set list listchars=tab:▶,eol:¶
 
 " Status bar

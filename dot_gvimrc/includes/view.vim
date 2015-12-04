@@ -4,9 +4,6 @@ set guioptions-=T
 " Turn on line numbers
 set number
 
-" Change colorscheme
-colorscheme autumn2
-
 " Turns on the tab bar always
 set showtabline=2
 
