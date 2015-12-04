@@ -1,6 +1,7 @@
 setopt ALL_EXPORT
 
 export PATH=\
+$HOME/bin:\
 $HOME/.rvm/gems/ruby-2.0.0-p247/bin:\
 $HOME/.rvm/gems/ruby-2.0.0-p2470@global/bin:\
 $HOME/.rvm/rubies/ruby-2.0.0-p247/bin:\
