@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Didn't actually work.
+
 XCODE_RESOURCE_PATH=/Applications/Xcode.app/Contents/SharedFrameworks/DVTKit.framework/Resources
 
 echo 'Downloading new image'
