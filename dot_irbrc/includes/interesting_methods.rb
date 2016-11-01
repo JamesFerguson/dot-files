@@ -3,9 +3,9 @@
 
 @reminders << %Q{
 irb> "abc".interesting_methods
-  %                            count                        first                        next                         start_with?                  
-  *                            crypt                        grep                         next!                        strip                        
-  +                            cycle                        group_by                     none?                        strip!                       
+  %                            count                        first                        next                         start_with?
+  *                            crypt                        grep                         next!                        strip
+  +                            cycle                        group_by                     none?                        strip!
 ...
 }
 
