@@ -1,4 +1,4 @@
-bundle_commands=( spec rspec cucumber cap watchr guard rails rackup rake jammit compass rdebug spring )
+bundle_commands=( cap compass cucumber guard jammit rackup rails rake rdebug rspec sidekiq spec spring watchr )
 
 function run_bundler_cmd () {
   if [ -e ./Gemfile ]; then
