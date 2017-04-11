@@ -2,8 +2,8 @@
 Bundle 'ctrlp.vim'
 Bundle 'scrooloose/nerdtree'
 Bundle 'jistr/vim-nerdtree-tabs'
-Bundle 'ack.vim'
 Bundle 'rails.vim'
+Bundle 'mileszs/ack.vim'
 
 " Changing things
 Bundle 'scrooloose/nerdcommenter'
