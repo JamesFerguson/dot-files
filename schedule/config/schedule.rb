@@ -19,12 +19,12 @@ env 'MAILTO', "jim"
 
 set :output, "~/codez/dot-files/schedule/log/cron.log"
 
-every :weekday, at: ['6:05am', '6:15am', '7:05am'] do
+every :weekday, at: ['7:30am', '8:05am', '8:15am', '8:55am', '9:15am'] do
   command 'cd ~ && open -a Flowdock && open -a "Vitamin-R 2"'
 end
 
-#every :weekday, at: '4:30pm' do
-  #command 'cd ~ && killall Flowdock && killall "Vitamin-R 2"'
-#end
+every :weekday, at: ['5:30pm', '6:00pm', '6:30pm', '7:00pm', '7:30pm', '8:00pm', '8:30pm'] do
+  command 'cd ~ && killall Flowdock && killall "Vitamin-R 2"'
+end
 
 # Installation/Update (without clobbering crontab): `whenever -i`
