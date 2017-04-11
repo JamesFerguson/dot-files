@@ -1,4 +1,5 @@
 set nocompatible
+
 filetype off                   " required!
 
 set rtp+=~/.vim/bundle/vundle/
@@ -8,12 +9,15 @@ call vundle#rc()
 " required!
 Bundle 'gmarik/vundle'
 
+":echom "source bundles"
 source ~/codez/dot-files/dot_vimrc/bundles.vim
 " load the plugin and indent settings for the detected filetype
 filetype plugin indent on     " required!
 
 set encoding=utf-8
 
+":echom "source includes"
 for f in split(glob('~/codez/dot-files/dot_vimrc/includes/*.vim'), '\n')
   exe 'source' f
 endfor
+":echom "vimrc done"
