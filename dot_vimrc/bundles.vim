@@ -7,7 +7,7 @@ Bundle 'mileszs/ack.vim'
 
 " Changing things
 Bundle 'scrooloose/nerdcommenter'
-Bundle 'SuperTab-continued.'
+Bundle 'ervandew/supertab'
 
 " Syntax
 Bundle 'rainbow_parentheses.vim'
