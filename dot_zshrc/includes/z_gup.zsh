@@ -1,4 +1,4 @@
-unalias gup # added by oh-my-zsh git plugin
+[ "$(type gup | awk '{print $4}')" = "alias" ] && unalias gup # added by oh-my-zsh git plugin
 
 function gup
 {
