@@ -18,6 +18,7 @@ Bundle 'vim-coffee-script'
 Bundle 'coffee-check.vim'
 Bundle 'tpope/vim-git'
 Bundle 'heartsentwined/vim-emblem'
+Bundle 'elixir-lang/vim-elixir'
 
 " Integration
  Bundle 'tpope/vim-fugitive'

@@ -40,5 +40,6 @@ let g:syntastic_error_symbol = '✗'
 let g:syntastic_warning_symbol = '⚠'
 let g:syntastic_ruby_checkers = ['mri', 'rubocop', 'ruby-lint']
 "let g:syntastic_quiet_messages = {'level': 'warnings'}
-
+let g:syntastic_enable_elixir_checker = 1
+let g:syntastic_elixir_checkers = ['elixir']
 
