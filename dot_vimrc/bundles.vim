@@ -1,43 +1,49 @@
 " Finding things
-Bundle 'ctrlp.vim'
-Bundle 'scrooloose/nerdtree'
-Bundle 'jistr/vim-nerdtree-tabs'
-Bundle 'rails.vim'
-Bundle 'mileszs/ack.vim'
+Plugin 'ctrlp.vim'
+Plugin 'scrooloose/nerdtree'
+Plugin 'jistr/vim-nerdtree-tabs'
+Plugin 'rails.vim'
+" Plugin 'mileszs/ack.vim'
+Plugin 'dyng/ctrlsf.vim'
 
 " Changing things
-Bundle 'scrooloose/nerdcommenter'
-Bundle 'ervandew/supertab'
+Plugin 'scrooloose/nerdcommenter'
+Plugin 'ervandew/supertab'
 
 " Syntax
-Bundle 'rainbow_parentheses.vim'
-Bundle 'scrooloose/syntastic'
+Plugin 'kien/rainbow_parentheses.vim'
+Plugin 'scrooloose/syntastic'
 
 " Syntax - lang specific
-Bundle 'vim-coffee-script'
-Bundle 'coffee-check.vim'
-Bundle 'tpope/vim-git'
-Bundle 'heartsentwined/vim-emblem'
-Bundle 'elixir-lang/vim-elixir'
+Plugin 'vim-coffee-script'
+Plugin 'coffee-check.vim'
+Plugin 'tpope/vim-git'
+Plugin 'heartsentwined/vim-emblem'
+Plugin 'elixir-lang/vim-elixir'
+Plugin 'syngan/vim-vimlint'
+Plugin 'ynkdir/vim-vimlparser'
+
+" Beautification/Formatting
+Plugin 'Chiel92/vim-autoformat'
 
 " Integration
- Bundle 'tpope/vim-fugitive'
+Plugin 'tpope/vim-fugitive'
 
 " Colors
 "
 " see examples http://vimcolorschemetest.googlecode.com/svn/html/index-pl.html
 " see bundle https://github.com/flazz/vim-colorschemes
-Bundle 'flazz/vim-colorschemes'
+Plugin 'flazz/vim-colorschemes'
 " autumn2 - custom
 " coffee2 - customized
-" Bundle 'khaki.vim'
+" Plugin 'khaki.vim'
 " rainbow_breeze
 " rainbow_night
 " rainbow_neon
-" Bundle 'oceandeep'
-" Bundle 'two2tango'
-" Bundle 'Zenburn'
+" Plugin 'oceandeep'
+" Plugin 'two2tango'
+" Plugin 'Zenburn'
 
 " Running things
-Bundle 'Conque-Shell'
+Plugin 'Conque-Shell'
 
