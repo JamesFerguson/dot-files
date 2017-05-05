@@ -1,0 +1,9 @@
+# chruby setup
+source /usr/local/share/chruby/chruby.sh
+source /usr/local/share/chruby/auto.sh
+
+# node setup
+NODE_PATH=/usr/local/lib/node_modules
+
+# bash completion
+source /usr/local/etc/bash_completion.d
