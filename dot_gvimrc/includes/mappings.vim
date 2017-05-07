@@ -6,8 +6,16 @@
 " Command-Return for fullscreen
 macmenu Window.Toggle\ Full\ Screen\ Mode key=<D-CR>
 
-" Command-Shift-F for Ack
-map <D-F> :Ack<space>
+ "Command-Shift-F for CtrlSF
+"map <D-F> :CtrlSF<space>
+nmap     <C-F>f <Plug>CtrlSFPrompt
+vmap     <C-F>f <Plug>CtrlSFVwordPath
+vmap     <C-F>F <Plug>CtrlSFVwordExec
+nmap     <C-F>n <Plug>CtrlSFCwordPath
+nmap     <C-F>p <Plug>CtrlSFPwordPath
+nnoremap <C-F>o :CtrlSFOpen<CR>
+nnoremap <C-F>t :CtrlSFToggle<CR>
+inoremap <C-F>t <Esc>:CtrlSFToggle<CR>
 
 " Command-e for ConqueTerm
 " map <D-e> :call StartTerm()<CR>
