@@ -9,6 +9,7 @@ Plugin 'dyng/ctrlsf.vim'
 " Changing things
 Plugin 'scrooloose/nerdcommenter'
 Plugin 'ervandew/supertab'
+Plugin 'osyo-manga/vim-over'
 
 " Syntax
 Plugin 'kien/rainbow_parentheses.vim'
