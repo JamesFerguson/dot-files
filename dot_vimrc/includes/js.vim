@@ -2,7 +2,7 @@
 let $JS_CMD='node'
 
 " Turn off jslint errors by default
-let g:JSLintHighlightErrorLine = 0
+" let g:JSLintHighlightErrorLine = 0
 
 " Allow easy pretty print of json with ==
 autocmd FileType json set equalprg=json_reformat
