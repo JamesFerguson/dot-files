@@ -16,6 +16,9 @@ map <Leader>te :tabe <C-R>=expand("%:p:h") . "/" <CR>
 " Command mode: Ctrl+P
 cmap <C-P> <C-R>=expand("%:p:h") . "/" <CR>
 
+" OverCommandLine - for visual find and replace
+map <Leader>r :OverCommandLine %s/<CR>
+
 " Unimpaired configuration
 " Bubble single lines
 nmap <C-Up> [e
