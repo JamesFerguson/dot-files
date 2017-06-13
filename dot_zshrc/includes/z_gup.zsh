@@ -1,7 +1,10 @@
+
 [ "$(type gup | awk '{print $4}')" = "alias" ] && unalias gup # added by oh-my-zsh git plugin
 
 function gup
 {
+  source /usr/local/share/chruby/chruby.sh
+  source /usr/local/share/chruby/auto.sh
   # subshell for `set -e` and `trap`
   (
     set -e # fail immediately if there's a problem
