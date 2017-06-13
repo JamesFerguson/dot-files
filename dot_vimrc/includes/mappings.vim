@@ -1,6 +1,3 @@
-" set the <Leader> binding to something easy to reach
-let mapleader = ","
-
 " allow backspacing over everything in insert mode
 set backspace=indent,eol,start
 
