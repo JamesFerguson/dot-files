@@ -28,7 +28,7 @@ vmap <C-Up> [egv
 vmap <C-Down> ]egv
 
 " MacVIM shift+arrow-keys behavior (required in .vimrc)
-let macvim_hig_shift_movement = 1
+let g:macvim_hig_shift_movement = 1
 
 " % to bounce from do to end etc.
 runtime! macros/matchit.vim
