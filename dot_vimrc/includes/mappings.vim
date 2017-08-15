@@ -3,6 +3,8 @@ set backspace=indent,eol,start
 
 " Fuzzy find files with Ctrl-P
 map <Leader>t :CtrlPMixed <CR>
+" ctrl-p most recently used files
+map <Leader>y :CtrlPMRUFiles<CR>
 
 " Opens an edit command with the path of the currently edited file filled in
 " Normal mode: <Leader>e
@@ -37,3 +39,4 @@ runtime! macros/matchit.vim
 "  Switch off anywhere in a regex with \V.
 nnoremap / /\v
 vnoremap / /\v
+
