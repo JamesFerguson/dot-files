@@ -16,6 +16,7 @@ Plugin 'kien/rainbow_parentheses.vim'
 Plugin 'scrooloose/syntastic'
 
 " Syntax - lang specific
+Plugin 'w0rp/ale'
 Plugin 'vim-coffee-script'
 Plugin 'coffee-check.vim'
 Plugin 'tpope/vim-git'
@@ -29,6 +30,7 @@ Plugin 'Chiel92/vim-autoformat'
 
 " Integration
 Plugin 'tpope/vim-fugitive'
+Plugin 'mattonrails/vim-mix'
 
 " Colors
 "
