@@ -22,6 +22,7 @@ ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
 ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
 ln -fs ~/codez/dot-files/production_slave_sh/production_slave.sh ~/production_slave.sh
 ln -fs ~/codez/dot-files/reci_sh/reci.sh ~/reci.sh
+ln -fs ~/codez/dot-files/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
 sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
 
 # powrc
