@@ -27,8 +27,6 @@ sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
 
 # powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/rex-student/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/eggspress-data/.powrc
-ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/media-hub/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/mathseeds/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/tv-shows/.powrc
 ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/blake-admin/.powrc
