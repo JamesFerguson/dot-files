@@ -32,6 +32,9 @@ Plugin 'Chiel92/vim-autoformat'
 Plugin 'tpope/vim-fugitive'
 Plugin 'mattonrails/vim-mix'
 
+" Status Line
+Plugin 'vim-airline/vim-airline'
+
 " Colors
 "
 " see examples http://vimcolorschemetest.googlecode.com/svn/html/index-pl.html
