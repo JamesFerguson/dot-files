@@ -37,12 +37,24 @@ au BufNewFile,BufRead *.as set filetype=actionscript
 " emblem syntax
 au BufNewFile,BufRead *.emblem set filetype=emblem
 
+" ALE syntax checking
+let g:ale_sign_column_always = 1
+let g:ale_sign_error = '✗'
+let g:ale_sign_warning = '⚠'
+let g:airline#extensions#ale#enabled = 1
+let g:ale_linters = {
+\   'ruby': ['brakeman', 'rails_best_practices', 'reek', 'rubocop'],
+\   'text': ['proselint', 'vale'],
+\}
+call ale#Set('ruby_reek_show_context', 1)
+call ale#Set('ruby_reek_show_wiki_link', 1)
+
 " Enable syntastic syntax checking
-let g:syntastic_enable_signs = 1
-let g:syntastic_error_symbol = '✗'
-let g:syntastic_warning_symbol = '⚠'
-let g:syntastic_ruby_checkers = ['mri', 'rubocop', 'ruby-lint']
-"let g:syntastic_quiet_messages = {'level': 'warnings'}
-let g:syntastic_enable_elixir_checker = 1
-let g:syntastic_elixir_checkers = ['elixir']
-let g:syntastic_vim_checkers = ['vimlint']
+"let g:syntastic_enable_signs = 1
+"let g:syntastic_error_symbol = '✗'
+"let g:syntastic_warning_symbol = '⚠'
+"let g:syntastic_ruby_checkers = ['mri', 'rubocop', 'ruby-lint']
+""let g:syntastic_quiet_messages = {'level': 'warnings'}
+"let g:syntastic_enable_elixir_checker = 1
+"let g:syntastic_elixir_checkers = ['elixir']
+"let g:syntastic_vim_checkers = ['vimlint']
