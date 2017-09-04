@@ -10,6 +10,7 @@ set wildignore+=*/tmp/*,*.so,*.swp,*.zip,.git,.svn,.o,.obj,app/assets/fonts,app/
 " NERDTree configuration
 let NERDTreeIgnore=['\.pyc$', '\.rbc$', '\~$']
 map <Leader>n <plug>NERDTreeMirrorToggle<CR>
+let NERDTreeShowHidden=1
 
 " Use ag for ack.vim
 "let g:ackprg = 'ag --nogroup --nocolor --column'
