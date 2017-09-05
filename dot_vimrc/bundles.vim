@@ -3,7 +3,6 @@ Plugin 'ctrlp.vim'
 Plugin 'scrooloose/nerdtree'
 Plugin 'jistr/vim-nerdtree-tabs'
 Plugin 'rails.vim'
-" Plugin 'mileszs/ack.vim'
 Plugin 'dyng/ctrlsf.vim'
 
 " Changing things
@@ -13,7 +12,6 @@ Plugin 'osyo-manga/vim-over'
 
 " Syntax
 Plugin 'kien/rainbow_parentheses.vim'
-Plugin 'scrooloose/syntastic'
 
 " Syntax - lang specific
 Plugin 'w0rp/ale'
