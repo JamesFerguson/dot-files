@@ -9,15 +9,15 @@ call vundle#rc()
 " required!
 Bundle 'gmarik/vundle'
 
+" set the <Leader> binding to something easy to reach
+let mapleader = ","
+
 ":echom "source bundles"
 source ~/codez/dot-files/dot_vimrc/bundles.vim
 " load the plugin and indent settings for the detected filetype
 filetype plugin indent on     " required!
 
 set encoding=utf-8
-
-" set the <Leader> binding to something easy to reach
-let mapleader = ","
 
 ":echom "source includes"
 for f in split(glob('~/codez/dot-files/dot_vimrc/includes/*.vim'), '\n')
