@@ -28,6 +28,7 @@ Plugin 'Chiel92/vim-autoformat'
 
 " Integration
 Plugin 'tpope/vim-fugitive'
+Plugin 'airblade/vim-gitgutter'
 Plugin 'mattonrails/vim-mix'
 
 " Status Line
