@@ -4,6 +4,7 @@ Plugin 'scrooloose/nerdtree'
 Plugin 'jistr/vim-nerdtree-tabs'
 Plugin 'rails.vim'
 Plugin 'dyng/ctrlsf.vim'
+Plugin 'junegunn/fzf.vim'
 
 " Changing things
 Plugin 'scrooloose/nerdcommenter'
