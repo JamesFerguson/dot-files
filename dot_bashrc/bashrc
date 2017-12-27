@@ -7,3 +7,5 @@ NODE_PATH=/usr/local/lib/node_modules
 
 # bash completion
 source /usr/local/etc/bash_completion.d
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
