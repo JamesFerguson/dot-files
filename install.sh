@@ -5,6 +5,7 @@ ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
 ln -fs ~/codez/dot-files/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs ~/codez/dot-files/dot_bashrc/bashrc ~/.bashrc
 ln -fs ~/codez/dot-files/dot_ctags/ctags ~/.ctags
+ln -fs ~/codez/dot-files/dot_default-gems/default-gems ~/.default-gems
 ln -fs ~/codez/dot-files/dot_editrc/editrc ~/.editrc
 ln -fs ~/codez/dot-files/dot_gemrc/gemrc ~/.gemrc
 ln -fs ~/codez/dot-files/dot_gitconfig/gitconfig ~/.gitconfig
