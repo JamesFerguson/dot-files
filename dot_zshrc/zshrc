@@ -6,3 +6,5 @@ do
         echo "Sourcing $i..."
         source "$ZDOTDIR/$i"
 done
+
+export PATH="$HOME/.yarn/bin:$PATH"
