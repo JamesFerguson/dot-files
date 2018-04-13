@@ -59,4 +59,7 @@ NODE_PATH=/usr/local/lib/node_modules
 # Can't set redis up in pow
 REDIS_URL="redis://127.0.0.1:6379/"
 
+# Enable shell history in IEx
+ERL_AFLAGS="-kernel shell_history enabled"
+
 unsetopt ALL_EXPORT
