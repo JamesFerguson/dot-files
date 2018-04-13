@@ -1,3 +1,5 @@
+ulimit -n 4096
+
 setopt ALL_EXPORT
 
 export PATH=\
