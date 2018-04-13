@@ -9,3 +9,5 @@ NODE_PATH=/usr/local/lib/node_modules
 source /usr/local/etc/bash_completion.d
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+export PATH=$PATH:/Users/jim/Blake/bs/bin/
