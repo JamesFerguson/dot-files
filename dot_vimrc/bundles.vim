@@ -23,6 +23,7 @@ Plugin 'heartsentwined/vim-emblem'
 Plugin 'elixir-lang/vim-elixir'
 Plugin 'syngan/vim-vimlint'
 Plugin 'ynkdir/vim-vimlparser'
+Plugin 'neovimhaskell/haskell-vim'
 
 " Beautification/Formatting
 Plugin 'Chiel92/vim-autoformat'
