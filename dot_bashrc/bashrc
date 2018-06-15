@@ -5,9 +5,11 @@ source /usr/local/share/chruby/auto.sh
 # node setup
 NODE_PATH=/usr/local/lib/node_modules
 
-# bash completion
-source /usr/local/etc/bash_completion.d
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 export PATH=$PATH:/Users/jim/Blake/bs/bin/
+
+source $HOME/.asdf/asdf.sh
+
+source $HOME/.asdf/completions/asdf.bash
