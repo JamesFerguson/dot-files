@@ -14,6 +14,7 @@ $HOME/Dropbox/Blake/sync/bin:\
 /usr/sbin:\
 /sbin:\
 /usr/local/opt/mysql@5.6/bin/mysql:\
+$HOME/Blake/bs/bin:\
 $PATH
 
 # RE setting
