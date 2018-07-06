@@ -31,3 +31,11 @@ let g:ctrlp_user_command = 'rg %s --files --color=never --glob ""'
 
 " rg is fast enough that CtrlP doesn't need to cache
 let g:ctrlp_use_caching = 0
+
+" set ctrlp's cwd at startup to the ancestor dir of the file param that is a
+" repo
+let g:ctrlp_working_path_mode = 'ra'
+
+" e - jump when <cr> is pressed, but only to windows in the current tab.
+" t - jump when <c-t> is pressed, but only to windows in another tab.
+let g:ctrlp_switch_buffer = 'et'
