@@ -1,4 +1,4 @@
-ulimit -n 4096
+ulimit -n 8192
 
 setopt ALL_EXPORT
 
