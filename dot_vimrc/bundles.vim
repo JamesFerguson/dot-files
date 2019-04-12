@@ -12,6 +12,7 @@ Plugin 'ervandew/supertab'
 Plugin 'osyo-manga/vim-over'
 
 " Syntax
+Plugin 'editorconfig/editorconfig-vim'
 Plugin 'kien/rainbow_parentheses.vim'
 
 " Syntax - lang specific
