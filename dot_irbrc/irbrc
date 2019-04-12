@@ -2,12 +2,12 @@ load '/etc/irbrc'
 
 puts "Loading ~/.irbrc"
 
-INCLUDE_DIR = "#{File.expand_path(File.dirname(__FILE__))}/codez/dot-files/dot_irbrc/includes"
+INCLUDE_DIR = "#{File.expand_path('~')}/codez/dot-files/dot_irbrc/includes"
 
 puts "Looking in #{INCLUDE_DIR} for includes..."
 
 require 'rubygems'
-Dir["#{INCLUDE_DIR}/*.rb"].each do |f|
+Dir["#{INCLUDE_DIR}/*.rb"].sort.each do |f|
   puts "Requiring #{f}"
   require f
 end
