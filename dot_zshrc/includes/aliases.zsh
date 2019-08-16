@@ -8,6 +8,7 @@ alias ls='ls -lah@eF'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
+alias locate="locate -e" # leaves out missing files (when db is old)
 
 # the silver searcher
 alias ag="nocorrect noglob ag --smart-case -C 2"
@@ -35,3 +36,5 @@ alias heroku='nocorrect heroku'
 alias github='nocorrect github'
 alias gh='nocorrect gh'
 alias grb='nocorrect grb'
+# (provided by omz plugin I think) remove all branches that have been merged to upstream
+# alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
