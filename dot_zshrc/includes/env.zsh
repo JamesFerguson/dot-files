@@ -17,6 +17,7 @@ $HOME/Dropbox/Blake/sync/bin:\
 $HOME/Blake/bs/bin:\
 $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
+$HOME/.config/yarn/global/node_modules/.bin:\
 $PATH
 
 # RE setting
