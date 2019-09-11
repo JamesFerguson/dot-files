@@ -6,6 +6,8 @@ export PATH=\
 $HOME/bin:\
 $HOME/codez/git-achievements:\
 $HOME/Dropbox/Blake/sync/bin:\
+/usr/local/Cellar/less/530_1/bin:\
+/usr/local/opt/grep/libexec/gnubin:\
 /usr/local/share/npm/bin:\
 /usr/local/bin:\
 /usr/local/sbin:\
@@ -57,7 +59,7 @@ RPS1="$PR_MAGENTA(%D{%m-%d %H:%M})$PR_NO_COLOR"
 DISPLAY=:0
 
 # Tell PostgreSQL where to find its data
-PGDATA=/Library/PostgreSQL/8.4/data/
+#PGDATA=/Library/PostgreSQL/8.4/data/
 
 # Ensure node finds npm modules
 NODE_PATH=/usr/local/lib/node_modules
@@ -67,5 +69,16 @@ REDIS_URL="redis://127.0.0.1:6379/"
 
 # Enable shell history in IEx
 ERL_AFLAGS="-kernel shell_history enabled"
+
+# Configure less
+LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CONTROL-CHARS --HILITE-UNREAD --tabs=2 --no-init --window=-2'
+# Set colors for less. Borrowed from https://wiki.archlinux.org/index.php/Color_output_in_console#less .
+LESS_TERMCAP_mb=$'\E[1;31m'     # begin bold
+LESS_TERMCAP_md=$'\E[1;36m'     # begin blink
+LESS_TERMCAP_me=$'\E[0m'        # reset bold/blink
+LESS_TERMCAP_so=$'\E[01;44;33m' # begin reverse video
+LESS_TERMCAP_se=$'\E[0m'        # reset reverse video
+LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
+LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
 unsetopt ALL_EXPORT
