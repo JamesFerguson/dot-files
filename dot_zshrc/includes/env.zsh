@@ -72,13 +72,15 @@ ERL_AFLAGS="-kernel shell_history enabled"
 
 # Configure less
 LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CONTROL-CHARS --HILITE-UNREAD --tabs=2 --no-init --window=-2'
+
+# should be provided by prezto environment module
 # Set colors for less. Borrowed from https://wiki.archlinux.org/index.php/Color_output_in_console#less .
-LESS_TERMCAP_mb=$'\E[1;31m'     # begin bold
-LESS_TERMCAP_md=$'\E[1;36m'     # begin blink
-LESS_TERMCAP_me=$'\E[0m'        # reset bold/blink
-LESS_TERMCAP_so=$'\E[01;44;33m' # begin reverse video
-LESS_TERMCAP_se=$'\E[0m'        # reset reverse video
-LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
-LESS_TERMCAP_ue=$'\E[0m'        # reset underline
+#LESS_TERMCAP_mb=$'\E[1;31m'     # begin bold
+#LESS_TERMCAP_md=$'\E[1;36m'     # begin blink
+#LESS_TERMCAP_me=$'\E[0m'        # reset bold/blink
+#LESS_TERMCAP_so=$'\E[01;44;33m' # begin reverse video
+#LESS_TERMCAP_se=$'\E[0m'        # reset reverse video
+#LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
+#LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
 unsetopt ALL_EXPORT
