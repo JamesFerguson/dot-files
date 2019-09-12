@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Make finder show hidden files, /usr, etc.
+echo "Making finder show hidden files, /usr, etc."
 defaults write com.apple.Finder AppleShowAllFiles YES
 
 # Auto detect trackpad orientation when you place five fingers on it in natural position
