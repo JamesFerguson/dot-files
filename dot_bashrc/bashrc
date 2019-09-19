@@ -5,10 +5,17 @@ source /usr/local/share/chruby/auto.sh
 # node setup
 NODE_PATH=/usr/local/lib/node_modules
 
-
+# fuzzy finder setup
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+# Add bs to path
 export PATH=$PATH:/Users/jim/Blake/bs/bin/
 
+# asdf setup
 source $HOME/.asdf/asdf.sh
 source $HOME/.asdf/completions/asdf.bash
+
+# node setup
+export PATH=$HOME/.yarn/dist/bin:$PATH
+export PATH=/usr/local/share/npm/bin:$PATH
+
