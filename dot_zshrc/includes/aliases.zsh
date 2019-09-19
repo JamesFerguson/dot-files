@@ -4,7 +4,7 @@
 alias cd..='cd ..'
 alias ..='cd ..'
 alias .='pwd'
-alias ls='ls -lah@eF'
+alias ls='/bin/ls -lAh@eF'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
