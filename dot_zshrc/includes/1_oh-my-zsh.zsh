@@ -4,14 +4,14 @@
 ######################################################################
 
 # Path to your oh-my-zsh configuration.
-export ZSH=$HOME/.oh-my-zsh
+#export ZSH=$HOME/.oh-my-zsh
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
 # export ZSH_THEME="robbyrussell"
-export ZSH_THEME="josh"
+#export ZSH_THEME="josh"
 
 # Set to this to use case-sensitive completion
 # CASE_SENSITIVE="true"
@@ -26,42 +26,42 @@ export ZSH_THEME="josh"
 # DISABLE_AUTO_TITLE="true"
 
 # Uncomment following line if you want red dots to be displayed while waiting for completion
-COMPLETION_WAITING_DOTS="true"
+#COMPLETION_WAITING_DOTS="true"
 
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(\
-  alias-tips\
-  asdf\
-  aws\
-  bower\
-  brew\
-  bundler\
-  capistrano\
-  chruby\
-  cp\
-  docker\
-  fasd\
-  gem\
-  git\
-  git-extras\
-  git-flow\
-  git-remote-branch\
-  github\
-  heroku\
-  node\
-  npm\
-  osx\
-  postgres\
-  powder\
-  rails\
-  rake\
-  redis-cli\
-  screen\
-  urltools\
-  vundle\
-  zeus\
-  zsh-autosuggestions\
-  autojump)
+#plugins=(\
+# alias-tips\
+# asdf\
+# aws\
+# bower\
+# brew\
+# bundler\
+# capistrano\
+# chruby\
+# cp\
+# docker\
+# fasd\
+# gem\
+# git\
+# git-extras\
+# git-flow\
+# git-remote-branch\
+# github\
+# heroku\
+# node\
+# npm\
+# osx\
+# postgres\
+# powder\
+# rails\
+# rake\
+# redis-cli\
+# screen\
+# urltools\
+# vundle\
+# zeus\
+# zsh-autosuggestions\
+# autojump)
 
-source $ZSH/oh-my-zsh.sh
+#source $ZSH/oh-my-zsh.sh
