@@ -2,7 +2,8 @@
 
 # Make finder show hidden files, /usr, etc.
 echo "Making finder show hidden files, /usr, etc."
-defaults write com.apple.Finder AppleShowAllFiles YES
+defaults write com.apple.finder AppleShowAllFiles -boolean true
+killall Finder
 
 # Auto detect trackpad orientation when you place five fingers on it in natural position
 echo 'Using sudo to turn on auto-detection of trackpad orientation'
