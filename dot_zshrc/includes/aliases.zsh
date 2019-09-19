@@ -40,5 +40,5 @@ alias github='nocorrect github'
 alias gh='nocorrect gh'
 alias grb='nocorrect grb'
 
-# (provided by omz plugin I think) remove all branches that have been merged to upstream
-# alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
+# remove all branches that have been merged to upstream
+alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
