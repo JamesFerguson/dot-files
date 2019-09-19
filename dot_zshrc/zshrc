@@ -1,8 +1,8 @@
-# The .zshrc file, for reference.
-export ZDOTDIR=~/codez/dot-files/dot_zshrc/includes
+echo "Sourcing ~/.zshrc"
 
-for i in `/bin/ls -1 $ZDOTDIR`
+export INCLUDES_DIR=~/codez/dot-files/dot_zshrc/includes
+for include in `/bin/ls -1 $INCLUDES_DIR`
 do
-        echo "Sourcing $i..."
-        source "$ZDOTDIR/$i"
+        echo "Sourcing $include..."
+        source "$INCLUDES_DIR/$include"
 done
