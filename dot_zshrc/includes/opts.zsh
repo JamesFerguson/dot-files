@@ -25,7 +25,7 @@ setopt EXTENDED_HISTORY		# puts timestamps/durations in the history
 setopt HIST_ALLOW_CLOBBER # allow history references to clobber files (overrides NO_CLOBBER)
 setopt HIST_IGNORE_ALL_DUPS # when adding cmd to history remove all previous dupes
 setopt HIST_REDUCE_BLANKS # remove superfluous blanks from lines added to history
-# setopt INC_APPEND_HISTORY # incrementally append each line to history, not on exit
+setopt INC_APPEND_HISTORY # incrementally append each line to history, not on exit
 setopt SHARE_HISTORY # commands are appended to and imported from history file (b/w shells)
 
 unsetopt CLOBBER # '>' and '>>' can destroy files, if unset must use '>!', '>|', '>>!' or '>>|'
