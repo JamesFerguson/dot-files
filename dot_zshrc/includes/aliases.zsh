@@ -24,6 +24,7 @@ alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:l
 # rails aliases
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias sp='spring'
+alias mupiter='bx jupiter --no-questions --mdns --init-code --stash --popup=raise'
 
 # global aliases
 alias -g G='| grep'
