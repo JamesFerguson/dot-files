@@ -32,3 +32,6 @@ sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
 #ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/tv-shows/.powrc
 #ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/blake-admin/.powrc
 
+# tweaks
+~/codez/dot-files/tweaks/install_mvimf.sh
+~/codez/dot-files/tweaks/tweaks.sh
