@@ -6,3 +6,6 @@ do
         echo "Sourcing $include..."
         source "$INCLUDES_DIR/$include"
 done
+
+export GOPATH=$HOME/go
+PATH=$PATH:${GOPATH//://bin:}/bin

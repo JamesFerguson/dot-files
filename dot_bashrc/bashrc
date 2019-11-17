@@ -19,3 +19,6 @@ source $HOME/.asdf/completions/asdf.bash
 export PATH=$HOME/.yarn/dist/bin:$PATH
 export PATH=/usr/local/share/npm/bin:$PATH
 
+
+export GOPATH=$HOME/go
+PATH=$PATH:${GOPATH//://bin:}/bin
