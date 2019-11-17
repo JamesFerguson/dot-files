@@ -1,0 +1,7 @@
+---
+BUNDLE_DISABLE_SHARED_GEMS: "true"
+BUNDLE_BUILD__LIBV8: "--with-cxx=/usr/local/bin/g++-4.2"
+BUNDLE_CLEAN: "true"
+BUNDLE_JOBS: "8"
+BUNDLE_UPDATE_REQUIRES_ALL_FLAG: "true"
+BUNDLE_PATH: "vendor/bundle"
