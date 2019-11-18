@@ -2,6 +2,11 @@ ulimit -n 8192
 
 setopt ALL_EXPORT
 
+# Go-lang setup
+export GOPATH=$HOME/go
+# ${VAR//PATTERN/REPLACE} -> find ':' replace w '/bin:'
+GOPATHS = ${GOPATH//://bin:}/bin
+
 export PATH=\
 $HOME/bin:\
 $HOME/codez/git-achievements:\
@@ -16,6 +21,7 @@ $HOME/Dropbox/Blake/sync/bin:\
 /usr/sbin:\
 /sbin:\
 /usr/local/opt/mysql@5.6/bin/mysql:\
+$GOPATHS:\
 $HOME/Blake/bs/bin:\
 $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
