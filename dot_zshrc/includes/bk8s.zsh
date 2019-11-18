@@ -1,0 +1,1 @@
+source $HOME/Blake/bk8s/completions/bk.bash

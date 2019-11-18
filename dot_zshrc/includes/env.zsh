@@ -23,6 +23,7 @@ $HOME/Dropbox/Blake/sync/bin:\
 /usr/local/opt/mysql@5.6/bin/mysql:\
 $GOPATHS:\
 $HOME/Blake/bs/bin:\
+$HOME/Blake/bk8s/bin:\
 $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
 $HOME/.config/yarn/global/node_modules/.bin:\
