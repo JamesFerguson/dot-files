@@ -25,6 +25,8 @@ alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:l
 alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias sp='spring'
 alias mupiter='bx jupiter --no-questions --mdns --init-code --stash --popup=raise'
+alias RET='RAILS_ENV=test'
+alias RED='RAILS_ENV=development'
 
 # global aliases
 alias -g G='| grep'
@@ -42,3 +44,5 @@ alias grb='nocorrect grb'
 
 # remove all branches that have been merged to upstream
 alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
+alias gst='git status'
+alias bcnf='bundle clean --force'
