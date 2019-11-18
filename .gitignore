@@ -6,3 +6,4 @@ dot_vim/.netrwhist
 .DS_store
 schedule/log
 schedule/vendor
+dot_bundle/cache
