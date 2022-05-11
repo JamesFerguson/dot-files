@@ -1,4 +1,5 @@
-bundler
+bundler 2.3.11
+bundler 2.3.10
 better_errors
 binding_of_caller
 bundle_outdated
