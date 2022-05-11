@@ -3,8 +3,8 @@
 
 function gup
 {
-  source /usr/local/share/chruby/chruby.sh
-  source /usr/local/share/chruby/auto.sh
+  source ~/codez/dot-files/dot_zshrc/includes/asdf.zsh
+
   # subshell for `set -e` and `trap`
   (
     set -e # fail immediately if there's a problem
