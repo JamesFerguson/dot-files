@@ -56,13 +56,13 @@ function gup
 
       if [ "$CAN_FF" -ne 0 ]
       then
-        echo "Nothing has changed locally, just fast foward."
+        echo "Nothing has changed locally, just fast forward."
         echo "git merge --ff \"$UPSTREAM\""
         git merge --ff "$UPSTREAM"
       else
         echo "Rebasing our changes on top of upstream, but keeping any merges."
-        echo "git rebase -p \"$UPSTREAM\""
-        git rebase -p "$UPSTREAM"
+        echo "git rebase --rebase-merges \"$UPSTREAM\""
+        git rebase --rebase-merges "$UPSTREAM"
       fi
 
       # restore any stashed changed
