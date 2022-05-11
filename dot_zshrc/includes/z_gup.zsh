@@ -95,8 +95,6 @@ function gup
           echo "Migrations found, migrating and preparing test..."
           rake db:migrate
           rake db:test:prepare
-          #echo "Migrating cucumber env..."
-          #DATABASE=$CUCUMBER_DATABASE rake db:test:prepare
         fi
       fi
 
