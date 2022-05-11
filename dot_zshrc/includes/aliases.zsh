@@ -42,3 +42,9 @@ alias grb='nocorrect grb'
 alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
 alias gst='git status'
 alias bcnf='bundle clean --force'
+alias mdcu='mix deps.clean --unused'
+alias rclose='g ch develop && gup && gbda && bcnf'
+alias eclose='g ch develop && gup && gbda && mdcu'
+
+# open buildkite pipeline
+alias bk="open https://buildkite.com/blake-education/$(basename $PWD | tr '_' '-')"
