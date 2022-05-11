@@ -5,7 +5,7 @@ setopt ALL_EXPORT
 # Go-lang setup
 export GOPATH=$HOME/go
 # ${VAR//PATTERN/REPLACE} -> find ':' replace w '/bin:'
-GOPATHS = ${GOPATH//://bin:}/bin
+GOPATHS=${GOPATH//://bin:}/bin
 
 export PATH=\
 $HOME/bin:\
@@ -75,7 +75,7 @@ NODE_PATH=/usr/local/lib/node_modules
 REDIS_URL="redis://127.0.0.1:6379/"
 
 # Enable shell history in IEx
-ERL_AFLAGS="-kernel shell_history enabled"
+ERL_AFLAGS="+pc unicode -kernel shell_history enabled"
 
 # Configure less
 LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CONTROL-CHARS --HILITE-UNREAD --tabs=2 --no-init --window=-2'
@@ -89,5 +89,8 @@ LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CON
 #LESS_TERMCAP_se=$'\E[0m'        # reset reverse video
 #LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
 #LESS_TERMCAP_ue=$'\E[0m'        # reset underline
+
+# editor used by bundle open
+BUNDLER_EDITOR=mine
 
 unsetopt ALL_EXPORT
