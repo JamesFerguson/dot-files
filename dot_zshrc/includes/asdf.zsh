@@ -1,2 +1,2 @@
 source $HOME/.asdf/asdf.sh
-source $HOME/.asdf/completions/asdf.bash
+BASH_SOURCE="$HOME/.asdf/completions/asdf.bash" emulate ksh -c '. $BASH_SOURCE'
