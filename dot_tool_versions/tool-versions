@@ -1,5 +1,7 @@
-elixir 1.8.1
-erlang 21.2.3
-nodejs 10.15.0
-yarn 1.16.0
-golang 1.12.5
+elixir 1.11.3
+erlang 22.3.3
+nodejs 14.15.5
+yarn 1.22.0
+golang 1.15
+python 3.9.0
+ruby 2.5.1
