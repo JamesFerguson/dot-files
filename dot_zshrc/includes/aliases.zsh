@@ -19,7 +19,6 @@ alias ack="nocorrect noglob ag --smart-case -C 2"
 alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:load'
 
 # rails aliases
-alias console='rails --version | grep 2.3 > /dev/null && script/console || rails console'
 alias sp='spring'
 alias mupiter='bx jupiter --no-questions --mdns --init-code --stash --popup=raise'
 alias RET='RAILS_ENV=test'
