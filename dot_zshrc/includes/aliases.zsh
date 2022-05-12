@@ -3,7 +3,6 @@
 # # --------------------------------------------------------------------
 alias cd..='cd ..'
 alias ..='cd ..'
-alias .='pwd'
 alias ls='/bin/ls -lAh@eF'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
