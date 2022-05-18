@@ -3,7 +3,7 @@
 
 function gup
 {
-  source ~/codez/dot-files/dot_zshrc/includes/asdf.zsh
+  source ~/codez/dot-files/dot_zshrc/includes/z_asdf.zsh
 
   # subshell for `set -e` and `trap`
   (
