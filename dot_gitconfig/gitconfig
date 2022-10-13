@@ -1,11 +1,9 @@
 [include]
-	path = /Users/jim/codez/dot-files/dot_gitconfig/credentials
+	path = /Users/james.ferguson/codez/dot-files/dot_gitconfig/credentials
 [color]
 	diff = auto
 	status = auto
 	branch = auto
-[merge]
-	tool = opendiff
 [branch]
 	autosetupmerge = true
 [core]
@@ -65,27 +63,29 @@
   lsfi = !git ls-files -v | grep ^[a-z]
   ls-assume-unchanged = !git ls-files -v | grep ^[a-z]
   lsau = !git ls-files -v | grep ^[a-z]
-	cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
-	gp = !git push --set-upstream origin HEAD:$(git cb)
-	gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
-	logline = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(red)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+  cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
+  gp = !git push --set-upstream origin HEAD:$(git cb)
+  gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
+  logline = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(red)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [git-up "bundler"]
-	check = true
-	autoinstall = true
+  check = true
+  autoinstall = true
 [git-up "fetch"]
-	prune = true
+  prune = true
+[merge]
+  tool = smerge
 [mergetool]
-	keepBackup = false
+  keepBackup = false
 [filter "media"]
-	required = true
-	clean = git media clean %f
-	smudge = git media smudge %f
+  required = true
+  clean = git media clean %f
+  smudge = git media smudge %f
 [credential]
-	helper = osxkeychain
+  helper = osxkeychain
 [filter "lfs"]
-	process = git-lfs filter-process
-	required = true
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
+  clean = git-lfs clean -- %f
+  smudge = git-lfs smudge -- %f
 [url "git@github.com:blake-education/"]
-	insteadOf = https://github.com/blake-education/
+  insteadOf = https://github.com/blake-education/
