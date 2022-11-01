@@ -10,11 +10,10 @@ GOPATHS=${GOPATH//://bin:}/bin
 export PATH=\
 $HOME/bin:\
 $HOME/codez/git-achievements:\
-$HOME/Dropbox/Blake/sync/bin:\
-/usr/local/Cellar/less/530_1/bin:\
-/usr/local/opt/grep/libexec/gnubin:\
-/usr/local/share/npm/bin:\
 /usr/local/bin:\
+/opt/homebrew/bin:\
+/opt/homebrew/sbin:\
+/opt/homebrew/opt/libpq/bin:\
 /usr/local/sbin:\
 /usr/bin:\
 /bin:\
