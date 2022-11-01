@@ -2,6 +2,7 @@
 
 ln -fs ~/codez/dot-files/dot_ackrc/ackrc ~/.ackrc
 ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
+ln -fs ~/codez/dot-files/dot_asdfrc/asdfrc ~/.asdfrc
 ln -fs ~/codez/dot-files/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs ~/codez/dot-files/dot_bashrc/bashrc ~/.bashrc
 ln -fs ~/codez/dot-files/dot_bundle/ ~/.bundle
@@ -14,16 +15,18 @@ ln -fs ~/codez/dot-files/dot_gitignore_global/gitignore_global ~/.gitignore_glob
 ln -fs ~/codez/dot-files/dot_gvimrc/gvimrc ~/.gvimrc
 ln -fs ~/codez/dot-files/dot_inputrc/inputrc ~/.inputrc
 ln -fs ~/codez/dot-files/dot_irbrc/irbrc ~/.irbrc
-ln -fs ~/codez/dot-files/dot_powconfig/powconfig ~/.powconfig
+#ln -fs ~/codez/dot-files/dot_powconfig/powconfig ~/.powconfig
 # powrc below \/
 #ln -fs ~/codez/dot-files/dot_rdebugrc/rdebugrc ~/.rdebugrc
+ln -fs ~/codez/dot-files/dot_rgignore/rgignore ~/.rgignore
 ln -fs ~/codez/dot-files/dot_rubocop_dot_yml/rubocop.yml ~/.rubocop.yml
 ln -fs ~/codez/dot-files/dot_ruby_version/ruby-version ~/.ruby-version
+ln -fs ~/codez/dot-files/dot_rspec/rspec ~/.rspec
 ln -fs ~/codez/dot-files/dot_screenrc/screenrc ~/.screenrc
 ln -fs ~/codez/dot-files/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs ~/codez/dot-files/dot_tool_versions/tool-versions ~/.tool-versions
 ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
-ln -fs ~/codez/dot-files/dot_vim ~/.vim
+ln -Ffs ~/codez/dot-files/dot_vim ~/.vim
 ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
 ln -fs ~/codez/dot-files/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
 sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
