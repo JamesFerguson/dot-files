@@ -1,20 +1,28 @@
-# node setup
-NODE_PATH=/usr/local/lib/node_modules
-
 # fuzzy finder setup
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 # Add bs to path
 export PATH=$PATH:/Users/jim/Blake/bs/bin/
+eval "$($HOME/Blake/bs/bin/bs init -)"
+eval "$($HOME/Blake/bd/bin/bd init -)"
+
+# bk8s shell setup
+export PATH=$PATH:/Users/james.ferguson/Blake/bk8s/bin/
+source $HOME/Blake/bk8s/completions/bk.bash
 
 # asdf setup
 source $HOME/.asdf/asdf.sh
 source $HOME/.asdf/completions/asdf.bash
 
 # node setup
+export NODE_PATH=/usr/local/lib/node_modules
 export PATH=$HOME/.yarn/dist/bin:$PATH
 export PATH=/usr/local/share/npm/bin:$PATH
 
 
 export GOPATH=$HOME/go
 PATH=$PATH:${GOPATH//://bin:}/bin
+
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+export PATH="/Users/james.ferguson/.rd/bin:$PATH"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
