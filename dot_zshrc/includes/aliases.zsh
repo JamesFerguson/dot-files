@@ -7,8 +7,10 @@ alias ls='/bin/ls -lAh@eF'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
-alias locate="locate -e" # leaves out missing files (when db is old)
 alias which="which -a" # show all matching paths, not just first
+
+# fasd (autojump substitute)
+alias j='fasd_cd -d'
 
 # the silver searcher
 alias ag="nocorrect noglob ag --smart-case -C 2"
