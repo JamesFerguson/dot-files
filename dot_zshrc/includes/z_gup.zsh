@@ -1,3 +1,6 @@
+# gup description:
+#   Pull changes from remote
+#
 
 [ "$(type gup | awk '{print $4}')" = "alias" ] && unalias gup # added by oh-my-zsh git plugin
 
