@@ -89,3 +89,5 @@
   smudge = git-lfs smudge -- %f
 [url "git@github.com:blake-education/"]
   insteadOf = https://github.com/blake-education/
+[init]
+	defaultBranch = main
