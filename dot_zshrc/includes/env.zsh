@@ -74,7 +74,8 @@ NODE_PATH=/usr/local/lib/node_modules
 REDIS_URL="redis://127.0.0.1:6379/"
 
 # Enable shell history in IEx
-ERL_AFLAGS="+pc unicode -kernel shell_history enabled"
+# ERL_AFLAGS"=" +pc unicode -kernel shell_history_file_bytes 1024000"
+ERL_AFLAGS="-kernel shell_history enabled"
 
 # Configure less
 LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CONTROL-CHARS --HILITE-UNREAD --tabs=2 --no-init --window=-2'
