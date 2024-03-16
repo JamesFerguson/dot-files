@@ -119,6 +119,7 @@ Thumbs.db
 # Rubymine / Eclipse #
 ######################
 .idea/
+/.idea/
 .classpath
 .project
 .settings
