@@ -1,9 +1,11 @@
+awscli 2.7.33
 elixir 1.12.2
 erlang 25.0
-python 3.10.2
-awscli 2.7.33
 golang 1.17.6
-ruby 3.1.2
-nodejs lts-gallium
+kubectl 1.23.13
+nodejs 20.11.0
+pnpm 8.7.0
+python 3.10.2
+ruby 3.3.0
 terraform 1.1.9
 yarn 1.22.19
