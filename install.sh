@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/bin/zsh
 
-ln -fs ~/codez/dot-files/dot_ackrc/ackrc ~/.ackrc
+# symlink all dot_config subdirs into $XDG_CONFIG_HOME
+find $HOME/codez/dot-files/dot_config -d 1 -type d | while read -r dir; do
+    ln -Ffs $dir $XDG_CONFIG_HOME/
+done
+
 ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
 ln -fs ~/codez/dot-files/dot_asdfrc/asdfrc ~/.asdfrc
 ln -fs ~/codez/dot-files/dot_bash_profile/bash_profile ~/.bash_profile
