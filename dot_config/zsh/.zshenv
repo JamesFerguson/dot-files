@@ -2,6 +2,18 @@ ulimit -n 8192
 
 setopt ALL_EXPORT
 
+# XDG base dir spec - mac dir spec sucks for cli tools
+XDG_CONFIG_HOME="$HOME/.config"
+XDG_DATA_HOME=$HOME/.local/share
+XDG_STATE_HOME=$HOME/.local/state
+XDG_CACHE_HOME=$HOME/.cache
+XDG_RUNTIME_DIR=/run/user/$UID
+
+# Make tools comply with XDG
+ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
+ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
+ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
+
 # Go-lang setup
 export GOPATH=$HOME/go
 # ${VAR//PATTERN/REPLACE} -> find ':' replace w '/bin:'
@@ -91,6 +103,6 @@ LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CON
 #LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
 # editor used by bundle open
-BUNDLER_EDITOR=mine
+BUNDLER_EDITOR=code
 
 unsetopt ALL_EXPORT

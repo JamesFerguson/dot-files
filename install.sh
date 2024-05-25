@@ -31,7 +31,6 @@ ln -fs ~/codez/dot-files/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs ~/codez/dot-files/dot_tool_versions/tool-versions ~/.tool-versions
 ln -fs ~/codez/dot-files/dot_vimrc/vimrc ~/.vimrc
 ln -Ffs ~/codez/dot-files/dot_vim ~/.vim
-ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
 ln -fs ~/codez/dot-files/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
 sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
 sudo ln -fs ~/codez/dot-files/etc_zshenv/zshenv /etc/zshenv
