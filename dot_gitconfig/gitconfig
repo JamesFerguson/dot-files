@@ -91,3 +91,5 @@
   insteadOf = https://github.com/blake-education/
 [init]
 	defaultBranch = main
+[github]
+	user = james.ferguson
