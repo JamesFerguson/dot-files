@@ -1,1 +1,2 @@
---format progress --profile --tag '~broken' --tag '~js' --tag '~quarantined' --tag '~system' --tag '~integration'
+--format progress --profile
+# --tag '~broken' --tag '~js' --tag '~quarantined' --tag '~system' --tag '~integration'
