@@ -1,5 +1,6 @@
 # some kind of precompile/caching for zshrc
 .zcompdump
+dot_config/zsh/.zsh_history
 dot_vim/bundle
 dot_vim/.netrwhist
 *.swp
