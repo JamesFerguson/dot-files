@@ -9,21 +9,6 @@
 fe80::1%lo0	localhost
 255.255.255.255	broadcasthost
 
-0.0.0.0 re-marketing.local # bypass chrome hatred for 0.0.0.0
-
-127.0.0.1	blake-admin.dev	#powder
-127.0.0.1	eggspress-data.dev	#powder
-127.0.0.1	mathseeds.dev	#powder
-127.0.0.1	media-hub.dev	#powder
-127.0.0.1	ranker.dev	#powder
-127.0.0.1	readingeggs.dev	#powder
-127.0.0.1	readingeggs2.dev	#powder
-127.0.0.1	rex-dashboard.dev	#powder
-127.0.0.1	rex-student.dev	#powder
-127.0.0.1	todos.dev	#powder
-127.0.0.1	tv-shows.dev	#powder
-127.0.0.1	typo.dev	#powder
-
 # Added by Docker Desktop
 # To allow the same kube context to work on the host and the container:
 127.0.0.1 kubernetes.docker.internal
