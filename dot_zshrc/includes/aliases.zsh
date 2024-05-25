@@ -3,7 +3,8 @@
 # # --------------------------------------------------------------------
 alias cd..='cd ..'
 alias ..='cd ..'
-alias ls='/bin/ls -lAh@eF'
+alias mls='/bin/ls -lAh@eF'
+alias ls='/opt/homebrew/bin/gls -lAhF --color=auto --group-directories-first'
 alias jobs='jobs -l'
 alias pgrep='grep -P'
 alias dmesg="sudo dmesg"
@@ -31,6 +32,7 @@ alias -g L='| less'
 alias -g C='| wc -l'
 
 # disable zsh corrections for some commands
+alias g='nocorrect git-achievements'
 alias git='nocorrect git-achievements'
 alias mvim='nocorrect mvim'
 alias guard='nocorrect guard'
