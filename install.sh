@@ -34,6 +34,8 @@ ln -Ffs ~/codez/dot-files/dot_vim ~/.vim
 ln -fs ~/codez/dot-files/dot_zshrc/zshrc ~/.zshrc
 ln -fs ~/codez/dot-files/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
 sudo ln -fs ~/codez/dot-files/etc_hosts/hosts /etc/hosts
+sudo ln -fs ~/codez/dot-files/etc_zshenv/zshenv /etc/zshenv
+sudo ln -fs ~/codez/dot-files/etc_zshenv/zshenv /etc/zsh/zshenv
 
 # powrc
 #ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/rex-student/.powrc

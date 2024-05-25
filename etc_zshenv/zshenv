@@ -1,0 +1,9 @@
+# Use XDG base dir spec for cli tools
+setopt ALL_EXPORT
+XDG_CONFIG_HOME="$HOME/.config"
+XDG_DATA_HOME=$HOME/.local/share
+XDG_STATE_HOME=$HOME/.local/state
+XDG_CACHE_HOME=$HOME/.cache
+XDG_RUNTIME_DIR=/private/var/run
+ZDOTDIR=$XDG_CONFIG_HOME/zsh
+unsetopt ALL_EXPORT
