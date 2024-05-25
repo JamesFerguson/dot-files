@@ -1,2 +1,2 @@
-require 'hirb'
-Hirb.enable
+# require 'hirb'
+# Hirb.enable
