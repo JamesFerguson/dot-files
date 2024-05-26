@@ -13,8 +13,21 @@ XDG_RUNTIME_DIR=/run/user/$UID
 ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
 ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
 ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
+AZURE_CONFIG_DIR="$XDG_DATA_HOME"/azure
 BUNDLE_USER_CONFIG="$XDG_CONFIG_HOME"/bundle/config
+BUNDLE_USER_CACHE="$XDG_CACHE_HOME"/bundle
+BUNDLE_USER_PLUGIN="$XDG_DATA_HOME"/bundle
+DOCKER_CONFIG="$XDG_CONFIG_HOME"/docker
+GEM_HOME="$XDG_DATA_HOME"/gem
+GEM_SPEC_CACHE="$XDG_CACHE_HOME"/gem
 INPUTRC="$XDG_CONFIG_HOME"/readline/inputrc
+LESSHISTFILE="$XDG_STATE_HOME"/less/history
+MYSQL_HISTFILE="$XDG_DATA_HOME"/mysql_history
+NODE_REPL_HISTORY="$XDG_DATA_HOME"/node_repl_history
+NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME"/npm/npmrc
+PSQL_HISTORY="$XDG_DATA_HOME/psql_history"
+SCREENRC="$XDG_CONFIG_HOME"/screen/screenrc
+TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
 
 # Go-lang setup
 export GOPATH=$HOME/go
@@ -51,14 +64,14 @@ LANG='en_US.UTF-8'
 LC_CTYPE=C
 TZ="Australia/Sydney"
 
-HISTFILE=$HOME/.zhistory
+HISTFILE="$XDG_STATE_HOME"/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
 
 HOSTNAME="`hostname`"
 
 PAGER='less'
-EDITOR='/usr/local/bin/mvimf' # '/Users/jim/bin/mate_wait'
+EDITOR=code #'/usr/local/bin/mvimf' # '/Users/jim/bin/mate_wait'
 
 # Colour vars
 autoload colors zsh/terminfo
