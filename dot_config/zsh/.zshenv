@@ -13,6 +13,8 @@ XDG_RUNTIME_DIR=/run/user/$UID
 ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
 ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
 ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
+BUNDLE_USER_CONFIG="$XDG_CONFIG_HOME"/bundle/config
+INPUTRC="$XDG_CONFIG_HOME"/readline/inputrc
 
 # Go-lang setup
 export GOPATH=$HOME/go
