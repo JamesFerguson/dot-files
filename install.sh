@@ -1,15 +1,16 @@
 #!/bin/zsh
 
-# symlink all dot_config subdirs into $XDG_CONFIG_HOME
+# symlink all dot_config subdirs into $XDG_CONFIG_HOME / .config
+#   there are dirs in .config that aren't in dot_config and can't be (too big etc)
 find $HOME/codez/dot-files/dot_config -d 1 -type d | while read -r dir; do
     ln -Ffs $dir $XDG_CONFIG_HOME/
 done
 
 ln -fs ~/codez/dot-files/dot_agignore/agignore ~/.agignore
-ln -fs ~/codez/dot-files/dot_asdfrc/asdfrc ~/.asdfrc
 ln -fs ~/codez/dot-files/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs ~/codez/dot-files/dot_bashrc/bashrc ~/.bashrc
 ln -fs ~/codez/dot-files/dot_bundle/ ~/.bundle
+# ln -fs ~/codez/dot-files/dot_config/ ~/.config # handled above
 #ln -fs ~/codez/dot-files/dot_ctags/ctags ~/.ctags
 ln -fs ~/codez/dot-files/dot_default-gems/default-gems ~/.default-gems
 ln -fs ~/codez/dot-files/dot_editrc/editrc ~/.editrc
@@ -39,10 +40,7 @@ sudo ln -fs ~/codez/dot-files/etc_zshenv/zshenv /etc/zshenv
 sudo ln -fs ~/codez/dot-files/etc_zshenv/zshenv /etc/zsh/zshenv
 
 # powrc
-#ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/rex-student/.powrc
-#ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/mathseeds/.powrc
 #ln -fs ~/codez/dot-files/dot_powrc/powrc ~/codez/tv-shows/.powrc
-#ln -fs ~/codez/dot-files/dot_powrc/powrc ~/Blake/blake-admin/.powrc
 
 # tweaks
 ~/codez/dot-files/tweaks/install_mvimf.sh
