@@ -1,3 +1,30 @@
+# XDG base dir spec - mac dir spec sucks for cli tools
+XDG_CONFIG_HOME="$HOME/.config"
+XDG_DATA_HOME=$HOME/.local/share
+XDG_STATE_HOME=$HOME/.local/state
+XDG_CACHE_HOME=$HOME/.cache
+XDG_RUNTIME_DIR=/run/user/$UID
+
+# Make tools comply with XDG
+ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
+ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
+ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
+AZURE_CONFIG_DIR="$XDG_DATA_HOME"/azure
+BUNDLE_USER_CONFIG="$XDG_CONFIG_HOME"/bundle/config
+BUNDLE_USER_CACHE="$XDG_CACHE_HOME"/bundle
+BUNDLE_USER_PLUGIN="$XDG_DATA_HOME"/bundle
+DOCKER_CONFIG="$XDG_CONFIG_HOME"/docker
+GEM_HOME="$XDG_DATA_HOME"/gem
+GEM_SPEC_CACHE="$XDG_CACHE_HOME"/gem
+INPUTRC="$XDG_CONFIG_HOME"/readline/inputrc
+LESSHISTFILE="$XDG_STATE_HOME"/less/history
+MYSQL_HISTFILE="$XDG_DATA_HOME"/mysql_history
+NODE_REPL_HISTORY="$XDG_DATA_HOME"/node_repl_history
+NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME"/npm/npmrc
+PSQL_HISTORY="$XDG_DATA_HOME/psql_history"
+SCREENRC="$XDG_CONFIG_HOME"/screen/screenrc
+TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
+
 # fuzzy finder setup
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
@@ -11,8 +38,13 @@ export PATH=$PATH:/Users/james.ferguson/Blake/bk8s/bin/
 source $HOME/Blake/bk8s/completions/bk.bash
 
 # asdf setup
-source $HOME/.asdf/asdf.sh
-source $HOME/.asdf/completions/asdf.bash
+# source $HOME/.asdf/asdf.sh
+# source $HOME/.asdf/completions/asdf.bash
+
+autoload -Uz bashcompinit
+bashcompinit
+source $HOMEBREW_PREFIX/opt/asdf/libexec/asdf.sh
+BASH_SOURCE="$HOMEBREW_PREFIX/Cellar/asdf/0.14.0/etc/bash_completion.d/asdf.bash" emulate ksh -c '. $BASH_SOURCE'
 
 # node setup
 export NODE_PATH=/usr/local/lib/node_modules
