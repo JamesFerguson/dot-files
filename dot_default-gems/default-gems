@@ -1,16 +1,11 @@
 better_errors
 binding_of_caller
-bundle_outdated
 cheat
 executable-hooks
-gem-outdated
-git_remote_branch
 git-up
 github
 irb_hacks
-jazz_hands
 launchy
-open_gem
 ori
 rdoc
 rubocop
@@ -18,4 +13,3 @@ ruby-lint
 showoff-io
 tapp
 terminal-notifier
-transpec
