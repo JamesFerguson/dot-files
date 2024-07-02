@@ -9,7 +9,7 @@ then
 fi
 
 
-export INCLUDES_DIR=~/codez/dot-files/dot_zshrc/includes
+export INCLUDES_DIR=$DOT_FILES_DIR/dot_zshrc/includes
 for include in `/bin/ls -1 $INCLUDES_DIR`
 do
         echo "Sourcing $include..."

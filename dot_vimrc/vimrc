@@ -13,7 +13,7 @@ Plugin 'VundleVim/Vundle.vim'
 let mapleader = ","
 
 ":echom "source bundles"
-source ~/codez/dot-files/dot_vimrc/bundles.vim
+source $DOT_FILES_DIR/dot_vimrc/bundles.vim
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -36,7 +36,7 @@ filetype plugin indent on     " required!
 set encoding=utf-8
 
 ":echom "source includes"
-for f in split(glob('~/codez/dot-files/dot_vimrc/includes/*.vim'), '\n')
+for f in split(glob('$DOT_FILES_DIR/dot_vimrc/includes/*.vim'), '\n')
   exe 'source' f
 endfor
 ":echom "vimrc done"
