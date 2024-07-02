@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cd ~/codez/dot-files/tweaks && \
+cd $DOT_FILES_DIR/tweaks && \
 chmod +x mvimf && \
 cd /usr/local/bin && \
-echo "sudo ln -s ~/codez/dot-files/tweaks/mvimf" && \
-sudo ln -s ~/codez/dot-files/tweaks/mvimf
+echo "sudo ln -s $DOT_FILES_DIR/tweaks/mvimf" && \
+sudo ln -s $DOT_FILES_DIR/tweaks/mvimf

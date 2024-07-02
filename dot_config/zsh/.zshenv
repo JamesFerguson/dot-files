@@ -29,6 +29,19 @@ PSQL_HISTORY="$XDG_DATA_HOME/psql_history"
 SCREENRC="$XDG_CONFIG_HOME"/screen/screenrc
 TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
 
+# Dot files dir
+#   - if on FatZebra laptop
+if [[ "$(hostname)" == *"fz-"* ]]; then
+  ON_WORK_LAPTOP=1
+  CODE_DIR="$HOME/code"
+  DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
+  source ~/.fat_zebra_env.sh
+else
+  ON_WORK_LAPTOP=0
+  CODE_DIR="$HOME/codez"
+  DOT_FILES_DIR="$CODE_DIR/dot-files"
+fi
+
 # Go-lang setup
 export GOPATH=$HOME/go
 # ${VAR//PATTERN/REPLACE} -> find ':' replace w '/bin:'
@@ -36,7 +49,7 @@ GOPATHS=${GOPATH//://bin:}/bin
 
 export PATH=\
 $HOME/bin:\
-$HOME/codez/git-achievements:\
+$CODE_DIR/git-achievements:\
 /usr/local/bin:\
 /opt/homebrew/bin:\
 /opt/homebrew/sbin:\

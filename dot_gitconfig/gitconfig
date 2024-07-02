@@ -1,5 +1,12 @@
 [include]
-	path = /Users/james.ferguson/codez/dot-files/dot_gitconfig/credentials
+	path = $DOT_FILES_DIR/dot_gitconfig/credentials
+[includeIf "gitdir/i:~/code/"]
+    path = ~/code/personal/dot-files/dot_gitconfig/credentials
+# override the above for github repos
+[includeIf "hasconfig:remote.*.url:git@github.com:*/**"]
+    path = ~/code/personal/dot-files/dot_gitconfig/gh_credentials
+[includeIf "gitdir/i:~/codez/"]
+    path = ~/codez/dot-files/dot_gitconfig/credentials
 [color]
 	diff = auto
 	status = auto

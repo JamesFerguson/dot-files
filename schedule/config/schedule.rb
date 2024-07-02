@@ -17,7 +17,7 @@
 
 env 'MAILTO', "jim"
 
-set :output, "~/codez/dot-files/schedule/log/cron.log"
+set :output, "#{ENV['DOT_FILES_DIR']}/schedule/log/cron.log"
 
 #every :weekday, at: ['7:30am', '8:05am', '8:15am', '8:55am', '9:15am'] do
   #command 'cd ~ && open -a "Vitamin-R 2"'

@@ -1,4 +1,4 @@
 " pull in includes
-for f in split(glob('~/codez/dot-files/dot_gvimrc/includes/*.vim'), '\n')
+for f in split(glob('$DOT_FILES_DIR/dot_gvimrc/includes/*.vim'), '\n')
     exe 'source' f
 endfor

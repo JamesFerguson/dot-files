@@ -2,7 +2,7 @@ load '/etc/irbrc'
 
 puts "Loading ~/.irbrc"
 
-INCLUDE_DIR = "#{File.expand_path('~')}/codez/dot-files/dot_irbrc/includes"
+INCLUDE_DIR = "#{ENV['DOT_FILES_DIR']}/dot_irbrc/includes"
 
 puts "Looking in #{INCLUDE_DIR} for includes..."
 

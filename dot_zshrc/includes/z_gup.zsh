@@ -6,7 +6,7 @@
 
 function gup
 {
-  source ~/codez/dot-files/dot_zshrc/includes/z_asdf.zsh
+  source $DOT_FILES_DIR/dot_zshrc/includes/z_asdf.zsh
 
   # subshell for `set -e` and `trap`
   (
