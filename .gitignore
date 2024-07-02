@@ -9,3 +9,4 @@ schedule/log
 schedule/vendor
 dot_bundle/cache
 .idea/
+dot_config/zsh/.zprezto
