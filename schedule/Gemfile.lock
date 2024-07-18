@@ -6,10 +6,11 @@ GEM
       chronic (>= 0.6.3)
 
 PLATFORMS
+  arm64-darwin-23
   ruby
 
 DEPENDENCIES
   whenever
 
 BUNDLED WITH
-   1.17.3
+   2.5.15
