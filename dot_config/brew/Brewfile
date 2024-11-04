@@ -1,0 +1,104 @@
+# Extra steps that can't be brewed
+#
+# git clone git@github.com:JamesFerguson/git-achievements.git
+#
+# git clone git@github.com:whjvenyl/fasd.git
+# PREFIX=$HOME make install
+#
+# # temporary for next step
+# git config --global user.name "James Ferguson"
+# git config --global user.email "James Ferguson <...the email...>"
+#
+# git clone git@github.com:JamesFerguson/dot-files.git
+# ./install.sh
+# git clone --recursive https://github.com/sorin-ionescu/prezto.git "${ZDOTDIR:-${XDG_CONFIG_HOME:-$HOME/.config}/zsh}/.zprezto"
+#
+# # edit dot-files/dot_gitconfig/credentials to add name and email
+# # edit dot-files/dot_gitconfig/gh_credentials to add name and email
+# # prevent the credentials showing in the git worktree / getting sent to GH
+# git update-index --skip-worktree dot_gitconfig/credentials
+# git update-index --skip-worktree dot_gitconfig/gh_credentials
+# # confirm it worked
+# git ls-files -v | grep '^[sS]' | grep <path-to-file>
+#
+# brew services start sleepwatcher
+
+tap 'homebrew/services'
+
+brew 'asdf'
+brew 'libxmlsec1' # XML security library
+brew 'gpg'
+brew 'postgresql@15', restart_service: :changed, link: true, conflicts_with: ['postgresql']
+brew 'puma/puma/puma-dev'
+brew 'redis', restart_service: :changed
+brew 'git'
+brew 'shared-mime-info' # Database of common MIME types
+brew 'pkg-config' # Manage compile and link flags for libraries
+
+# We don't yet support OpenSearch2 - https://fatzebra.atlassian.net/browse/AP-3454
+tap 'isaaceindhoven/opensearch-maintenance'
+# Should this be 1.3? Tabled until needed.
+brew 'opensearch@1', restart_service: :changed, link: true, conflicts_with: %w[elasticsearch opensearch]
+
+brew 'awscli'
+brew 'docker-buildx'
+brew 'foreman'
+brew 'localstack' # local AWS cloud stack
+brew 'saml2aws'
+
+cask 'google-chrome'
+cask 'docker'
+cask 'firefox'
+cask 'microsoft-outlook'
+cask 'miro'
+cask 'session-manager-plugin' # Session Manager Plugin for the AWS CLI
+cask 'slack'
+
+# Mine
+brew 'bat' # cat with nice formatting
+brew 'blueutil' # used w sleepwatcher to turn off bluetooth during sleep
+brew 'cheat' # cheatsheets on commands
+brew 'csvtk' # count, re/format, search, edit, transform and plot CSVs
+brew 'curl'
+brew 'fortune'
+brew 'gh'
+brew 'gitleaks'
+brew 'mas' # mac app store cli tool, crippled by Apple
+brew 'pigz' # multi-core gzip
+brew 'pipx' # run python tools in isolated environments
+brew 'pbzip2' # multi-core bzip2
+brew 'ripgrep' # grep with Rust
+brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
+brew 'tldr' # cheatsheets on commands
+brew 'up' # write cli pipes with live preview
+brew 'whalebrew' # brew for dockerized tools
+brew 'xdg-ninja' # find files that can be converted to XDG spec
+
+cask 'bitwarden'
+cask 'bruno'
+cask 'divvy'
+cask 'font-fira-code'
+cask 'iterm2'
+cask 'karabiner-elements'
+cask 'keepingyouawake'
+cask 'macmediakeyforwarder'
+cask 'macvim'
+cask 'notion'
+cask 'pgadmin4'
+cask 'postman'
+cask 'raycast'
+cask 'rowanj-gitx'
+cask 'spotify'
+cask 'sublime-merge'
+cask 'swiftbar'
+cask 'visual-studio-code'
+cask 'zed'
+
+mas '1Password for Safari', id: 1_569_813_296
+mas 'Amphetamine', id: 937_984_704
+mas 'Bitwarden', id: 1_352_778_147 # needs to be App Store for Touch ID integration
+mas 'iBar-Menubar icon control tool', id: 6_443_843_900
+mas 'JustJoin for Zoom meetings', id: 1_514_260_034
+mas 'Monosnap - screenshot editor', id: 540_348_655
+# mas 'Okta Verify', id: 490_179_405 # failed after first time, controlled by jamf maybe?
+mas 'Okta Extension App', id: 1_439_967_473

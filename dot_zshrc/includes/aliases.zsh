@@ -26,6 +26,9 @@ alias mupiter='bx jupiter --no-questions --mdns --init-code --stash --popup=rais
 alias RET='RAILS_ENV=test'
 alias RED='RAILS_ENV=development'
 
+# brew aliases
+alias brew-bundle="brew bundle --file=$XDG_CONFIG_HOME/brew/Brewfile"
+
 # global aliases
 alias -g G='| grep'
 alias -g L='| less'
