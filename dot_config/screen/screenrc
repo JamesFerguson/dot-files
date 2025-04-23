@@ -1,1 +1,15 @@
-/Users/james.ferguson/codez/dot-files/dot_screenrc/screenrc
+# Tell screen your default shell
+shell zsh
+
+# Turn off start message
+startup_message off
+
+# Lots of scroll back
+defscrollback = 100000
+
+# Dynamic window titled for running program
+#shelltitle '$ |zsh'
+
+# Turn off the annoying whole-screen-flash-on-tab-complete "feature"
+vbell off
+
