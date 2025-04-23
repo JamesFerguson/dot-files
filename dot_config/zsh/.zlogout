@@ -1,0 +1,1 @@
+/Users/james.ferguson/.config/zsh/.zprezto/runcoms/zlogout
