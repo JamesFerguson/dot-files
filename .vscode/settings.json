@@ -1,0 +1,12 @@
+{
+  "workbench.colorCustomizations": {
+    "editor.findMatchBackground": "#cc6666",
+    "editor.findMatchBorder": "#FFAA00",
+    "editor.findMatchHighlightBackground": "#93694d",
+    "editor.findRangeHighlightBackground": "#333388",
+    "activityBar.background": "#430A74",
+    "titleBar.activeBackground": "#5E0EA3",
+    "titleBar.activeForeground": "#FEFDFF"
+  },
+  "window.title": "${activeEditorShort}${separator}${rootName}${separator}${profileName}${separator}[master]"
+}
