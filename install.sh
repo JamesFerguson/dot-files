@@ -37,6 +37,8 @@ ln -fs $DOT_FILES_DIR/dot_rspec/rspec ~/.rspec
 ln -fs $DOT_FILES_DIR/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs $DOT_FILES_DIR/dot_tool_versions/tool-versions ~/.tool-versions
 ln -fs $DOT_FILES_DIR/dot_vimrc/vimrc ~/.vimrc
+ln -fs $DOT_FILES_DIR/dot_zpreztorc/zpreztorc $XDG_CONFIG_HOME/.zprezto/.zpreztorc
+
 ln -Ffs $DOT_FILES_DIR/dot_vim ~/.vim
 ln -fs $DOT_FILES_DIR/sleepwatcher/dot_sleep/sleep ~/.sleep
 ln -fs $DOT_FILES_DIR/sleepwatcher/dot_wakeup/wakeup ~/.wakeup
@@ -44,6 +46,7 @@ ln -fs $DOT_FILES_DIR/sleepwatcher/dot_wakeup/wakeup ~/.wakeup
 sudo ln -fs $DOT_FILES_DIR/etc_hosts/hosts /etc/hosts
 sudo ln -fs $DOT_FILES_DIR/etc_zshenv/zshenv /etc/zshenv
 sudo ln -fs $DOT_FILES_DIR/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
+sudo ln -fs $DOT_FILES_DIR/sleepwatcher/homebrew.mxcl.sleepwatcher.plist $HOME/Library/LaunchAgents/homebrew.mxcl.sleepwatcher.plist
 
 # powrc
 #ln -fs $DOT_FILES_DIR/dot_powrc/powrc ~/codez/tv-shows/.powrc
