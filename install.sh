@@ -19,13 +19,11 @@ done
 ln -fs $DOT_FILES_DIR/dot_agignore/agignore ~/.agignore
 ln -fs $DOT_FILES_DIR/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs $DOT_FILES_DIR/dot_bashrc/bashrc ~/.bashrc
-ln -fs $DOT_FILES_DIR/dot_bundle/ ~/.bundle
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems
 ln -fs $DOT_FILES_DIR/dot_editrc/editrc ~/.editrc
 ln -fs $DOT_FILES_DIR/dot_gemrc/gemrc ~/.gemrc
-ln -fs $DOT_FILES_DIR/dot_gitconfig/gitconfig ~/.gitconfig
 ln -fs $DOT_FILES_DIR/dot_gitignore_global/gitignore_global ~/.gitignore_global
 ln -fs $DOT_FILES_DIR/dot_gvimrc/gvimrc ~/.gvimrc
 ln -fs $DOT_FILES_DIR/dot_inputrc/inputrc ~/.inputrc
@@ -35,9 +33,7 @@ ln -fs $DOT_FILES_DIR/dot_irbrc/irbrc ~/.irbrc
 #ln -fs $DOT_FILES_DIR/dot_rdebugrc/rdebugrc ~/.rdebugrc
 ln -fs $DOT_FILES_DIR/dot_rgignore/rgignore ~/.rgignore
 ln -fs $DOT_FILES_DIR/dot_rubocop_dot_yml/rubocop.yml ~/.rubocop.yml
-ln -fs $DOT_FILES_DIR/dot_ruby_version/ruby-version ~/.ruby-version
 ln -fs $DOT_FILES_DIR/dot_rspec/rspec ~/.rspec
-ln -fs $DOT_FILES_DIR/dot_screenrc/screenrc ~/.screenrc
 ln -fs $DOT_FILES_DIR/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs $DOT_FILES_DIR/dot_tool_versions/tool-versions ~/.tool-versions
 ln -fs $DOT_FILES_DIR/dot_vimrc/vimrc ~/.vimrc
