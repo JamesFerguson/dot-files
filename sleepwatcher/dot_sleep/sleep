@@ -1,1 +1,16 @@
-$HOMEBREW_PREFIX/bin/blueutil -p 0
+#!/bin/bash
+
+# -e to interpret escape chars
+# echo -e "\nRunning .sleep script" >> /tmp/sleepwatcher.log
+
+# echo -e  "$(env)" >> /tmp/sleepwatcher.log
+
+# Script may run in a restricted env, doesn't get /etc/zshenv vars
+HOMEBREW_PREFIX='/opt/homebrew'
+
+# $HOMEBREW_PREFIX/blueutil -p 0
+$HOMEBREW_PREFIX/bin/blueutil --disconnect "86-b0-00-eb-c8-6b" # U8
+$HOMEBREW_PREFIX/bin/blueutil --disconnect "41-42-a1-d0-47-91" # Bluetooth Music
+
+
+# echo -e  "Finished .sleep script\n\n" >> /tmp/sleepwatcher.log
