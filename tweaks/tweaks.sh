@@ -19,6 +19,14 @@ echo 'Make system File Save dialog expanded by default'
 defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode  -bool true # expand save dialog
 defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true # expand save dialog
 
+# Allow touchid to be used for sudo in terminal
+echo 'Allow touchid to be used for sudo in terminal'
+if [ ! -f /etc/pam.d/sudo_local ]; then
+  sudo touch /etc/pam.d/sudo_local
+  sudo echo "# sudo_local: local config file which survives system update and is included for sudo" >> /etc/pam.d/sudo_local
+  sudo echo "# uncomment following line to enable touchid for sudo" >> /etc/pam.d/sudo_local
+  sudo echo "auth       sufficient     pam_tid.so" >> /etc/pam.d/sudo_local
+fi
 
 
 # Show full path in Finder
