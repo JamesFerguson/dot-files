@@ -1,0 +1,7 @@
+[default]
+region = ap-southeast-2
+output = text
+
+[test]
+region = ap-southeast-2
+output = text
