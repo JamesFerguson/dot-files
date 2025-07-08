@@ -1,15 +1,12 @@
 better_errors
 binding_of_caller
-cheat
-executable-hooks
+# cheat # server gone
+# executable-hooks # was for rbenv, some gems complain about it
 git-up
-github
 irb_hacks
 launchy
-ori
 rdoc
 rubocop
-ruby-lint
 showoff-io
 tapp
-terminal-notifier
+# terminal-notifier # replaced by osascript now
