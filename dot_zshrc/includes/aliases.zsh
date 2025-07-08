@@ -13,18 +13,19 @@ alias which="which -a" # show all matching paths, not just first
 # fasd (autojump substitute)
 alias j='fasd_cd -d'
 
-# the silver searcher
-alias ag="nocorrect noglob ag --smart-case -C 2"
-alias ack="nocorrect noglob ag --smart-case -C 2"
+# use rg for ag or ack
+alias ag="nocorrect noglob rg --smart-case -C 2"
+alias ack="nocorrect noglob rg --smart-case -C 2"
 
 # rake aliases
 alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:load'
 
 # rails aliases
+alias be="bundle exec"
 alias sp='spring'
-alias mupiter='bx jupiter --no-questions --mdns --init-code --stash --popup=raise'
 alias RET='RAILS_ENV=test'
 alias RED='RAILS_ENV=development'
+alias rials='run_bundler_cmd rails'
 
 # brew aliases
 alias brew-bundle="brew bundle --file=$XDG_CONFIG_HOME/brew/Brewfile"
@@ -43,14 +44,27 @@ alias heroku='nocorrect heroku'
 alias github='nocorrect github'
 alias gh='nocorrect gh'
 alias grb='nocorrect grb'
+alias gsm='git switch --merge'
 
 # remove all branches that have been merged to upstream
+alias gp='git push'
+alias gb='git branch'
+alias gre='git rebase --edit-todo'
+#   git remote branch new
+function grbn() {
+  git checkout -b "$1"
+  git push -u origin "$1"
+}
+alias grbd='git push origin --delete'
 alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
 alias gst='git status'
-alias bcnf='bundle clean --force'
+alias bcf='bundle clean --force'
 alias mdcu='mix deps.clean --unused'
-alias rclose='g ch develop && gup && gbda && bcnf'
+alias rclose='g ch develop && gup && gbda && bcf'
 alias eclose='g ch develop && gup && gbda && mdcu'
+alias rgclose='(g ch master || g ch main) && gup && gbda && bcf'
+alias egclose='(g ch master || g ch main) && gup && gbda && mdcu'
+alias gbname='git rev-parse --abbrev-ref HEAD' # bare branch name
 
 # open buildkite pipeline
-alias bk="open https://buildkite.com/blake-education/$(basename $PWD | tr '_' '-')"
+alias bk="open https://buildkite.com/fat-zebra/$(basename $PWD | tr '_' '-')"
