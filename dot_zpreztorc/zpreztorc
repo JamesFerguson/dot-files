@@ -5,7 +5,7 @@
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
 #
 
-echo 'Sourcing ~/.zpreztorc'
+echo '    Sourcing ~/.zpreztorc'
 
 #
 # General
@@ -26,46 +26,53 @@ zstyle ':prezto:*:*' color 'yes'
 # Set the Prezto modules to load (browse modules).
 # The order matters.
 #
+# archive # intelligent `archive`, `lsarchive` and `unarchive` based on filename extension
 # environment # set opts re jobs and env vars for less termcap
 # terminal # terminal titling - brokenish
-# editor # emacs/vi key bindings
+# editor # emacs/vi key bindings, what chars are part of words, and more
+# emacs # emacs dependency management with `carton`
 # history
 # directory
-# spectrum
+# dnf # dnf, RedHat package manager, aliases
+# docker # docker aliases
+# dpkg # Debian package manager aliases
+# spectrum # easier use of 256 colours
 # gnu-utility
 # utility
-# completion
+# git # must be before 'completion'
 # prompt
 # syntax-highlighting
 # history-substring-search
+# autosuggestions # must be after syntax-highlighting and history-substring-search, suggest commands as you type
 # ruby
-# git
 # homebrew
 # osx
-# blake
 # archive # generic archive, lsarchive, unarchive uses correct util based on filename
-# fasd # autojump clone, faster
 # command-not-found' # suggest brew formula when command not found
+# completion # must be loaded late after all modules that add completions
+# fasd # must be after `completion`; autojump clone, faster, bundled w prezto
 #
 zstyle ':prezto:load' pmodule \
+  'archive' \
   'environment' \
   'terminal' \
   'history' \
   'directory' \
+  'docker' \
   'spectrum' \
   'utility' \
-  'completion' \
+  'git' \
   'prompt' \
   'syntax-highlighting' \
   'history-substring-search' \
+  'autosuggestions' \
   'ruby' \
-  'git' \
   'homebrew' \
   'osx' \
-  'blake' \
   'archive' \
-  'fasd' \
-  'command-not-found'
+  'command-not-found' \
+  'completion' \
+  'fasd'
 
 #
 # Editor
@@ -118,7 +125,11 @@ zstyle ':prezto:module:history-substring-search' globbing-flags ''
 # Set the prompt theme to load.
 # Setting it to 'random' loads a random theme.
 # Auto set to 'off' on dumb terminals.
-zstyle ':prezto:module:prompt' theme 'sorin'
+zstyle ':prezto:module:prompt' theme 'smiley'
+
+# Working directory length in prompt
+# 'short', the basename, 'long' path w/out expanding ~, 'full' absolute path
+zstyle ':prezto:module:prompt' pwd-length 'long'
 
 #
 # Ruby
