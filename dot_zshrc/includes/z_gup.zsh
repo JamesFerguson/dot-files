@@ -6,7 +6,9 @@
 
 function gup
 {
-  source $DOT_FILES_DIR/dot_zshrc/includes/z_asdf.zsh
+  # Shouldn't be needed now that asdf gets setup in zshenv.
+  # source $DOT_FILES_DIR/dot_zshrc/includes/z_asdf.zsh
+  asdf current ruby
 
   # subshell for `set -e` and `trap`
   (
