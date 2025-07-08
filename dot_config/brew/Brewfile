@@ -63,6 +63,8 @@ brew 'curl'
 brew 'fortune'
 brew 'gh'
 brew 'gitleaks'
+brew 'httpie' # curl with a nicer interface
+brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
 brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
@@ -71,6 +73,8 @@ brew 'ripgrep' # grep with Rust
 brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
 brew 'up' # write cli pipes with live preview
+tap 'hmarr/tap' # needed for vitals
+brew 'vitals' # tiny mac process monitor (app, in menubar, should be a cask)
 brew 'whalebrew' # brew for dockerized tools
 brew 'xdg-ninja' # find files that can be converted to XDG spec
 
@@ -91,8 +95,9 @@ cask 'rowanj-gitx'
 cask 'spotify'
 cask 'sublime-merge'
 cask 'swiftbar'
+cask 'time-out'
 cask 'visual-studio-code'
-cask 'zed'
+cask 'zed' # new editor to try
 
 mas '1Password for Safari', id: 1_569_813_296
 mas 'Amphetamine', id: 937_984_704
@@ -101,4 +106,4 @@ mas 'iBar-Menubar icon control tool', id: 6_443_843_900
 mas 'JustJoin for Zoom meetings', id: 1_514_260_034
 mas 'Monosnap - screenshot editor', id: 540_348_655
 # mas 'Okta Verify', id: 490_179_405 # failed after first time, controlled by jamf maybe?
-mas 'Okta Extension App', id: 1_439_967_473
+# mas 'Okta Extension App', id: 1_439_967_473 # failed after first time, controlled by jamf maybe?
