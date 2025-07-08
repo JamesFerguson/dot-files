@@ -1,2 +1,2 @@
---format progress --profile
-# --tag '~broken' --tag '~js' --tag '~quarantined' --tag '~system' --tag '~integration'
+--format progress --profile 10
+# 10 is the default number of slowest examples to list, without specifying a number you get warnings
