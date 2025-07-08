@@ -13,12 +13,14 @@ XDG_RUNTIME_DIR=/run/user/$UID
 ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
 ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
 ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
+AWS_SHARED_CREDENTIALS_FILE="$XDG_CONFIG_HOME"/aws/credentials
+AWS_CONFIG_FILE="$XDG_CONFIG_HOME"/aws/config
 AZURE_CONFIG_DIR="$XDG_DATA_HOME"/azure
 BUNDLE_USER_CONFIG="$XDG_CONFIG_HOME"/bundle/config
 BUNDLE_USER_CACHE="$XDG_CACHE_HOME"/bundle
 BUNDLE_USER_PLUGIN="$XDG_DATA_HOME"/bundle
 DOCKER_CONFIG="$XDG_CONFIG_HOME"/docker
-GEM_HOME="$XDG_DATA_HOME"/gem
+# GEM_HOME="$XDG_DATA_HOME"/gem # might conflict with ASDF setting this
 GEM_SPEC_CACHE="$XDG_CACHE_HOME"/gem
 INPUTRC="$XDG_CONFIG_HOME"/readline/inputrc
 LESSHISTFILE="$XDG_STATE_HOME"/less/history
@@ -26,8 +28,10 @@ MYSQL_HISTFILE="$XDG_DATA_HOME"/mysql_history
 NODE_REPL_HISTORY="$XDG_DATA_HOME"/node_repl_history
 NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME"/npm/npmrc
 PSQL_HISTORY="$XDG_DATA_HOME/psql_history"
+RUBOCOP_CONFIG="$XDG_CONFIG_HOME"/rubocop/config.yml
 SCREENRC="$XDG_CONFIG_HOME"/screen/screenrc
 TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
+ZPREZTODIR="$XDG_CONFIG_HOME/.zprezto"
 
 # Dot files dir
 #   - if on FatZebra laptop
@@ -36,21 +40,29 @@ if [[ "$(hostname)" == *"fz-"* ]]; then
   CODE_DIR="$HOME/code"
   DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
   source ~/.fat_zebra_env.sh
+  setopt ALL_EXPORT # above line unsets ALL_EXPORT
 else
   ON_WORK_LAPTOP=0
   CODE_DIR="$HOME/codez"
   DOT_FILES_DIR="$CODE_DIR/dot-files"
 fi
 
+# FZ root dir
+FZ_ROOT_DIR="$CODE_DIR"
+FZ_UTIL_BIN_DIR="$FZ_ROOT_DIR/utils/fz/bin"
+
 # Go-lang setup
 export GOPATH=$HOME/go
 # ${VAR//PATTERN/REPLACE} -> find ':' replace w '/bin:'
 GOPATHS=${GOPATH//://bin:}/bin
 
+# Path
 export PATH=\
+$ASDF_DATA_DIR/shims:\
 $HOME/bin:\
 $CODE_DIR/git-achievements:\
 /usr/local/bin:\
+$HOME/.local/bin:\
 /opt/homebrew/bin:\
 /opt/homebrew/sbin:\
 /opt/homebrew/opt/libpq/bin:\
@@ -59,17 +71,14 @@ $CODE_DIR/git-achievements:\
 /bin:\
 /usr/sbin:\
 /sbin:\
+$XDG_DATA_HOME/gem/bin:\
 /usr/local/opt/mysql@5.6/bin/mysql:\
 $GOPATHS:\
-$HOME/Blake/bs/bin:\
-$HOME/Blake/bk8s/bin:\
 $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
-$HOME/.config/yarn/global/node_modules/.bin:\
+$XDG_CONFIG_HOME/yarn/global/node_modules/.bin:\
+$FZ_UTIL_BIN_DIR:\
 $PATH
-
-# RE setting
-RETRIES=1
 
 # Locale
 LC_ALL='en_US.UTF-8'
@@ -77,14 +86,17 @@ LANG='en_US.UTF-8'
 LC_CTYPE=C
 TZ="Australia/Sydney"
 
+# History
 HISTFILE="$XDG_STATE_HOME"/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
 
+# Put hostname in the env
 HOSTNAME="`hostname`"
 
+# Some standard zsh config
 PAGER='less'
-EDITOR=code #'/usr/local/bin/mvimf' # '/Users/jim/bin/mate_wait'
+EDITOR=code #'/usr/local/bin/mvimf'
 
 # Colour vars
 autoload colors zsh/terminfo
@@ -104,9 +116,6 @@ CLICOLOR=1 # colorize ls and others
 #RPS1="$PR_MAGENTA(%D{%m-%d %H:%M})$PR_NO_COLOR"
 #DISPLAY=:0
 
-# Tell PostgreSQL where to find its data
-#PGDATA=/Library/PostgreSQL/8.4/data/
-
 # Ensure node finds npm modules
 NODE_PATH=/usr/local/lib/node_modules
 
@@ -125,12 +134,30 @@ LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CON
 #LESS_TERMCAP_mb=$'\E[1;31m'     # begin bold
 #LESS_TERMCAP_md=$'\E[1;36m'     # begin blink
 #LESS_TERMCAP_me=$'\E[0m'        # reset bold/blink
-#LESS_TERMCAP_so=$'\E[01;44;33m' # begin reverse video
+#LESS_TERMCAP_so=$'\E[01;44;33m' # begin reverse video 
 #LESS_TERMCAP_se=$'\E[0m'        # reset reverse video
 #LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
 #LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
+# API Tokens
+BUILDKITE_TOKEN="***REMOVED***"
+
+# Ruby
+RUBY_CONFIGURE_OPTS="--enable-yjit"
+SIMPLECOV_ONLY_FULL_SUITE=true
+
 # editor used by bundle open
 BUNDLER_EDITOR=code
 
+# Brew env var init
+HOMEBREW_PREFIX=$(brew --prefix)
+HOMEBREW_NO_ANALYTICS=1
+
 unsetopt ALL_EXPORT
+
+# Source Prezto's zshenv
+if [[ -z "$ZPREZTODIR" ]]; then
+  echo "Error: ZPREZTODIR is not set"
+else
+  source "$ZPREZTODIR/runcoms/zshenv"
+fi
