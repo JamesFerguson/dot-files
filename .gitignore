@@ -1,12 +1,18 @@
-# some kind of precompile/caching for zshrc
-.zcompdump
-dot_config/zsh/.zsh_history
-dot_vim/bundle
-dot_vim/.netrwhist
-*.swp
 .DS_store
+.idea/
+# .zcompdump - some kind of precompile/caching for zshrc
+.zcompdump
+*.swp
+
+dot_bundle/cache
+dot_config/aws/credentials
+dot_config/git/credentials
+dot_config/git/gh_credentials
+dot_config/zsh/.zprezto
+dot_config/zsh/.zsh_history
+dot_config/zsh/.zsh_sessions
+dot_vim/.netrwhist
+dot_vim/bundle
+
 schedule/log
 schedule/vendor
-dot_bundle/cache
-.idea/
-dot_config/zsh/.zprezto
