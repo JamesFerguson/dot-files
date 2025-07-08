@@ -1,11 +1,12 @@
-elixir latest
-erlang latest
-golang latest
-kubectl latest
-nodejs latest
-pnpm latest
-python latest
-ruby 3.2.2
-rust latest
-terraform latest
-yarn latest
+awscli 2.23.13
+elixir 1.18.2-otp-27
+erlang 27.2.1
+golang 1.23.6
+kubectl 1.32.1
+nodejs latest # 23.7.0
+pnpm 9.15.5
+python 3.13.1
+ruby 3.4.1
+rust 1.84.1
+terraform 1.10.5
+yarn 1.22.22
