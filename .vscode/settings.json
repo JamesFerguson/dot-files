@@ -5,8 +5,12 @@
     "editor.findMatchHighlightBackground": "#93694d",
     "editor.findRangeHighlightBackground": "#333388",
     "activityBar.background": "#430A74",
+    "activityBar.foreground": "#ffffff",
+    "activityBarTop.background": "#aa65e6",
+    "activityBarTop.foreground": "#ffffff",
+    "titleBar.inactiveBackground": "#430A74",
     "titleBar.activeBackground": "#5E0EA3",
-    "titleBar.activeForeground": "#FEFDFF"
+    "titleBar.activeForeground": "#ffffff"
   },
   "window.title": "${activeEditorShort}${separator}${rootName}${separator}${profileName}${separator}[master]"
 }
