@@ -28,10 +28,12 @@ TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
 # fuzzy finder setup
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+# Homebrew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+HOMEBREW_PREFIX=$(brew --prefix)
+HOMEBREW_NO_ANALYTICS=1
 
 # asdf setup
-autoload -Uz bashcompinit
-bashcompinit
 HOMEBREW_ASDF_DIR=$(brew --prefix asdf)
 if [ -f "$HOMEBREW_ASDF_DIR/libexec/asdf.sh" ]; then
   source "$HOMEBREW_ASDF_DIR/libexec/asdf.sh"
