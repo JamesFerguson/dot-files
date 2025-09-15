@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.fatzebra.opensearch-java11</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>launchctl setenv OPENSEARCH_JAVA_HOME "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home"</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!--- Not needed for just setenv and exit tasks. --->
+  <key>KeepAlive</key>
+  <false/>
+</dict>
+</plist>
