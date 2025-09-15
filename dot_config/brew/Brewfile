@@ -42,8 +42,8 @@ brew 'opensearch@1', restart_service: :changed, link: true, conflicts_with: %w[e
 cask 'temurin@11' # Java 11, needed for OpenSearch@1
 
 brew 'awscli'
-brew 'docker-buildx'
-brew 'foreman'
+brew 'docker-buildx' # Docker CLI plugin for extended build capabilities with BuildKit
+brew 'foreman' # a manager for Procfile-based applications
 brew 'localstack' # local AWS cloud stack
 brew 'saml2aws'
 
@@ -74,8 +74,6 @@ brew 'ripgrep' # grep with Rust
 brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
 brew 'up' # write cli pipes with live preview
-tap 'hmarr/tap' # needed for vitals
-brew 'vitals' # tiny mac process monitor (app, in menubar, should be a cask)
 brew 'whalebrew' # brew for dockerized tools
 brew 'xdg-ninja' # find files that can be converted to XDG spec
 
@@ -98,6 +96,7 @@ cask 'sublime-merge'
 cask 'swiftbar'
 cask 'time-out'
 cask 'visual-studio-code'
+cask 'vitals' # tiny mac process monitor (app, in menubar)
 cask 'zed' # new editor to try
 
 mas '1Password for Safari', id: 1_569_813_296
