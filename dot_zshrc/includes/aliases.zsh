@@ -29,6 +29,7 @@ alias rials='run_bundler_cmd rails'
 
 # brew aliases
 alias brew-bundle="brew bundle --file=$XDG_CONFIG_HOME/brew/Brewfile"
+alias bb="brew bundle --file=$XDG_CONFIG_HOME/brew/Brewfile"
 
 # global aliases
 alias -g G='| grep'
@@ -56,7 +57,7 @@ function grbn() {
   git push -u origin "$1"
 }
 alias grbd='git push origin --delete'
-alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
+alias gbda='git branch --no-color --merged | command grep -vE "^(\*|\s*(main|master|develop|dev)\s*$)" | command xargs -n 1 git branch -d'
 alias gst='git status'
 alias bcf='bundle clean --force'
 alias mdcu='mix deps.clean --unused'
