@@ -1,3 +1,10 @@
+# Need to rethink. Can't symlink this file to /etc/hosts
+# Could write a script to overwrite /etc/hosts from it
+# Or consider third-party tools:
+#	hostess: CLI tool for managing /etc/hosts.
+#	dnsmasq: Run a local DNS server and just route *.dev or whatever to 127.0.0.1 based on config.
+#	hblock: For automated blocking or merging hosts files from multiple sources.
+
 ##
 # Host Database
 #
@@ -13,3 +20,7 @@ fe80::1%lo0	localhost
 # To allow the same kube context to work on the host and the container:
 127.0.0.1 kubernetes.docker.internal
 # End of section
+
+# FZ setup
+127.0.0.1 opensearch
+127.0.0.1 elasticsearch
