@@ -76,11 +76,14 @@ brew 'tldr' # cheatsheets on commands
 brew 'up' # write cli pipes with live preview
 brew 'whalebrew' # brew for dockerized tools
 brew 'xdg-ninja' # find files that can be converted to XDG spec
+brew 'zsh-you-should-use' # alias reminders when you use the long form of the command
 
+cask '1password-cli' # 1Password CLI tools to use credentials in scripts
 cask 'bitwarden'
 cask 'bruno'
 cask 'divvy'
 cask 'font-fira-code'
+cask 'gitup-app'
 cask 'iterm2'
 cask 'karabiner-elements'
 cask 'keepingyouawake'
