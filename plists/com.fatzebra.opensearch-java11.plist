@@ -15,8 +15,24 @@
   <key>RunAtLoad</key>
   <true/>
 
-  <!--- Not needed for just setenv and exit tasks. --->
+  <!-- Not needed for just setenv and exit tasks. -->
   <key>KeepAlive</key>
   <false/>
+
+  <!--
+   This plist is unreliable becuase plist load ordering is not guaranteed.
+   If opensearch starts failing after an update, edit
+   
+     /Users/james.ferguson/Library/LaunchAgents/homebrew.mxcl.opensearch@1.plist
+
+    and add the following:
+   
+      <key>EnvironmentVariables</key>
+      <dict>
+        <key>OPENSEARCH_JAVA_HOME</key>
+        <string>/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home</string>
+      </dict>
+  -->
+
 </dict>
 </plist>
