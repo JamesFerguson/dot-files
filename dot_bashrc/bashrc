@@ -28,14 +28,6 @@ TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
 # fuzzy finder setup
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
-# Add bs to path
-export PATH=$PATH:/Users/jim/Blake/bs/bin/
-eval "$($HOME/Blake/bs/bin/bs init -)"
-eval "$($HOME/Blake/bd/bin/bd init -)"
-
-# bk8s shell setup
-export PATH=$PATH:/Users/james.ferguson/Blake/bk8s/bin/
-source $HOME/Blake/bk8s/completions/bk.bash
 
 # asdf setup
 # source $HOME/.asdf/asdf.sh
