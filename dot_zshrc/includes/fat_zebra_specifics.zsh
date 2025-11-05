@@ -22,7 +22,14 @@ alias gbname='git rev-parse --abbrev-ref HEAD' # bare branch name
   # quick open builds for current project
 alias bk="buildkite_open"
 alias fgd="sal && fargate_deploy"
-alias current_project='basename $(pwd) | tr "_" "-"'
+
+function current_project() {
+  if [[ "$(basename $(dirname $(pwd)))" == *"-worktrees" ]] && [[ -f .git ]] && [[ $(cat .git) =~ gitdir:.*code/([^/]+)/\.git/worktrees ]]; then
+    echo "${match[1]}" | tr "_" "-"
+  else
+    basename $(pwd) | tr "_" "-"
+  fi
+}
 
 ## Functions
 
