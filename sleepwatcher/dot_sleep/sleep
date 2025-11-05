@@ -11,6 +11,11 @@ HOMEBREW_PREFIX='/opt/homebrew'
 # $HOMEBREW_PREFIX/blueutil -p 0
 $HOMEBREW_PREFIX/bin/blueutil --disconnect "86-b0-00-eb-c8-6b" # U8
 $HOMEBREW_PREFIX/bin/blueutil --disconnect "41-42-a1-d0-47-91" # Bluetooth Music
+$HOMEBREW_PREFIX/bin/blueutil --disconnect "70-5a-6f-6b-66-2f" # EarFun Air Pro 4
 
+# Log sleep event to work from home CSV
+LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Sleep" >> "$LOG_FILE"
 
 # echo -e  "Finished .sleep script\n\n" >> /tmp/sleepwatcher.log

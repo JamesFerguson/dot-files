@@ -6,3 +6,8 @@ HOMEBREW_PREFIX='/opt/homebrew'
 # /opt/homebrew/bin/blueutil -p 1
 $HOMEBREW_PREFIX/bin/blueutil --connect "86-b0-00-eb-c8-6b" # U8
 $HOMEBREW_PREFIX/bin/blueutil --connect "41-42-a1-d0-47-91" # Bluetooth Music
+
+# Log wake event to work from home CSV
+LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Wake" >> "$LOG_FILE"
