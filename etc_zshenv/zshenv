@@ -6,7 +6,7 @@ XDG_CONFIG_HOME="$HOME/.config"
 XDG_DATA_HOME=$HOME/.local/share
 XDG_STATE_HOME=$HOME/.local/state
 XDG_CACHE_HOME=$HOME/.cache
-XDG_RUNTIME_DIR=/private/var/run
+# XDG_RUNTIME_DIR=/private/var/run # macOS doesn't use this
 # Find Zsh under XDG
 ZDOTDIR=$XDG_CONFIG_HOME/zsh
 
