@@ -58,23 +58,29 @@ cask 'slack'
 # Mine
 brew 'bat' # cat with nice formatting
 brew 'blueutil' # used w sleepwatcher to turn off bluetooth during sleep
+brew 'btop' # better top in terminal
 brew 'cheat' # cheatsheets on commands
 brew 'csvtk' # count, re/format, search, edit, transform and plot CSVs
 brew 'curl'
+brew 'fop' # erlang/elixir dep to format XML to PDF/PS
 brew 'fortune'
 brew 'gh'
 brew 'gitleaks'
 brew 'httpie' # curl with a nicer interface
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
+brew 'meetingbar' # menubar app to see upcoming meetings (esp. Teams support)
 brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
 brew 'ripgrep' # grep with Rust
 brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
+brew 'unixodbc' # might be used by erlang/elixir to connect to dbs
 brew 'up' # write cli pipes with live preview
+brew 'watchman' # watch files and take action (used by Sorbet & some JS tools)
 brew 'whalebrew' # brew for dockerized tools
+brew 'wxmac', args: ["--build-from-source"] # might be used by erlang/elixir to build GUI apps
 brew 'xdg-ninja' # find files that can be converted to XDG spec
 brew 'zsh-you-should-use' # alias reminders when you use the long form of the command
 
