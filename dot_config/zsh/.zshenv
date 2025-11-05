@@ -77,8 +77,10 @@ $GOPATHS:\
 $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
 $XDG_CONFIG_HOME/yarn/global/node_modules/.bin:\
-$FZ_UTIL_BIN_DIR:\
 $PATH
+
+# $FZ_UTIL_BIN_DIR:\ # fat zebra utils
+
 
 # Locale
 LC_ALL='en_US.UTF-8'
