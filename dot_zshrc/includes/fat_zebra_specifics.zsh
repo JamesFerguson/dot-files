@@ -5,6 +5,10 @@ AWS_PROFILE=test
 AWS_DEFAULT_REGION=ap-southeast-2
 AWS_SDK_LOAD_CONFIG=true
 
+JABBERWOCKY_DEBUG=true
+JABBERWOCKY_PORT=$(<~/.puma-dev/jabberwocky)
+JABBERWOCKY_WORKERS=1
+
 PGGSSENCMODE="disable" # fix random segfaults in JW pg gem
 
 SAML2AWS_AUTO_BROWSER_DOWNLOAD=true
