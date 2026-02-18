@@ -1,10 +1,10 @@
 [includeIf "gitdir/i:~/code/"]
-    path = ~/code/personal/dot-files/dot_config/git/credentials
+	path = ~/code/personal/dot-files/dot_config/git/credentials
 ; override the above for github repos
 [includeIf "hasconfig:remote.*.url:git@github.com:*/**"]
-    path = ~/code/personal/dot-files/dot_config/git/gh_credentials
+	path = ~/code/personal/dot-files/dot_config/git/gh_credentials
 [includeIf "gitdir/i:~/codez/"]
-    path = ~/codez/dot-files/dot_config/git/credentials
+	path = ~/codez/dot-files/dot_config/git/credentials
 [color]
 	diff = auto
 	status = auto
@@ -22,79 +22,79 @@
 	default = simple
 	autoSetupRemote = true
 [pull]
-    rebase = true
+	rebase = true
 [rebase]
-    autoStash = true
+	autoStash = true
 [achievement]
 	upload = true
 [alias]
-  stus = status
-  s = status
-  st = status
-#  ci = commit
-  cm = commit
-#  c = commit
-#  br = branch
-#  b = branch
-#  co = checkout
-  ch = checkout
-#  lg = log
-#  l = log
-  lgp = log -p --word-diff
-  lggo = log --graph --decorate --pretty=oneline --abbrev-commit
-  lggoa = log --graph --decorate --pretty=oneline --abbrev-commit --all
-  wc = whatchanged
-#  w = whatchanged
-  mg = merge --no-ff
-  merge = merge --no-ff
-#  ad = add
-#  a = add
-  adp = add -p
-  mt = mergetool
-#  ps = push
-#  ph = push
-#  pl = pull
-#  sh = stash
-  au = update-index --assume-unchanged
-  assume-unchanged = update-index --assume-unchanged
-  uiau = update-index --assume-unchanged
-  force-ignore = update-index --assume-unchanged
-  fi = update-index --assume-unchanged
-  noau = update-index --no-assume-unchanged
-  no-assume-unchanged = update-index --no-assume-unchanged
-  unforce-ignore = update-index --no-assume-unchanged
-  unfi = update-index --no-assume-unchanged
-  ls-force-ignored = !git ls-files -v | grep ^[a-z]
-  lsfi = !git ls-files -v | grep ^[a-z]
-  ls-assume-unchanged = !git ls-files -v | grep ^[a-z]
-  lsau = !git ls-files -v | grep ^[a-z]
-  cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
-  gp = !git push --set-upstream origin HEAD:$(git cb)
-  gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
-  logline = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(red)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	stus = status
+	s = status
+	st = status
+#	ci = commit
+	cm = commit
+#	c = commit
+#	br = branch
+#	b = branch
+#	co = checkout
+	ch = checkout
 	; diff = diff --word-diff
 	df = diff ; --word-diff
+#	lg = log
+#	l = log
+	lgp = log -p --word-diff
+	lggo = log --graph --decorate --pretty=oneline --abbrev-commit
+	lggoa = log --graph --decorate --pretty=oneline --abbrev-commit --all
+	wc = whatchanged
+#	w = whatchanged
+	mg = merge --no-ff
+	merge = merge --no-ff
+#	ad = add
+#	a = add
+	adp = add -p
+	mt = mergetool
+#	ps = push
+#	ph = push
+#	pl = pull
+#	sh = stash
+	au = update-index --assume-unchanged
+	assume-unchanged = update-index --assume-unchanged
+	uiau = update-index --assume-unchanged
+	force-ignore = update-index --assume-unchanged
+	fi = update-index --assume-unchanged
+	noau = update-index --no-assume-unchanged
+	no-assume-unchanged = update-index --no-assume-unchanged
+	unforce-ignore = update-index --no-assume-unchanged
+	unfi = update-index --no-assume-unchanged
+	ls-force-ignored = !git ls-files -v | grep ^[a-z]
+	lsfi = !git ls-files -v | grep ^[a-z]
+	ls-assume-unchanged = !git ls-files -v | grep ^[a-z]
+	lsau = !git ls-files -v | grep ^[a-z]
+	cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
+	gp = !git push --set-upstream origin HEAD:$(git cb)
+	gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
+	logline = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(red)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [git-up "bundler"]
-  check = true
-  autoinstall = true
+	check = true
+	autoinstall = true
 [git-up "fetch"]
-  prune = true
+	prune = true
 [merge]
-  tool = smerge
+	tool = smerge
 	conflictStyle = zdiff3
 [mergetool]
-  keepBackup = false
+	keepBackup = false
 [filter "media"]
-  required = true
-  clean = git media clean %f
-  smudge = git media smudge %f
+	required = true
+	clean = git media clean %f
+	smudge = git media smudge %f
 [credential]
-  helper = osxkeychain
+	helper = osxkeychain
 [filter "lfs"]
-  process = git-lfs filter-process
-  required = true
-  clean = git-lfs clean -- %f
-  smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
 ; [url "git@github.com:blake-education/"]
 ;   insteadOf = https://github.com/blake-education/
 [init]
@@ -107,7 +107,7 @@
 	cmd = smerge diff "$LOCAL" "$REMOTE"
 [mergetool "smerge"]
 	cmd = smerge mergetool "$BASE" "$LOCAL" "$REMOTE" -o "$MERGED"
-  trustExitCode = "true"
+	trustExitCode = "true"
 [interactive]
 	diffFilter = delta --color-only
 [delta]
@@ -129,3 +129,57 @@
 	file-style = bold yellow
 	file-decoration-style = none
 	hunk-header-decoration-style = yellow box
+[maintenance]
+	repo = /Users/james.ferguson/.config/.zprezto
+	repo = /Users/james.ferguson/.local/share/asdf/plugin-index
+	repo = /Users/james.ferguson/.local/share/asdf/repository
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/terraform
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/nodejs/.node-build
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/nodejs
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/python/pyenv
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/python
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/elixir
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/golang
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/opensearch
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/rust
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/erlang
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/pnpm
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/awscli
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/yarn
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/kubectl
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/elasticsearch
+	repo = /Users/james.ferguson/.local/share/asdf/plugins/ruby
+	repo = /Users/james.ferguson/.local/share/ruby-advisory-db
+	repo = /Users/james.ferguson/code/upi
+	repo = /Users/james.ferguson/code/iso8583
+	repo = /Users/james.ferguson/code/personal/dot-files
+	repo = /Users/james.ferguson/code/fd-base24
+	repo = /Users/james.ferguson/code/scof
+	repo = /Users/james.ferguson/code/mastercard
+	repo = /Users/james.ferguson/code/dashboard2
+	repo = /Users/james.ferguson/code/safe-flipper
+	repo = /Users/james.ferguson/code/cybersource-payer-auth-test-harness
+	repo = /Users/james.ferguson/code/gateway-seed
+	repo = /Users/james.ferguson/code/amex-direct
+	repo = /Users/james.ferguson/code/forter
+	repo = /Users/james.ferguson/code/drawio_diagrams
+	repo = /Users/james.ferguson/code/fargate-connect
+	repo = /Users/james.ferguson/code/crm
+	repo = /Users/james.ferguson/code/airborne_testing
+	repo = /Users/james.ferguson/code/paynow
+	repo = /Users/james.ferguson/code/utils
+	repo = /Users/james.ferguson/code/changelog-publisher
+	repo = /Users/james.ferguson/code/fdi-xtp
+	repo = /Users/james.ferguson/code/fat-zebra-models
+	repo = /Users/james.ferguson/code/fz_util_go
+	repo = /Users/james.ferguson/code/git-achievements
+	repo = /Users/james.ferguson/code/amexdirect-settlement
+	repo = /Users/james.ferguson/code/jabberwocky
+	repo = /Users/james.ferguson/code/mdes-m4m
+	repo = /Users/james.ferguson/code/dynamic3dsconnect
+	repo = /Users/james.ferguson/code/switch-mock
+	repo = /Users/james.ferguson/code/eftpos-direct
+	repo = /Users/james.ferguson/code/barclaycard-base24
+	repo = /Users/james.ferguson/code/fasd
+	repo = /Users/james.ferguson/code/changelog-publisher-git
+	repo = /Users/james.ferguson/code/gateway
