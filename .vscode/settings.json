@@ -12,5 +12,6 @@
     "titleBar.activeBackground": "#5E0EA3",
     "titleBar.activeForeground": "#ffffff"
   },
-  "window.title": "${activeEditorShort}${separator}${rootName}${separator}${profileName}${separator}[master]"
+  "window.title": "${activeEditorShort}${separator}${rootName}${separator}${profileName}${separator}[master]",
+  "snyk.advanced.autoSelectOrganization": true
 }
