@@ -35,7 +35,7 @@ ZPREZTODIR="$XDG_CONFIG_HOME/.zprezto"
 
 # Dot files dir
 #   - if on FatZebra laptop
-if [[ "$(hostname)" == *"fz-"* ]]; then
+if [[ "$HOST" == *"fz-"* ]]; then
   ON_WORK_LAPTOP=1
   CODE_DIR="$HOME/code"
   DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
@@ -108,7 +108,6 @@ fi
 for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE; do
   eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
   eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
-  (( count = $count + 1 ))
 done
 PR_NO_COLOR="%{$terminfo[sgr0]%}"
 CLICOLOR=1 # colorize ls and others
