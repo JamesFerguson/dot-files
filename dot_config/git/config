@@ -17,6 +17,7 @@
 	editor = "code --wait" # mvimf
 	whitespace = fix
 	excludesfile = /Users/james.ferguson/.gitignore_global
+	pager = delta
 [push]
 	default = simple
 	autoSetupRemote = true
@@ -37,8 +38,6 @@
 #  b = branch
 #  co = checkout
   ch = checkout
-  diff = diff --word-diff
-  df = diff --word-diff
 #  lg = log
 #  l = log
   lgp = log -p --word-diff
@@ -73,6 +72,8 @@
   gp = !git push --set-upstream origin HEAD:$(git cb)
   gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
   logline = log --graph --pretty=format:'%C(yellow)%h%Creset -%C(red)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	; diff = diff --word-diff
+	df = diff ; --word-diff
 [git-up "bundler"]
   check = true
   autoinstall = true
@@ -80,6 +81,7 @@
   prune = true
 [merge]
   tool = smerge
+	conflictStyle = zdiff3
 [mergetool]
   keepBackup = false
 [filter "media"]
@@ -106,3 +108,24 @@
 [mergetool "smerge"]
 	cmd = smerge mergetool "$BASE" "$LOCAL" "$REMOTE" -o "$MERGED"
   trustExitCode = "true"
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	features = unobtrusive-line-numbers decorations 
+	navigate = true # n/N to navigate between diff chunks
+	line-numbers = true
+	tabs = 2
+[delta "unobtrusive-line-numbers"]
+	line-numbers = true
+	line-numbers-minus-style = "#444444"
+	line-numbers-zero-style = "#444444"
+	line-numbers-plus-style = "#444444"
+	line-numbers-left-format = "{nm:>4}┊"
+	line-numbers-right-format = "{np:>4}│"
+	line-numbers-left-style = blue
+	line-numbers-right-style = blue
+[delta "decorations"]
+	commit-decoration-style = bold yellow box ul
+	file-style = bold yellow
+	file-decoration-style = none
+	hunk-header-decoration-style = yellow box
