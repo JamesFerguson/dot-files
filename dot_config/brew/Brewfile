@@ -65,7 +65,8 @@ brew 'curl'
 brew 'fop' # erlang/elixir dep to format XML to PDF/PS
 brew 'fortune'
 brew 'gh'
-brew 'gitleaks'
+brew 'gitleaks' # audit git repos for secrets
+brew 'git-delta' # better git diffs in terminal
 brew 'httpie' # curl with a nicer interface
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
@@ -92,7 +93,6 @@ cask 'font-fira-code'
 cask 'gitup-app'
 cask 'iterm2'
 cask 'karabiner-elements'
-cask 'keepingyouawake'
 cask 'macmediakeyforwarder'
 cask 'macvim'
 cask 'notion'
