@@ -33,6 +33,9 @@ SCREENRC="$XDG_CONFIG_HOME"/screen/screenrc
 TLDR_CACHE_DIR="$XDG_CACHE_HOME"/tldr
 ZPREZTODIR="$XDG_CONFIG_HOME/.zprezto"
 
+# Claude environment file for VSCode
+CLAUDE_ENV_FILE="$HOME/.claude-env"
+
 # Dot files dir
 #   - if on FatZebra laptop
 if [[ "$HOST" == *"fz-"* ]]; then
