@@ -18,7 +18,7 @@ alias ag="nocorrect noglob rg --smart-case -C 2"
 alias ack="nocorrect noglob rg --smart-case -C 2"
 
 # rake aliases
-alias migrate='run_bundler_cmd rake db:migrate && run_bundler_cmd rake db:test:load'
+alias migrate='mig'
 
 # rails aliases
 alias be="bundle exec"
@@ -46,6 +46,7 @@ alias github='nocorrect github'
 alias gh='nocorrect gh'
 alias grb='nocorrect grb'
 alias gsm='git switch --merge'
+alias rbm='grebase $(git rev-parse --abbrev-ref HEAD) origin/main'
 
 # remove all branches that have been merged to upstream
 alias gp='git push'
