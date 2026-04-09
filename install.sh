@@ -54,6 +54,7 @@ sudo ln -fs $DOT_FILES_DIR/usr_local_bin/mvimf /usr/local/bin/mvimf
 # plists
 ln -fs $DOT_FILES_DIR/sleepwatcher/homebrew.mxcl.sleepwatcher.plist $HOME/Library/LaunchAgents/homebrew.mxcl.sleepwatcher.plist
 ln -fs $DOT_FILES_DIR/plists/com.fatzebra.opensearch-java11.plist $HOME/Library/LaunchAgents/com.fatzebra.opensearch-java11.plist
+ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-gui-path.plist
 
 # powrc
 #ln -fs $DOT_FILES_DIR/dot_powrc/powrc ~/codez/tv-shows/.powrc
