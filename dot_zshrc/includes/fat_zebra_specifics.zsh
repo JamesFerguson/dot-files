@@ -13,6 +13,9 @@ PGGSSENCMODE="disable" # fix random segfaults in JW pg gem
 
 SAML2AWS_AUTO_BROWSER_DOWNLOAD=true
 
+# So that switch-mock's SFTP server port doesn't clash with Ruby LSP
+SFTP_PORT=2223
+
 unsetopt ALL_EXPORT
 
 # optional
