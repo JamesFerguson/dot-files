@@ -19,6 +19,7 @@ done
 ln -fs $DOT_FILES_DIR/dot_agignore/agignore ~/.agignore
 ln -fs $DOT_FILES_DIR/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs $DOT_FILES_DIR/dot_bashrc/bashrc ~/.bashrc
+ln -fs $DOT_FILES_DIR/dot_claude-env/claude-env ~/.claude-env
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems
@@ -32,7 +33,6 @@ ln -fs $DOT_FILES_DIR/dot_irbrc/irbrc ~/.irbrc
 # powrc below \/
 #ln -fs $DOT_FILES_DIR/dot_rdebugrc/rdebugrc ~/.rdebugrc
 ln -fs $DOT_FILES_DIR/dot_rgignore/rgignore ~/.rgignore
-ln -fs $DOT_FILES_DIR/dot_rubocop_dot_yml/rubocop.yml ~/.rubocop.yml
 ln -fs $DOT_FILES_DIR/dot_rspec/rspec ~/.rspec
 ln -fs $DOT_FILES_DIR/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs $DOT_FILES_DIR/dot_tool_versions/tool-versions ~/.tool-versions
