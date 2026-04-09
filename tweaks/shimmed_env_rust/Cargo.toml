@@ -1,0 +1,8 @@
+[package]
+name = "shimmed_env"
+version = "1.7.0"
+edition = "2021"
+
+[[bin]]
+name = "shimmed_env"
+path = "src/main.rs"
