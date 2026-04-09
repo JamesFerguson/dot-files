@@ -48,7 +48,7 @@ brew 'localstack' # local AWS cloud stack
 brew 'saml2aws'
 
 cask 'google-chrome'
-cask 'docker'
+cask 'docker-desktop'
 cask 'firefox'
 cask 'microsoft-outlook'
 cask 'miro'
@@ -70,7 +70,6 @@ brew 'git-delta' # better git diffs in terminal
 brew 'httpie' # curl with a nicer interface
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
-brew 'meetingbar' # menubar app to see upcoming meetings (esp. Teams support)
 brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
@@ -88,13 +87,17 @@ brew 'zsh-you-should-use' # alias reminders when you use the long form of the co
 cask '1password-cli' # 1Password CLI tools to use credentials in scripts
 cask 'bitwarden'
 cask 'bruno'
+cask 'claude'
+cask 'claude-code'
+cask 'copilot-cli' # GitHub Copilot CLI tool to use Copilot in terminal
 cask 'divvy'
 cask 'font-fira-code'
 cask 'gitup-app'
 cask 'iterm2'
 cask 'karabiner-elements'
 cask 'macmediakeyforwarder'
-cask 'macvim'
+cask 'macvim-app'
+cask 'meetingbar' # menubar app to see upcoming meetings (esp. Teams support)
 cask 'notion'
 cask 'pgadmin4'
 cask 'postman'
