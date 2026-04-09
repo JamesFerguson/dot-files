@@ -1,110 +1,172 @@
 # gup description:
-#   Pull changes from remote
-#
+#   - Pull changes from remote.
+#   - Update all local tracking branches.
+#   - Run post-pull steps for Ruby projects.
 
-[ "$(type gup | awk '{print $4}')" = "alias" ] && unalias gup # added by oh-my-zsh git plugin
+# Remove any existing alias for gup, e.g. added by prezto or oh-my-zsh git plugins.
+[ "$(type gup | awk '{print $4}')" = "alias" ] && unalias gup
 
 function gup
 {
-  # Shouldn't be needed now that asdf gets setup in zshenv.
-  # source $DOT_FILES_DIR/dot_zshrc/includes/z_asdf.zsh
+  # Output the ruby version for trace.
   asdf current ruby
 
-  # subshell for `set -e` and `trap`
+  # subshell for `set -e`
   (
-    set -e # fail immediately if there's a problem
+    set -e
 
-    # use `git-up` if installed
-    if type git-up > /dev/null 2>&1
-    then
-      exec git-up
-    fi
+    local current_branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-    echo "Fetching upstream changes"
-    git fetch
+    # Fetch all remotes (pruning stale remote tracking refs) so we know what needs updating.
+    echo "Fetching all remotes"
+    git fetch --all --prune
 
-    BRANCH=$(git describe --contains --all HEAD)
-    if [ -z "$(git config branch.$BRANCH.remote)" -o -z "$(git config branch.$BRANCH.merge)" ]
-    then
-      echo "\"$BRANCH\" is not a tracking branch." >&2
-      exit 1
-    else
-      echo "\"$BRANCH\" is a tracking branch, using it."
-    fi
+    # Rebase current branch, with autostash.
+    echo "Updating current branch ($current_branch)"
+    git pull --rebase --autostash
 
-    TEMPFILE=$(mktemp -u -t "gup.XXXXXX")
-    echo "Created a temp file, \"$TEMPFILE\", for capturing command output, will delete on exit."
-    trap '{ rm -f "$TEMPFILE"; echo "Deleted $TEMPFILE" }' EXIT
+    # Collect any diverged branches for user action after doing fast-forwards.
+    local -a diverged_branches=()
 
-    if git status | grep "Your branch" > "$TEMPFILE" # 'is behind.*|and .* have diverged'
-    then
-      # extract tracking branch from message
-      UPSTREAM=$(cat "$TEMPFILE" | cut -d "'" -f 2)
-      if [ -z "$UPSTREAM" ]
-      then
-        echo Could not detect upstream branch >&2
-        exit 1
-      fi
-      echo "We're behind upstream, \"$UPSTREAM\", we need to update."
+    # Grab the local branches and their tracking info to loop over.
+    local branch_info
+    branch_info=$(git branch --format='%(refname:short) %(upstream:short) %(upstream:track)')
 
-      # can we fast-forward?
-      CAN_FF=1
-      grep -q "can be fast-forwarded" "$TEMPFILE" || CAN_FF=0
-
-      # stash any uncommitted changes
-      git stash | tee "$TEMPFILE"
-      [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
-
-      # take note if anything was stashed
-      HAVE_STASH=0
-      grep -q "No local changes" "$TEMPFILE" || HAVE_STASH=1
-
-      if [ "$CAN_FF" -ne 0 ]
-      then
-        echo "Nothing has changed locally, just fast forward."
-        echo "git merge --ff \"$UPSTREAM\""
-        git merge --ff "$UPSTREAM"
+    # Loop over all local branches and try to update.
+    while read -r local upstream track; do
+      [[ "$local" == "$current_branch" ]] && continue
+      [[ -z "$upstream" ]] && continue
+      # Fast-forward other local tracking branches that are purely behind upstream.
+      echo "Trying to fast-forward other local tracking branches..."
+      if [[ "$track" == *"behind"* && "$track" != *"ahead"* ]]; then
+        git fetch . "$upstream:$local" \
+          && echo "  $local - fast-forwarded" \
+          || echo "  $local - could not fast-forward, skipping"
+      elif [[ "$track" == *"ahead"* && "$track" == *"behind"* ]]; then
+        echo "  $local - diverged"
+        diverged_branches+=("$local")
+      elif [[ "$track" == *"ahead"* ]]; then
+        echo "  $local - ahead of upstream, skipping"
       else
-        echo "Rebasing our changes on top of upstream, but keeping any merges."
-        echo "git rebase --rebase-merges \"$UPSTREAM\""
-        git rebase --rebase-merges "$UPSTREAM"
+        echo "  $local - up to date"
       fi
+    done <<< "$branch_info"
 
-      # restore any stashed changed
-      if [ "$HAVE_STASH" -ne 0 ]
-      then
-        echo "Popping stash."
-        git stash pop
-      else
-        echo "Nothing stashed."
-      fi
+    # If any branches diverged, ask whether to rebase them.
+    if [[ ${#diverged_branches[@]} -gt 0 ]]; then
+      echo ""
+      echo "The following branches have diverged from their upstream:"
+      for b in "${diverged_branches[@]}"; do
+        echo "  $b"
+      done
+      echo ""
+      echo -n "Rebase these branches? [y/n] "
+      read -r answer
+      if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+        local -a skipped_branches=()
 
-      if [ -f "Gemfile" ]
-      then
-        echo "Bundling in case of Gemfile changes"
-        bundle install --clean
-      fi
+        for b in "${diverged_branches[@]}"; do
+          git checkout "$b"
+          grebase || skipped_branches+=("$b")
+        done
 
-      if [ -d "db" ]
-      then
-        echo "Running any new migrations and updating test db..."
+        git checkout "$current_branch"
 
-        rake db:abort_if_pending_migrations
-        HAVE_MIGRATIONS=$?
-
-        echo "HAVE_MIGRATIONS is '$HAVE_MIGRATIONS'"
-        if [ $HAVE_MIGRATIONS -ne 1 ]
-        then
-          echo "No new migrations."
-        else
-          echo "Migrations found, migrating and preparing test..."
-          rake db:migrate
-          rake db:test:prepare
+        if [[ ${#skipped_branches[@]} -gt 0 ]]; then
+          echo ""
+          echo "The following branches were not rebased:"
+          for b in "${skipped_branches[@]}"; do
+            echo "  $b"
+          done
         fi
       fi
-
-    else
-      echo "Nothing to update, no need to stash/rebase."
     fi
+
+    bdl && mig
   )
+}
+
+# Guided rebase with interactive conflict resolution.
+# Usage: grebase [branch] [upstream]
+#   No args: rebase current branch onto its tracking branch
+#   One arg: rebase given branch onto its tracking branch (checks it out first)
+#   Two args: rebase given branch onto given upstream (checks it out first)
+function grebase
+{
+  local b="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+  local u="${2:-$(git rev-parse --abbrev-ref --symbolic-full-name "$b@{u}" 2>/dev/null)}"
+
+  if [[ -z "$u" ]]; then
+    echo "No upstream found for $b. Set one with: git branch --set-upstream-to=<upstream> $b"
+    return 1
+  fi
+
+  local current_branch
+  current_branch=$(git rev-parse --abbrev-ref HEAD)
+  if [[ "$b" != "$current_branch" ]]; then
+    git checkout "$b"
+  fi
+
+  echo "Rebasing $b onto $u"
+
+  local rebase_cmd=(git rebase "$u")
+  while true; do
+    if "${rebase_cmd[@]}" 2>&1; then
+      echo "  $b - rebased successfully"
+      if [[ "$b" != "$current_branch" ]]; then
+        git checkout "$current_branch"
+      fi
+      return 0
+    fi
+
+    # Rebase stopped due to conflicts — show state and ask what to do.
+    echo ""
+    echo "Conflicting files:"
+    git diff --name-only --diff-filter=U | sed 's/^/  /'
+    echo ""
+    echo "Commits remaining to be applied:"
+    git log --oneline "$u"..REBASE_HEAD 2>/dev/null \
+      || echo "  (could not determine remaining commits)"
+    echo ""
+    echo -n "Run git mergetool to fix conflicts? [y/n] (n aborts the rebase) "
+    read -r conflict_answer
+    if [[ "$conflict_answer" == "y" || "$conflict_answer" == "Y" ]]; then
+      git mergetool
+      rebase_cmd=(git rebase --continue)
+    else
+      git rebase --abort
+      echo "  Rebase aborted. $b restored to its pre-rebase state."
+      if [[ "$b" != "$current_branch" ]]; then
+        git checkout "$current_branch"
+      fi
+      return 1
+    fi
+  done
+}
+
+# Bundle install and clean for the current Ruby project.
+function bdl
+{
+  if [ ! -f "Gemfile" ]; then
+    echo "No Gemfile found, nothing to bundle."
+    return 0
+  fi
+  echo "Bundling in case of Gemfile changes..."
+  bundle install && echo "Cleaning up old gems..." && bundle clean
+}
+
+# Run any new migrations if this looks like a Ruby project with a Rails-style schema.
+# Then sync the test db from the updated schema.
+function mig
+{
+  if [ -f "Gemfile" ] && [ -f "db/schema.rb" ]
+  then
+    echo "Running any new migrations..."
+    run_bundler_cmd rake db:migrate
+    echo "Syncing test db from schema..."
+    RAILS_ENV=test RACK_ENV=test run_bundler_cmd rake db:schema:load
+  else
+    echo "Gemfile or db/schema.rb not found, nothing to migrate."
+  fi
 }
