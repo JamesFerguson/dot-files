@@ -46,6 +46,8 @@ ln -fs $DOT_FILES_DIR/sleepwatcher/dot_wakeup/wakeup ~/.wakeup
 sudo ln -fs $DOT_FILES_DIR/etc_hosts/hosts /etc/hosts
 sudo ln -fs $DOT_FILES_DIR/etc_zshenv/zshenv /etc/zshenv
 sudo ln -fs $DOT_FILES_DIR/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
+chmod +x $DOT_FILES_DIR/usr_local_bin/wrapped_code
+sudo ln -fs $DOT_FILES_DIR/usr_local_bin/wrapped_code /usr/local/bin/wrapped_code
 chmod +x $DOT_FILES_DIR/usr_local_bin/mvimf
 sudo ln -fs $DOT_FILES_DIR/usr_local_bin/mvimf /usr/local/bin/mvimf
 

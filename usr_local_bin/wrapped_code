@@ -1,0 +1,4 @@
+#!/bin/sh
+# Wrapper for VS Code that passes --wait, for use as $VISUAL / $EDITOR
+# crontab -e and similar tools exec the editor directly, so can't pass args
+exec env code --wait "$@"
