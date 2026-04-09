@@ -10,9 +10,8 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
   echo "\n\n  Updating rubygems\ncurrent ruby --->" $(asdf current ruby)
   eval "ruby_versions=( $(asdf list ruby | sed 's/*/ /g') )"
   for version in "${ruby_versions[@]}"; do
-    asdf shell ruby $version
     echo "  Updating gems for ruby $version"
-    gem update --system
+    ASDF_RUBY_VERSION=$version gem update --system
   done
 
   echo "\n\n  Updating ASDF plugin lists"
