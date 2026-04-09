@@ -46,6 +46,8 @@ ln -fs $DOT_FILES_DIR/sleepwatcher/dot_wakeup/wakeup ~/.wakeup
 sudo ln -fs $DOT_FILES_DIR/etc_hosts/hosts /etc/hosts
 sudo ln -fs $DOT_FILES_DIR/etc_zshenv/zshenv /etc/zshenv
 sudo ln -fs $DOT_FILES_DIR/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
+chmod +x $DOT_FILES_DIR/usr_local_bin/mvimf
+sudo ln -fs $DOT_FILES_DIR/usr_local_bin/mvimf /usr/local/bin/mvimf
 
 # plists
 sudo ln -fs $DOT_FILES_DIR/sleepwatcher/homebrew.mxcl.sleepwatcher.plist $HOME/Library/LaunchAgents/homebrew.mxcl.sleepwatcher.plist
@@ -55,5 +57,4 @@ sudo ln -fs $DOT_FILES_DIR/plists/com.fatzebra.opensearch-java11.plist $HOME/Lib
 #ln -fs $DOT_FILES_DIR/dot_powrc/powrc ~/codez/tv-shows/.powrc
 
 # tweaks
-./tweaks/install_mvimf.sh
 ./tweaks/tweaks.sh
