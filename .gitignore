@@ -16,3 +16,5 @@ dot_vim/bundle
 
 schedule/log
 schedule/vendor
+
+tweaks/shimmed_env_rust/target
