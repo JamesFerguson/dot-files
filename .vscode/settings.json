@@ -10,7 +10,13 @@
     "activityBarTop.foreground": "#ffffff",
     "titleBar.inactiveBackground": "#430A74",
     "titleBar.activeBackground": "#5E0EA3",
-    "titleBar.activeForeground": "#ffffff"
+    "titleBar.activeForeground": "#ffffff",
+    "statusBar.background": "#430A74",
+    "statusBar.foreground": "#FEFDFF",
+    "statusBar.debuggingBackground": "#430A74",
+    "statusBar.debuggingForeground": "#FEFDFF",
+    "statusBar.noFolderBackground": "#430A74",
+    "statusBar.noFolderForeground": "#FEFDFF"
   },
   "window.title": "${activeEditorShort}${separator}${rootName}${separator}${profileName}${separator}[master]",
   "snyk.advanced.autoSelectOrganization": true
