@@ -11,6 +11,7 @@ dot_config/git/gh_credentials
 dot_config/zsh/.zprezto
 dot_config/zsh/.zsh_history
 dot_config/zsh/.zsh_sessions
+dot_config/zsh/.zcompdump*
 dot_vim/.netrwhist
 dot_vim/bundle
 
