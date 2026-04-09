@@ -98,7 +98,8 @@ HOSTNAME="`hostname`"
 
 # Some standard zsh config
 PAGER='less'
-EDITOR=code #'/usr/local/bin/mvimf'
+EDITOR="code --wait" #'/usr/local/bin/mvimf'
+VISUAL="code --wait"
 
 # Colour vars
 autoload colors zsh/terminfo
@@ -148,7 +149,7 @@ RUBY_CONFIGURE_OPTS="--enable-yjit"
 SIMPLECOV_ONLY_FULL_SUITE=true
 
 # editor used by bundle open
-BUNDLER_EDITOR=code
+BUNDLER_EDITOR="code --wait"
 
 # Brew env var init
 HOMEBREW_PREFIX=$(brew --prefix)
