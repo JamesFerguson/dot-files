@@ -70,6 +70,7 @@ brew 'git-delta' # better git diffs in terminal
 brew 'httpie' # curl with a nicer interface
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
+brew 'aha-app/overitall/oit' # TUI combining process management and log viewing
 brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
@@ -92,7 +93,8 @@ cask 'claude-code'
 cask 'copilot-cli' # GitHub Copilot CLI tool to use Copilot in terminal
 cask 'divvy'
 cask 'font-fira-code'
-cask 'gitup-app'
+cask 'gitup-app' # GUI git client
+cask 'hiddenbar' # hide menu bar icons to reduce clutter
 cask 'iterm2'
 cask 'karabiner-elements'
 cask 'macmediakeyforwarder'
