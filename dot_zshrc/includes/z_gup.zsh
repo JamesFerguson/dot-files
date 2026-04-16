@@ -34,11 +34,11 @@ function gup
     branch_info=$(git branch --format='%(refname:short) %(upstream:short) %(upstream:track)')
 
     # Loop over all local branches and try to update.
+    echo "Trying to fast-forward other local tracking branches..."
     while read -r local upstream track; do
       [[ "$local" == "$current_branch" ]] && continue
       [[ -z "$upstream" ]] && continue
       # Fast-forward other local tracking branches that are purely behind upstream.
-      echo "Trying to fast-forward other local tracking branches..."
       if [[ "$track" == *"behind"* && "$track" != *"ahead"* ]]; then
         git fetch . "$upstream:$local" \
           && echo "  $local - fast-forwarded" \
