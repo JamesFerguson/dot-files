@@ -160,7 +160,7 @@ function bdl
 # Then sync the test db from the updated schema.
 function mig
 {
-  if [ -f "Gemfile" ] && [ -f "db/schema.rb" ]
+  if [ -f "Gemfile" ] && [ -f "db/schema.rb" ] && { [ -f "bin/rails" ] || [ -f "config/application.rb" ]; }
   then
     echo "Running any new migrations..."
     run_bundler_cmd rake db:migrate
