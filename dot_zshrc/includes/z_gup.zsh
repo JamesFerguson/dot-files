@@ -34,22 +34,30 @@ function gup
     branch_info=$(git branch --format='%(refname:short) %(upstream:short) %(upstream:track)')
 
     # Loop over all local branches and try to update.
+    local c_reset='\033[0m'
+    local c_green='\033[32m'
+    local c_yellow='\033[33m'
+    local c_red='\033[31m'
+    local c_dim='\033[2m'
+
     echo "Trying to fast-forward other local tracking branches..."
     while read -r local upstream track; do
       [[ "$local" == "$current_branch" ]] && continue
       [[ -z "$upstream" ]] && continue
       # Fast-forward other local tracking branches that are purely behind upstream.
       if [[ "$track" == *"behind"* && "$track" != *"ahead"* ]]; then
-        git fetch . "$upstream:$local" \
-          && echo "  $local - fast-forwarded" \
-          || echo "  $local - could not fast-forward, skipping"
+        if git fetch . "$upstream:$local" 2>/dev/null; then
+          echo "  ${c_green}↓ $local${c_reset} - fast-forwarded"
+        else
+          echo "  ${c_red}✗ $local${c_reset} - could not fast-forward, skipping"
+        fi
       elif [[ "$track" == *"ahead"* && "$track" == *"behind"* ]]; then
-        echo "  $local - diverged"
+        echo "  ${c_yellow}⇅ $local${c_reset} - diverged"
         diverged_branches+=("$local")
       elif [[ "$track" == *"ahead"* ]]; then
-        echo "  $local - ahead of upstream, skipping"
+        echo "  ${c_dim}↑ $local - ahead of upstream, skipping${c_reset}"
       else
-        echo "  $local - up to date"
+        echo "  ${c_dim}✓ $local - up to date${c_reset}"
       fi
     done <<< "$branch_info"
 
