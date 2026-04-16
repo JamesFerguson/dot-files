@@ -70,3 +70,6 @@ alias gbname='git rev-parse --abbrev-ref HEAD' # bare branch name
 
 # open buildkite pipeline
 alias bk="open https://buildkite.com/fat-zebra/$(basename $PWD | tr '_' '-')"
+
+# overitall log viewer for all local apps
+alias oita="oit -c $XDG_CONFIG_HOME/overitall/config.toml"
