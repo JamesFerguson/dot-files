@@ -74,3 +74,6 @@ export TZ="Australia/Sydney"
 # Standard configuration
 export PAGER='less'
 export HOSTNAME="${HOSTNAME:-$(hostname 2>/dev/null)}"
+
+# Machine-local secrets, not committed (e.g. NEW_RELIC_API_KEY for the MCP server)
+[ -f "$HOME/.claude-env.local" ] && . "$HOME/.claude-env.local"

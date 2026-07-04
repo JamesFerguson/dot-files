@@ -61,3 +61,6 @@ ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-g
 
 # tweaks
 ./tweaks/tweaks.sh
+
+# Claude Code MCP servers (idempotent; safe to re-run on its own)
+source "$DOT_FILES_DIR/dot_config/claude/mcp-install.sh"
