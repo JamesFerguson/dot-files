@@ -144,8 +144,8 @@ LESS='--quit-if-one-screen --ignore-case --status-column --LONG-PROMPT --RAW-CON
 #LESS_TERMCAP_us=$'\E[1;32m'     # begin underline
 #LESS_TERMCAP_ue=$'\E[0m'        # reset underline
 
-# API Tokens
-BUILDKITE_TOKEN="***REMOVED***"
+# API tokens and other machine-local secrets live in ~/.claude-env.local (uncommitted)
+[[ -f "$HOME/.claude-env.local" ]] && source "$HOME/.claude-env.local"
 
 # Ruby
 RUBY_CONFIGURE_OPTS="--enable-yjit"
