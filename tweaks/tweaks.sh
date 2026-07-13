@@ -37,6 +37,10 @@ defaults write com.apple.finder _FXShowPosixPathInTitle -bool true # show path i
 echo "Show file extensions in Finder"
 defaults write com.apple.finder _FXShowPosixPathInTitle -bool true # show path in finder
 
+# Default Finder windows to column view
+echo "Default Finder to column view"
+defaults write com.apple.finder FXPreferredViewStyle -string "clmv"
+
 # Make Finder changes effective now
 echo "Restarting Finder"
 killall Finder
