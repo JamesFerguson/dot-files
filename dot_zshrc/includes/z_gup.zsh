@@ -38,6 +38,7 @@ function gup
     local c_green='\033[32m'
     local c_yellow='\033[33m'
     local c_red='\033[31m'
+    local c_cyan='\033[36m'
     local c_dim='\033[2m'
 
     echo "Trying to fast-forward other local tracking branches..."
@@ -55,7 +56,7 @@ function gup
         echo "  ${c_yellow}⇅ $local${c_reset} - diverged"
         diverged_branches+=("$local")
       elif [[ "$track" == *"ahead"* ]]; then
-        echo "  ${c_dim}↑ $local - ahead of upstream, skipping${c_reset}"
+        echo "  ${c_cyan}↑ $local${c_reset} - ahead of upstream, skipping"
       else
         echo "  ${c_dim}✓ $local - up to date${c_reset}"
       fi
@@ -153,7 +154,7 @@ function grebase
   done
 }
 
-# Bundle install and clean for the current Ruby project.
+# Bundle install for the current Ruby project.
 function bdl
 {
   if [ ! -f "Gemfile" ]; then
@@ -161,7 +162,7 @@ function bdl
     return 0
   fi
   echo "Bundling in case of Gemfile changes..."
-  bundle install && echo "Cleaning up old gems..." && bundle clean
+  bundle install
 }
 
 # Run any new migrations if this looks like a Ruby project with a Rails-style schema.
