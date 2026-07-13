@@ -1,0 +1,39 @@
+procfile = "/Users/james.ferguson/.config/overitall/Procfile"
+hidden_processes = []
+ignored_processes = ["_placeholder"]
+start_processes = []
+compact_mode = false
+
+[processes]
+
+[[log_files]]
+name = "crm"
+path = "/Users/james.ferguson/code/crm/log/development.log"
+
+[[log_files]]
+name = "gateway"
+path = "/Users/james.ferguson/code/gateway/log/development.log"
+
+[[log_files]]
+name = "jabberwocky"
+path = "/Users/james.ferguson/code/jabberwocky/log/development.log"
+
+[[log_files]]
+name = "paynow"
+path = "/Users/james.ferguson/code/paynow/log/development.log"
+
+[[log_files]]
+name = "puma-dev"
+path = "/Users/james.ferguson/Library/Logs/puma-dev.log"
+
+[[log_files]]
+name = "switch-mock"
+path = "/Users/james.ferguson/code/switch-mock/log/development.log"
+
+[filters]
+include = []
+exclude = []
+
+[colors]
+
+[groups]
