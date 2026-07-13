@@ -74,6 +74,7 @@ brew 'atlassian/acli/acli' # Atlassian CLI (Jira/Confluence/Compass/Rovo Dev)
 brew 'jiratui' # TUI for Jira
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
+brew 'mole' # system optimization tool, call w Raycast.
 brew 'aha-app/overitall/oit' # TUI combining process management and log viewing
 brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
