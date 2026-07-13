@@ -24,6 +24,7 @@
 # brew services start sleepwatcher
 
 tap 'homebrew/services'
+tap 'atlassian/acli' # Atlassian CLI (acli)
 
 brew 'asdf'
 brew 'libxmlsec1' # XML security library
@@ -67,7 +68,10 @@ brew 'fortune'
 brew 'gh'
 brew 'gitleaks' # audit git repos for secrets
 brew 'git-delta' # better git diffs in terminal
+brew 'herdr' # manage multiple LLM conversations in tmux-like sessions
 brew 'httpie' # curl with a nicer interface
+brew 'atlassian/acli/acli' # Atlassian CLI (Jira/Confluence/Compass/Rovo Dev)
+brew 'jiratui' # TUI for Jira
 brew 'jq' # JSON parser
 brew 'mas' # mac app store cli tool, crippled by Apple
 brew 'aha-app/overitall/oit' # TUI combining process management and log viewing
