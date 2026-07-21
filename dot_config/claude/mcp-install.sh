@@ -48,17 +48,16 @@ if [[ ! -f "$SECRETS_FILE" ]]; then
 #!/bin/sh
 # Machine-local secrets for Claude / MCP servers. NOT committed to dot-files.
 # Sourced by ~/.claude-env and ~/.zshenv (via .config/zsh/.zshenv).
+# Put any non-Fat-Zebra machine-local secret here, e.g.:
+#   export SOME_API_KEY="..."
 #
-# Fill in real values below, then restart Claude Code.
-
-# New Relic user API key (https://one.newrelic.com > API keys).
-# Used by the `new-relic` MCP server.
-# export NEW_RELIC_API_KEY="***REMOVED***"
-
-# Rollbar tokens are NOT here — they live in ~/.rollbar-mcp.json (one per project).
+# Fat Zebra secrets do NOT go here:
+#   - NEW_RELIC_API_KEY (used by the new-relic MCP) lives in ~/.fat_zebra_env.sh
+#     alongside the other FZ creds; .zshenv sources it on work laptops.
+#   - Rollbar tokens live in ~/.rollbar-mcp.json (one per project).
 EOF
   chmod 600 "$SECRETS_FILE"
-  echo "mcp-install: wrote secrets template $SECRETS_FILE (fill in NEW_RELIC_API_KEY)."
+  echo "mcp-install: wrote secrets template $SECRETS_FILE."
 fi
 
 # ── pganalyze (http, OAuth) ─────────────────────────────────────────────────────
@@ -71,11 +70,16 @@ else
     && echo "mcp-install: run 'claude mcp login pganalyze' to complete OAuth."
 fi
 
-# ── rollbar (stdio, public npm package — needs Node 20+) ────────────────────────
-# Multi-project: one Rollbar project per app (crm/gw/jw), each with its own token.
-# Tokens are inline in ~/.rollbar-mcp.json (the server has no env-var interpolation),
-# so that file stays uncommitted with 600 perms — like the secrets sidecar.
-# Pick a project in a tool call with the `project` arg (matches "name" below).
+# ── rollbar (CLIs, not MCP) ─────────────────────────────────────────────────────
+# Rollbar is queried via two CLIs now, NOT an MCP. The @rollbar/mcp-server was very 
+# limited (no way to page/search occurrences or run RQL). CLI tools are:
+#   • robzolkos `rollbar` — installed via Brewfile (robzolkos/tap/rollbar-cli).
+#       List/triage/resolve items, browse occurrences. Reads ROLLBAR_ACCESS_TOKEN per call.
+#   • delexw rollbar-cli  — run via `npx -y @delexw/rollbar-cli@latest` (its npm bin is
+#       ALSO named `rollbar`, so it's deliberately never installed globally — that would
+#       collide with the brew binary). Full API + RQL. Reads tokens from the OS keychain.
+# Per-project read tokens (crm/gw/jw) still live in ~/.rollbar-mcp.json (uncommitted, 600);
+# this seeds the delexw keychain from it so `rollbar --project <name>` just works.
 
 if [[ ! -f "$ROLLBAR_CONFIG" ]]; then
   cat > "$ROLLBAR_CONFIG" <<'EOF'
@@ -91,17 +95,23 @@ EOF
   echo "mcp-install: wrote $ROLLBAR_CONFIG (paste a per-project read token into each)."
 fi
 
-if already_registered rollbar; then
-  echo "mcp-install: rollbar already registered — skipping."
-else
-  echo "mcp-install: adding rollbar (stdio via npx, multi-project config)..."
-  claude mcp add --scope user rollbar \
-    -e 'ROLLBAR_CONFIG_FILE=${HOME}/.rollbar-mcp.json' \
-    -- npx -y @rollbar/mcp-server@latest
-fi
-
 if grep -q 'PASTE_' "$ROLLBAR_CONFIG" 2>/dev/null; then
-  echo "mcp-install: ⚠ $ROLLBAR_CONFIG still has placeholder tokens — rollbar tools will fail until filled."
+  echo "mcp-install: ⚠ $ROLLBAR_CONFIG still has placeholder tokens — fill them, then re-run to seed the delexw keychain."
+elif command -v npx >/dev/null 2>&1; then
+  echo "mcp-install: seeding delexw keychain from $ROLLBAR_CONFIG..."
+  python3 - "$ROLLBAR_CONFIG" <<'PY' | while read -r name token; do
+import json, sys
+for p in json.load(open(sys.argv[1]))["projects"]:
+    if "PASTE_" not in p["token"]:
+        print(p["name"], p["token"])
+PY
+    npx -y @delexw/rollbar-cli@latest config set-token "$name" "$token" >/dev/null 2>&1 \
+      && echo "mcp-install:   keychain token set for $name" \
+      || echo "mcp-install:   ⚠ failed to set keychain token for $name"
+  done
+  npx -y @delexw/rollbar-cli@latest config set-default jw >/dev/null 2>&1
+else
+  echo "mcp-install: npx not found — skipping delexw keychain seed (install Node 20+)."
 fi
 
 # ── new-relic (stdio, in-house Ruby server — work laptop only) ──────────────────
@@ -134,13 +144,19 @@ install_new_relic() {
   }
 
   # Register with the key as a runtime-expanded var, not the literal secret.
+  # Launch via `sh -c "cd $repo_dir && exec ..."` so asdf picks the repo's pinned
+  # Ruby and bundler finds its Gemfile. Claude starts MCP servers from the current
+  # session's cwd otherwise, which uses the global Ruby and dies with
+  # Bundler::GemNotFound if that differs from the repo's pinned version.
   echo "mcp-install: adding new-relic (stdio)..."
   claude mcp add --scope user new-relic \
     -e 'NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY}' \
-    -- "$bin"
+    -- sh -c "cd $repo_dir && exec bin/fz_newrelic_mcp"
 
-  if ! grep -q '^[[:space:]]*export NEW_RELIC_API_KEY=' "$SECRETS_FILE" 2>/dev/null; then
-    echo "mcp-install: ⚠ NEW_RELIC_API_KEY not set in $SECRETS_FILE — new-relic won't work until you add it."
+  # The key is an FZ account secret, so it lives in ~/.fat_zebra_env.sh (sourced by
+  # .zshenv on work laptops) alongside the other FZ creds — not in the sidecar.
+  if ! grep -qE '^[[:space:]]*(export[[:space:]]+)?NEW_RELIC_API_KEY=' "$HOME/.fat_zebra_env.sh" 2>/dev/null; then
+    echo "mcp-install: ⚠ NEW_RELIC_API_KEY not found in ~/.fat_zebra_env.sh — add it there; new-relic won't work until you do."
   fi
 }
 
