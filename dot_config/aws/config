@@ -5,3 +5,16 @@ output = text
 [test]
 region = ap-southeast-2
 output = text
+
+# Fat Zebra Production datalake — Athena via IAM Identity Center (Okta).
+# Log in with: aws sso login --profile datalake
+[profile datalake]
+sso_session = FZ Prod Athena
+sso_account_id = 393255818646
+sso_role_name = DatalakeViewer
+region = ap-southeast-2
+
+[sso-session 'FZ Prod Athena']
+sso_start_url = https://d-9767150100.awsapps.com/start/#/
+sso_region = ap-southeast-2
+sso_registration_scopes = sso:account:access
