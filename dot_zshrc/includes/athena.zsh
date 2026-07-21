@@ -33,12 +33,25 @@ athena-q() {
   qid=$(aws athena start-query-execution --profile "$profile" \
           --work-group "$workgroup" --query-string "$sql" \
           --query QueryExecutionId --output text 2>"$err")
-  if [[ -z "$qid" ]]; then
-    if grep -qiE 'sso|token has expired|forbidden|ExpiredToken' "$err"; then
-      echo "athena-q: SSO session expired — run: aws sso login --profile $profile" >&2
+
+  # Expired SSO token: if we're at an interactive terminal, open the browser to
+  # log in and retry once. In a pipe/script (no tty) just print the hint — never
+  # block on a browser that can't be driven.
+  if [[ -z "$qid" ]] && grep -qiE 'sso|token has expired|forbidden|expiredtoken' "$err"; then
+    if [[ -t 2 ]]; then
+      echo "athena-q: SSO session expired — opening browser to log in..." >&2
+      if aws sso login --profile "$profile" >&2; then
+        qid=$(aws athena start-query-execution --profile "$profile" \
+                --work-group "$workgroup" --query-string "$sql" \
+                --query QueryExecutionId --output text 2>"$err")
+      fi
     else
-      sed 's/^/athena-q: /' "$err" >&2
+      echo "athena-q: SSO session expired — run: aws sso login --profile $profile" >&2
     fi
+  fi
+
+  if [[ -z "$qid" ]]; then
+    sed 's/^/athena-q: /' "$err" >&2
     rm -f "$err"; return 1
   fi
   rm -f "$err"
