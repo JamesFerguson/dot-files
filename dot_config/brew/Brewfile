@@ -25,6 +25,7 @@
 
 tap 'homebrew/services'
 tap 'atlassian/acli' # Atlassian CLI (acli)
+tap 'robzolkos/tap' # rollbar-cli (Rollbar query/triage CLI)
 
 brew 'asdf'
 brew 'libxmlsec1' # XML security library
@@ -80,6 +81,7 @@ brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
 brew 'ripgrep' # grep with Rust
+brew 'robzolkos/tap/rollbar-cli' # `rollbar` CLI: list/triage/resolve items, browse occurrences. Delexw's RQL CLI runs via npx (see mcp-install.sh) — both ship a `rollbar` binary, so only this one is global.
 brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
 brew 'unixodbc' # might be used by erlang/elixir to connect to dbs
