@@ -36,6 +36,7 @@ brew 'redis', restart_service: :changed
 brew 'git'
 brew 'shared-mime-info' # Database of common MIME types
 brew 'pkg-config' # Manage compile and link flags for libraries
+brew 'terminal-notifier' # Clickable macOS notifications for the purchase-stats scheduled run (call by absolute path — asdf shim shadows it)
 
 # We don't yet support OpenSearch2 - https://fatzebra.atlassian.net/browse/AP-3454
 tap 'isaaceindhoven/opensearch-maintenance'
@@ -81,7 +82,11 @@ brew 'pigz' # multi-core gzip
 brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
 brew 'ripgrep' # grep with Rust
-brew 'robzolkos/tap/rollbar-cli' # `rollbar` CLI: list/triage/resolve items, browse occurrences. Delexw's RQL CLI runs via npx (see mcp-install.sh) — both ship a `rollbar` binary, so only this one is global.
+brew 'robzolkos/tap/rollbar-cli' # Rollbar query CLI (list/triage/resolve items, browse occurrences). Its binary is `rollbar`; mcp-install.sh symlinks it to ~/bin/rollbar-rz. The companion delexw RQL CLI (also ships a `rollbar` binary) is npm-installed out of PATH and symlinked to ~/bin/rollbar-dx — see mcp-install.sh.
+# Buildkite tooling (bk, buildkite-mcp-server, bk-axi) is NOT here — the tap's formulae need
+# `brew trust` and bk-axi is a from-source build, so it's all set up in dot_config/claude/mcp-install.sh.
+# ReadMe docs tooling (rdme, @readme/cli) is npm-installed and symlinked into ~/bin by
+# dot_config/claude/mcp-install.sh (no brew formula) — same as rollbar-dx.
 brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
 brew 'unixodbc' # might be used by erlang/elixir to connect to dbs
