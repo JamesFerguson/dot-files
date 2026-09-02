@@ -11,10 +11,6 @@ export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="$HOME/.local/state"
 export XDG_CACHE_HOME="$HOME/.cache"
 
-# ASDF configuration
-export ASDF_CONFIG_FILE="$XDG_CONFIG_HOME/asdf/asdfrc"
-export ASDF_DATA_DIR="$XDG_DATA_HOME/asdf"
-
 # Tool configurations (XDG-compliant)
 export ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
 export AWS_SHARED_CREDENTIALS_FILE="$XDG_CONFIG_HOME/aws/credentials"
@@ -45,7 +41,7 @@ GOPATHS="${GOPATH}/bin"
 
 # PATH configuration - comprehensive path for tool access
 export PATH="\
-$ASDF_DATA_DIR/shims:\
+$XDG_DATA_HOME/mise/shims:\
 $HOME/bin:\
 $CODE_DIR/git-achievements:\
 /usr/local/bin:\

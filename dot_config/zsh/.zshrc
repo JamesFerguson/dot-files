@@ -10,7 +10,7 @@ autoload -Uz compinit bashcompinit
 compinit
 
 # Initialize Bash completion compatibility layer (so zsh can read completion files written for bash)
-# Needed for asdf completions (at least)
+# Kept for bash-style completion files; mise uses native zsh completions (via `mise activate` / `mise completion zsh`)
 bashcompinit
 
 # Add Prezto's zshrc; sources .zprezto/init.zsh

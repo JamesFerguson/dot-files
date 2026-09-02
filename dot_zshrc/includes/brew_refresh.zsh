@@ -31,7 +31,7 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
 
   # Get all installed ruby versions and find the newest used version.
   local -a installed_versions=()
-  eval "installed_versions=( $(asdf list ruby 2>/dev/null | sed 's/[* ]//g') )"
+  eval "installed_versions=( $(mise ls ruby --installed 2>/dev/null | awk '{print $2}') )"
 
   # used_versions is already sort -V'd: first is oldest, last is newest.
   local oldest_used="${used_versions[1]}"
@@ -61,26 +61,26 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
     if [[ "$uninstall_answer" == "y" || "$uninstall_answer" == "Y" ]]; then
       for v in "${unused_versions[@]}"; do
         echo "  Uninstalling ruby $v"
-        asdf uninstall ruby "$v"
+        mise uninstall ruby@"$v"
       done
     fi
   fi
 
   # Check latest rubygems version once, then only update rubies that are behind.
-  # Note: brew_refresh.zsh sources before z_asdf.zsh, so asdf shims aren't on PATH
+  # Note: brew_refresh.zsh sources before z_mise.zsh, so mise shims aren't on PATH
   # yet — invoke each ruby's gem binary by absolute path to avoid hitting /usr/bin/gem.
   local current_ruby
-  current_ruby=$(asdf current ruby 2>/dev/null | awk 'NR==2 {print $2}')
+  current_ruby=$(mise current ruby 2>/dev/null)
   echo "\n\n  Updating rubygems (current ruby ---> $current_ruby)"
   local latest_rubygems
   latest_rubygems=$(curl -sf https://rubygems.org/api/v1/gems/rubygems-update.json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
   echo "  Latest rubygems: $latest_rubygems"
 
-  eval "ruby_versions=( $(asdf list ruby | sed 's/[* ]//g') )"
+  eval "ruby_versions=( $(mise ls ruby --installed 2>/dev/null | awk '{print $2}') )"
   for version in "${ruby_versions[@]}"; do
     echo "\n\n-----------------\n  Updating gems for ruby $version\n-----------------\n\n"
     local gem_bin
-    gem_bin="$(asdf where ruby "$version" 2>/dev/null)/bin/gem"
+    gem_bin="$(mise where ruby@"$version" 2>/dev/null)/bin/gem"
     if [[ ! -x "$gem_bin" ]]; then
       echo "  ruby $version - gem binary not found at $gem_bin, skipping"
       continue
@@ -95,28 +95,51 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
     fi
   done
 
-  echo "\n\n---------------\n  Updating ASDF plugin lists\n-----------------\n\n"
-  asdf plugin update --all
+  echo "\n\n---------------\n  Updating mise plugin lists\n-----------------\n\n"
+  # Only asdf-backed / plugin tools have anything to update; mise core tools (ruby,
+  # node, python, go, ...) resolve from the built-in registry and need no plugin update.
+  # Guard so this is a no-op (and no error) when no plugins are installed.
+  if [[ -n "$(mise plugins ls 2>/dev/null)" ]]; then
+    mise plugins update
+  else
+    echo "  No mise plugins installed — core tools need no plugin update."
+  fi
 
-  echo "  Checking ASDF installed versions against latest"
-  local asdf_outdated
-  asdf_outdated=$(asdf latest --all 2>&1)
-  echo "$asdf_outdated"
+  echo "  Checking mise installed versions against latest"
+  # `mise outdated --bump --json` keys tools by canonical name, each with a `bump`
+  # field: a version string when a newer version is available, else null. Reduce to
+  # <tool>\t<bump_version> lines for the tools that actually have an upgrade.
+  local mise_outdated mise_upgrades
+  mise_outdated=$(mise outdated --bump --json 2>/dev/null)
+  mise_upgrades=$(echo "$mise_outdated" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for tool, info in data.items():
+    bump = info.get('bump')
+    if bump:
+        print(f'{tool}\t{bump}')
+")
+  echo "$mise_upgrades"
 
-  if echo "$asdf_outdated" | grep -q $'\tmissing$'; then
-    echo -n "\n  ASDF tools have newer versions available. Install latest and update .tool-versions? [y/N] "
-    read -r asdf_answer
-    if [[ "$asdf_answer" == "y" || "$asdf_answer" == "Y" ]]; then
-      while IFS=$'\t' read -r tool latest install_status; do
-        [[ "$install_status" == "missing" ]] || continue
+  if [[ -n "$mise_upgrades" ]]; then
+    echo -n "\n  mise tools have newer versions available. Install latest and update .tool-versions? [y/N] "
+    read -r mise_answer
+    if [[ "$mise_answer" == "y" || "$mise_answer" == "Y" ]]; then
+      while IFS=$'\t' read -r tool latest; do
+        [[ -n "$tool" && -n "$latest" ]] || continue
         echo "  Installing $tool $latest"
-        if asdf install "$tool" "$latest"; then
-          asdf set --home "$tool" "$latest"
+        # --path writes to ~/.tool-versions (which overrides ~/.config/mise/config.toml
+        # in precedence, so `mise use -g` would be silently ignored here).
+        if mise install "$tool@$latest"; then
+          mise use --path ~/.tool-versions "$tool@$latest"
           echo "  $tool updated to $latest"
         else
           echo "  $tool $latest install failed, skipping"
         fi
-      done <<< "$asdf_outdated"
+      done <<< "$mise_upgrades"
     fi
   fi
 

@@ -303,7 +303,7 @@ install_new_relic() {
   }
 
   # The key comes from settings.json env (baked above), injected into this server's process.
-  # Launch via `sh -c "cd $repo_dir && exec ..."` so asdf picks the repo's pinned
+  # Launch via `sh -c "cd $repo_dir && exec ..."` so mise picks the repo's pinned
   # Ruby and bundler finds its Gemfile. Claude starts MCP servers from the current
   # session's cwd otherwise, which uses the global Ruby and dies with
   # Bundler::GemNotFound if that differs from the repo's pinned version.

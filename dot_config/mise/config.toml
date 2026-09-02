@@ -1,0 +1,28 @@
+[settings]
+# Equivalent of the old ~/.config/asdf/asdfrc `legacy_version_file = no`:
+# ignore tool-native version files (.ruby-version, .nvmrc, .python-version, ...)
+# and read only .tool-versions / mise.toml.
+#
+# LOAD-BEARING: mise defaults this to true (the opposite of the old asdf
+# behavior), so setting it here is required to preserve resolution. Newer mise
+# renames the key to `idiomatic_version_file`; mise 2026.8.8 still accepts the
+# `legacy_version_file` spelling (verified), so keep it until that's dropped.
+legacy_version_file = false
+
+# Ignore orphaned tools the way asdf did. asdf silently skipped a tool it had no
+# plugin for; mise is stricter — it tries to install every pinned tool and errors.
+# Some repos' .tool-versions still pin elasticsearch / opensearch, whose old pinned
+# versions 404 on download and aren't real local deps (local Elasticsearch is the
+# brew server on :9200). Disabling them keeps `mise install` / `mise exec` / cd-into
+# a repo quiet and non-failing, instead of dying on a dead download URL. Verified in
+# crm (pins elasticsearch 7.1.0): without this, `mise exec -- ruby` 404s before ruby
+# runs; with it, ruby 3.4.9 resolves cleanly.
+disable_tools = ["elasticsearch", "opensearch"]
+
+[settings.ruby]
+# Use mise's prebuilt ruby binaries instead of compiling from source (ruby-build).
+# Confirmed available for every pinned version incl. 4.0.6 — a ~1-minute binary
+# download each, no compiler / build-deps, no compile-failure risk. Prebuilt is
+# mise's own default from 2026.8.0 on (we're on 2026.8.8), so this is redundant
+# now — kept explicit to document intent and stay correct on older mise.
+compile = false

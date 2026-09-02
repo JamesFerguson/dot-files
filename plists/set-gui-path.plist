@@ -9,7 +9,7 @@
     <string>launchctl</string>
     <string>setenv</string>
     <string>PATH</string>
-    <string>/Users/james.ferguson/.local/share/asdf/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/james.ferguson/.asdf/bin</string>
+    <string>/Users/james.ferguson/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
