@@ -9,7 +9,7 @@
 function gup
 {
   # Output the ruby version for trace.
-  asdf current ruby
+  mise current ruby
 
   # subshell for `set -e`
   (

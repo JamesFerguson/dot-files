@@ -11,8 +11,6 @@ XDG_CACHE_HOME=$HOME/.cache
 
 # Make tools comply with XDG
 ACKRC="$XDG_CONFIG_HOME/ack/ackrc"
-ASDF_CONFIG_FILE="$XDG_CONFIG_HOME"/asdf/asdfrc
-ASDF_DATA_DIR="$XDG_DATA_HOME"/asdf
 AWS_SHARED_CREDENTIALS_FILE="$XDG_CONFIG_HOME"/aws/credentials
 AWS_CONFIG_FILE="$XDG_CONFIG_HOME"/aws/config
 AZURE_CONFIG_DIR="$XDG_DATA_HOME"/azure
@@ -20,7 +18,7 @@ BUNDLE_USER_CONFIG="$XDG_CONFIG_HOME"/bundle/config
 BUNDLE_USER_CACHE="$XDG_CACHE_HOME"/bundle
 BUNDLE_USER_PLUGIN="$XDG_DATA_HOME"/bundle
 DOCKER_CONFIG="$XDG_CONFIG_HOME"/docker
-# GEM_HOME="$XDG_DATA_HOME"/gem # might conflict with ASDF setting this
+# GEM_HOME="$XDG_DATA_HOME"/gem # might conflict with mise's per-version gem setup
 GEM_SPEC_CACHE="$XDG_CACHE_HOME"/gem
 INPUTRC="$XDG_CONFIG_HOME"/readline/inputrc
 LESSHISTFILE="$XDG_STATE_HOME"/less/history
@@ -61,7 +59,7 @@ GOPATHS=${GOPATH//://bin:}/bin
 
 # Path
 export PATH=\
-$ASDF_DATA_DIR/shims:\
+$XDG_DATA_HOME/mise/shims:\
 $HOME/bin:\
 $CODE_DIR/git-achievements:\
 /usr/local/bin:\

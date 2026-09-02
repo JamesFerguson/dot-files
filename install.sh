@@ -58,6 +58,16 @@ ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-g
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-reminder.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-reminder.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-run.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-run.plist
 
+# VS Code user settings — path has spaces + capitals and lives outside ~/.config,
+# so it needs its own explicit symlink (the dot_config loop can't reach it).
+# Pins Ruby LSP at mise (rubyLsp.rubyVersionManager). Backs up the live copy once.
+VSCODE_SETTINGS="$HOME/Library/Application Support/Code/User/settings.json"
+if [[ -e "$VSCODE_SETTINGS" && ! -L "$VSCODE_SETTINGS" ]]; then
+  cp "$VSCODE_SETTINGS" "$VSCODE_SETTINGS.bak.$(date +%Y%m%d)"
+fi
+mkdir -p "$(dirname "$VSCODE_SETTINGS")"
+ln -fs "$DOT_FILES_DIR/vscode/settings.json" "$VSCODE_SETTINGS"
+
 # powrc
 #ln -fs $DOT_FILES_DIR/dot_powrc/powrc ~/codez/tv-shows/.powrc
 

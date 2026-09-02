@@ -27,7 +27,7 @@ tap 'homebrew/services'
 tap 'atlassian/acli' # Atlassian CLI (acli)
 tap 'robzolkos/tap' # rollbar-cli (Rollbar query/triage CLI)
 
-brew 'asdf'
+brew 'mise'
 brew 'libxmlsec1' # XML security library
 brew 'gpg'
 brew 'postgresql@15', restart_service: :changed, link: true, conflicts_with: ['postgresql']

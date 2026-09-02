@@ -1,0 +1,290 @@
+// VS Code user-global settings, version-controlled copy.
+//
+// Source of truth on the machine:
+//   ~/Library/Application Support/Code/User/settings.json
+// This file is SANITIZED (account IDs, org UUIDs, client-named paths, and
+// machine-specific absolute tool paths stripped). See README.md for how to
+// apply it and what was removed.
+//
+// mise migration note: the only setting that changed for the asdf -> mise
+// cutover is "rubyLsp.rubyVersionManager" (see comment below).
+{
+  // --- Editor ---
+  "editor.fontSize": 16,
+  "editor.fontFamily": "Fira Code",
+  "editor.fontLigatures": true,
+  "editor.tabSize": 2,
+  "editor.indentSize": "tabSize",
+  "editor.renderWhitespace": "all",
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.tabCompletion": "on",
+  "editor.acceptSuggestionOnEnter": "smart",
+  "editor.accessibilitySupport": "off",
+  "editor.guides.bracketPairs": "active",
+  "editor.defaultFormatter": "Shopify.ruby-lsp",
+  "files.autoSave": "onFocusChange",
+  "files.autoSaveDelay": 50,
+
+  // --- Fonts for other panes ---
+  "debug.console.fontSize": 14,
+  "scm.inputFontSize": 14,
+  "terminal.integrated.fontSize": 14,
+  "chat.editor.fontSize": 14,
+
+  // --- Find highlight colours ---
+  "workbench.colorCustomizations": {
+    "editor.findMatchBackground": "#cc6666", // Background for current match
+    "editor.findMatchBorder": "#FFAA00", // Border for current match
+    "editor.findMatchHighlightBackground": "#93694d", // Highlight for other matches
+    "editor.findRangeHighlightBackground": "#333388" // Background of the range that was searched within
+  },
+
+  // --- Terminal ---
+  "terminal.integrated.tabStopWidth": 2,
+  // Max lines the terminal keeps in its buffer (memory is pre-allocated to this).
+  "terminal.integrated.scrollback": 100000,
+  // When the terminal process must shut down (window/app close), controls whether
+  // the previous session's contents/history are restored and processes recreated.
+  "terminal.integrated.persistentSessionReviveProcess": "onExitAndWindowClose",
+  // Max lines restored when reconnecting to a persistent terminal session.
+  "terminal.integrated.persistentSessionScrollback": 10000,
+
+  // --- Windows ---
+  "window.openFilesInNewWindow": "default",
+  "window.openFoldersInNewWindow": "on",
+  "branchInWindowTitle.branchTemplate": "${separator}[$branchName]",
+  "workbench.editor.empty.hint": "hidden",
+  "workbench.settings.applyToAllProfiles": [
+    "editor.defaultFormatter"
+  ],
+
+  // --- Git ---
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "never",
+  "betterGitLineBlame.showInlineAnnotations": true,
+  "betterGitLineBlame.showStatusBarItem": true,
+  "githubPullRequests.pullBranch": "never",
+  "githubIssues.issueCompletions.enabled": false,
+
+  // --- Diff editor ---
+  "diffEditor.experimental.showMoves": true,
+  "diffEditor.experimental.useTrueInlineView": true,
+  "diffEditor.renderSideBySide": true,
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // --- Ruby / Ruby LSP / Solargraph ---
+  // rubyVersionManager: was unset under asdf, so Ruby LSP fell back to "auto"
+  // and found ruby via whatever shims were on PATH. Pin it to mise so LSP
+  // resolves the repo's .tool-versions ruby deterministically instead of
+  // guessing. (Object form is what current Ruby LSP expects; if your extension
+  // predates it, use the string form "mise".)
+  "rubyLsp.rubyVersionManager": { "identifier": "mise" },
+  "rubyLsp.formatter": "rubocop",
+  "rubyLsp.enabledFeatures": {
+    "codeActions": true,
+    "diagnostics": true,
+    "documentHighlights": true,
+    "documentLink": true,
+    "documentSymbols": true,
+    "foldingRanges": true,
+    "formatting": true,
+    "hover": true,
+    "inlayHint": true,
+    "onTypeFormatting": true,
+    "selectionRanges": true,
+    "semanticHighlighting": true,
+    "completion": true,
+    "codeLens": true,
+    "definition": true,
+    "workspaceSymbol": true,
+    "signatureHelp": true,
+    "typeHierarchy": true
+  },
+  // Solargraph paths point at the XDG *system* gem bin ($XDG_DATA_HOME/gem/bin),
+  // which is neither asdf- nor mise-managed, so the mise migration leaves them
+  // as-is. (Also moot for Ruby formatting here since "[ruby]" uses ruby-lsp.)
+  "solargraph.bundlerPath": "/Users/james.ferguson/.local/share/gem/bin/bundle",
+  "solargraph.commandPath": "/Users/james.ferguson/.local/share/gem/bin/solargraph",
+  "solargraph.diagnostics": true,
+  "solargraph.logLevel": "debug",
+  "ruby.rubocop.configFilePath": ".rubocop.yml",
+  "ruby.rubocop.autocorrectOnSave": true,
+  "ruby.specSaveFile": true,
+  "ruby.specFocusTerminal": false,
+  "rubyTestExplorer.logpanel": true,
+  "simplecov.coverageOptions": "showUncoveredCodeOnly",
+
+  // --- Language-specific formatters ---
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // --- File associations ---
+  "files.associations": {
+    "*.html.erb": "erb"
+  },
+  "search.useIgnoreFiles": false,
+
+  // --- code-runner executor map ---
+  "code-runner.executorMap": {
+    "javascript": "node",
+    "java": "cd $dir && javac $fileName && java $fileNameWithoutExt",
+    "c": "cd $dir && gcc $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "zig": "zig run",
+    "cpp": "cd $dir && g++ $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "objective-c": "cd $dir && gcc -framework Cocoa $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "php": "php",
+    "python": "python -u",
+    "perl": "perl",
+    "perl6": "perl6",
+    "ruby": "ruby",
+    "go": "go run",
+    "lua": "lua",
+    "groovy": "groovy",
+    "powershell": "powershell -ExecutionPolicy ByPass -File",
+    "bat": "cmd /c",
+    "shellscript": "bash",
+    "fsharp": "fsi",
+    "csharp": "scriptcs",
+    "vbscript": "cscript //Nologo",
+    "typescript": "ts-node",
+    "coffeescript": "coffee",
+    "scala": "scala",
+    "swift": "swift",
+    "julia": "julia",
+    "crystal": "crystal",
+    "ocaml": "ocaml",
+    "r": "Rscript",
+    "applescript": "osascript",
+    "clojure": "lein exec",
+    "haxe": "haxe --cwd $dirWithoutTrailingSlash --run $fileNameWithoutExt",
+    "rust": "cd $dir && rustc $fileName && $dir$fileNameWithoutExt",
+    "racket": "racket",
+    "scheme": "csi -script",
+    "ahk": "autohotkey",
+    "autoit": "autoit3",
+    "dart": "dart",
+    "pascal": "cd $dir && fpc $fileName && $dir$fileNameWithoutExt",
+    "d": "cd $dir && dmd $fileName && $dir$fileNameWithoutExt",
+    "haskell": "runghc",
+    "nim": "nim compile --verbosity:0 --hints:off --run",
+    "lisp": "sbcl --script",
+    "kit": "kitc --run",
+    "v": "v run",
+    "sass": "sass --style expanded",
+    "scss": "scss --style expanded",
+    "less": "cd $dir && lessc $fileName $fileNameWithoutExt.css",
+    "FortranFreeForm": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "fortran-modern": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "fortran_fixed-form": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "fortran": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+    "sml": "cd $dir && sml $fileName",
+    "mojo": "mojo run",
+    "erlang": "escript",
+    "spwn": "spwn build",
+    "pkl": "cd $dir && pkl eval -f yaml $fileName -o $fileNameWithoutExt.yaml",
+    "gleam": "gleam run -m $fileNameWithoutExt"
+  },
+
+  // --- Go ---
+  "go.toolsManagement.autoUpdate": true,
+
+  // --- GitHub Copilot (enablement toggles only; account name stripped) ---
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": true,
+    "scminput": false
+  },
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.selectedCompletionModel": "gpt-4o-copilot",
+  "github.copilot.chat.customUserInstructions": [
+    "The domain is payment processing, as a payment gateway and an acquirer.",
+    "Prefer examples and solutions in Ruby on Rails where possible."
+  ],
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": ".github/copilot-instructions.local.md"
+    }
+  ],
+
+  // --- Chat tool auto-approve ---
+  "chat.tools.terminal.autoApprove": {
+    "bundle install": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "cat": true,
+    "cd": true,
+    "df": true,
+    "du": true,
+    "env": true,
+    "file": true,
+    "find": true,
+    "git diff": true,
+    "git log": true,
+    "git remote -v": true,
+    "git rev-parse": true,
+    "git show": true,
+    "git status": true,
+    "grep": true,
+    "head": true,
+    "hostname": true,
+    "id": true,
+    "ip addr": true,
+    "ip route": true,
+    "less": true,
+    "ls": true,
+    "more": true,
+    "printenv": true,
+    "ps aux": true,
+    "pwd": true,
+    "rspec": true,
+    "rubocop": true,
+    "ss": true,
+    "stat": true,
+    "sw_vers": true,
+    "tail": true,
+    "uname -a": true,
+    "uptime": true,
+    "whoami": true,
+    "bundle": true
+  },
+  "chat.tools.urls.autoApprove": {
+    "https://github.com": {
+      "approveRequest": false,
+      "approveResponse": true
+    }
+  },
+  "chat.viewSessions.orientation": "stacked",
+
+  // --- Claude Code extension ---
+  "claudeCode.selectedModel": "default",
+  "claudeCode.preferredLocation": "panel",
+  "claudeCodeChat.thinking.intensity": "think-harder",
+
+  // --- Misc ---
+  "npm.fetchOnlinePackageInfo": false,
+  "docker.extension.enableComposeLanguageServer": false,
+  "makefile.configureOnOpen": false,
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ]
+}
