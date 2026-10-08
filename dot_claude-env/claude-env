@@ -25,6 +25,10 @@ export INPUTRC="$XDG_CONFIG_HOME/readline/inputrc"
 export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
 export RUBOCOP_CONFIG="$XDG_CONFIG_HOME/rubocop/config.yml"
 
+# Let Claude Code run `brew upgrade` itself when a new version ships — Homebrew
+# installs don't auto-update, so this opts the CLI into doing it in the background.
+export CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE=1
+
 # Determine code directory based on hostname
 if [ -n "$HOST" ] && echo "$HOST" | grep -q "fz-"; then
   CODE_DIR="$HOME/code"
