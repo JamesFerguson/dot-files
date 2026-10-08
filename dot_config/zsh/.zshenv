@@ -34,6 +34,10 @@ ZPREZTODIR="$XDG_CONFIG_HOME/.zprezto"
 # Claude environment file for VSCode
 CLAUDE_ENV_FILE="$HOME/.claude-env"
 
+# Let Claude Code run `brew upgrade` itself when a new version ships — Homebrew
+# installs don't auto-update, so this opts the CLI into doing it in the background.
+CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE=1
+
 # Dot files dir
 #   - if on FatZebra laptop
 if [[ "$HOST" == *"fz-"* ]]; then
