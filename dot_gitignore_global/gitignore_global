@@ -248,3 +248,4 @@ typings/
 .fusebox/
 .dynamodb/
 
+.env*.local
