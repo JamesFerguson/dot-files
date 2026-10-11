@@ -296,5 +296,16 @@
     "**/.gitea/workflows/*.yaml",
     "**/.forgejo/workflows/*.yml",
     "**/.forgejo/workflows/*.yaml"
-  ]
+  ],
+  "snyk.advanced.cliPath": "/Users/james.ferguson/.local/share/snyk/vscode-cli/snyk-macos-arm64",
+  "atlascode.bitbucket.contextMenus.enabled": false,
+  "atlascode.bitbucket.enabled": false,
+  "atlascode.bitbucket.explorer.enabled": false,
+  "atlascode.bitbucket.explorer.nestFilesEnabled": false,
+  "snyk.yesWelcomeNotification": false,
+  "snyk.advanced.automaticDependencyManagement": true,
+  "snyk.trustedFolders": [
+    "/Users/james.ferguson/code/core-payments"
+  ],
+  "snyk.advanced.customEndpoint": "https://api.au.snyk.io"
 }
