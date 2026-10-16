@@ -39,22 +39,20 @@ CLAUDE_ENV_FILE="$HOME/.claude-env"
 CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE=1
 
 # Dot files dir
-#   - if on FatZebra laptop
+#   - if on the work laptop
 if [[ "$HOST" == *"fz-"* ]]; then
   ON_WORK_LAPTOP=1
   CODE_DIR="$HOME/code"
   DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
-  source ~/.fat_zebra_env.sh
-  setopt ALL_EXPORT # above line unsets ALL_EXPORT
+  # Work-specific config lives in the private work-dot-files repo, layered on top
+  # when present. All of it is guarded, so a machine without that repo is unaffected.
+  WORK_DOT_FILES_DIR="$CODE_DIR/personal/work-dot-files"
+  [[ -f "$WORK_DOT_FILES_DIR/zsh/fz.zshenv" ]] && source "$WORK_DOT_FILES_DIR/zsh/fz.zshenv"
 else
   ON_WORK_LAPTOP=0
   CODE_DIR="$HOME/codez"
   DOT_FILES_DIR="$CODE_DIR/dot-files"
 fi
-
-# FZ root dir
-FZ_ROOT_DIR="$CODE_DIR"
-FZ_UTIL_BIN_DIR="$FZ_ROOT_DIR/utils/fz/bin"
 
 # Go-lang setup
 export GOPATH=$HOME/go
@@ -83,8 +81,6 @@ $HOME/.yarn/bin:\
 $HOME/.yarn/dist/bin:\
 $XDG_CONFIG_HOME/yarn/global/node_modules/.bin:\
 $PATH
-
-# $FZ_UTIL_BIN_DIR:\ # fat zebra utils
 
 
 # Locale

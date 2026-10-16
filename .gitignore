@@ -19,3 +19,5 @@ schedule/log
 schedule/vendor
 
 tweaks/shimmed_env_rust/target
+# Conversation notes live in the private work-dot-files repo (symlinked)
+CLAUDE_convos

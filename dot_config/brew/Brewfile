@@ -38,17 +38,10 @@ brew 'shared-mime-info' # Database of common MIME types
 brew 'pkg-config' # Manage compile and link flags for libraries
 brew 'terminal-notifier' # Clickable macOS notifications for the purchase-stats scheduled run (call by absolute path — asdf shim shadows it)
 
-# We don't yet support OpenSearch2 - https://fatzebra.atlassian.net/browse/AP-3454
-tap 'isaaceindhoven/opensearch-maintenance'
-# Should this be 1.3? Tabled until needed.
-brew 'opensearch@1', restart_service: :changed, link: true, conflicts_with: %w[elasticsearch opensearch]
-cask 'temurin@11' # Java 11, needed for OpenSearch@1
-
 brew 'awscli'
 brew 'docker-buildx' # Docker CLI plugin for extended build capabilities with BuildKit
 brew 'foreman' # a manager for Procfile-based applications
 brew 'localstack' # local AWS cloud stack
-brew 'saml2aws'
 
 cask 'google-chrome'
 cask 'docker-desktop'

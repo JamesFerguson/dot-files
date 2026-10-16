@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # Dot files dir
-#   - if on FatZebra laptop
+#   - if on the work laptop
 if [[ "$(hostname)" == *"fz-"* ]]; then
   ON_WORK_LAPTOP=1
   DOT_FILES_DIR="$HOME/code/personal/dot-files"
@@ -53,7 +53,6 @@ sudo ln -fs $DOT_FILES_DIR/usr_local_bin/mvimf /usr/local/bin/mvimf
 
 # plists
 ln -fs $DOT_FILES_DIR/sleepwatcher/homebrew.mxcl.sleepwatcher.plist $HOME/Library/LaunchAgents/homebrew.mxcl.sleepwatcher.plist
-ln -fs $DOT_FILES_DIR/plists/com.fatzebra.opensearch-java11.plist $HOME/Library/LaunchAgents/com.fatzebra.opensearch-java11.plist
 ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-gui-path.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-reminder.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-reminder.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-run.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-run.plist
@@ -74,5 +73,13 @@ ln -fs "$DOT_FILES_DIR/vscode/settings.json" "$VSCODE_SETTINGS"
 # tweaks
 ./tweaks/tweaks.sh
 
-# Claude Code MCP servers (idempotent; safe to re-run on its own)
-source "$DOT_FILES_DIR/dot_config/claude/mcp-install.sh"
+# Work overlay: if the private work-dot-files repo is cloned, run its installer.
+# It sets up the work-specific Homebrew formulae, the OpenSearch LaunchAgent, config
+# symlinks, and the Claude Code MCP servers. Nothing work-specific happens without it.
+WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
+if [[ -x "$WORK_DOT_FILES_DIR/install-fz.sh" ]]; then
+  "$WORK_DOT_FILES_DIR/install-fz.sh"
+else
+  echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping work overlay."
+  echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
+fi

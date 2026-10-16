@@ -27,6 +27,16 @@ do
         source "$INCLUDES_DIR/$include"
 done
 
+# Fat Zebra-specific includes from the private work-dot-files repo, if it's present.
+# Loaded after the public includes so they can override (e.g. the `bk` alias).
+if [[ -n "$WORK_DOT_FILES_DIR" && -d "$WORK_DOT_FILES_DIR/zshrc/includes" ]]; then
+  for include in `/bin/ls -1 "$WORK_DOT_FILES_DIR/zshrc/includes"`
+  do
+          echo "  Sourcing (fz) $include..."
+          source "$WORK_DOT_FILES_DIR/zshrc/includes/$include"
+  done
+fi
+
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/james.ferguson/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)

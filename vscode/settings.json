@@ -221,7 +221,6 @@
   "github.copilot.nextEditSuggestions.enabled": true,
   "github.copilot.selectedCompletionModel": "gpt-4o-copilot",
   "github.copilot.chat.customUserInstructions": [
-    "The domain is payment processing, as a payment gateway and an acquirer.",
     "Prefer examples and solutions in Ruby on Rails where possible."
   ],
   "github.copilot.chat.codeGeneration.instructions": [
@@ -304,8 +303,6 @@
   "atlascode.bitbucket.explorer.nestFilesEnabled": false,
   "snyk.yesWelcomeNotification": false,
   "snyk.advanced.automaticDependencyManagement": true,
-  "snyk.trustedFolders": [
-    "/Users/james.ferguson/code/core-payments"
-  ],
+  "snyk.trustedFolders": [],
   "snyk.advanced.customEndpoint": "https://api.au.snyk.io"
 }

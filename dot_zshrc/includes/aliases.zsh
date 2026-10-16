@@ -78,9 +78,3 @@ alias eclose='g ch develop && gup && gbda && mdcu'
 alias rgclose='(g ch master || g ch main) && gup && gbda'
 alias egclose='(g ch master || g ch main) && gup && gbda && mdcu'
 alias gbname='git rev-parse --abbrev-ref HEAD' # bare branch name
-
-# open buildkite pipeline
-alias bk="open https://buildkite.com/fat-zebra/$(basename $PWD | tr '_' '-')"
-
-# overitall log viewer for all local apps
-alias oita="oit -c $XDG_CONFIG_HOME/overitall/config.toml"
