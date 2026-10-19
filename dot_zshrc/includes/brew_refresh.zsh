@@ -215,12 +215,25 @@ def git_ts(repo, path):
         return int(ts) if ts else None
     except: return None
 
+def gh_token():
+    # Unauthenticated GitHub is 60 req/hr; a full outdated list exhausts it and the
+    # release dates fall back to now (first-seen), which strands the cooldown clock.
+    # gh is already logged in, so borrow its token when no env token is set.
+    t = os.environ.get('HOMEBREW_GITHUB_API_TOKEN') or os.environ.get('GITHUB_TOKEN', '')
+    if t:
+        return t
+    try:
+        r = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, timeout=5)
+        return r.stdout.strip()
+    except: return ''
+
+GH_TOKEN = gh_token()
+
 def github_ts(path, repo):
-    token = os.environ.get('HOMEBREW_GITHUB_API_TOKEN') or os.environ.get('GITHUB_TOKEN', '')
     url = f'https://api.github.com/repos/{repo}/commits?path={path}&per_page=1'
     req = urllib.request.Request(url, headers={'User-Agent': 'brew-cooldown/1.0'})
-    if token:
-        req.add_header('Authorization', f'token {token}')
+    if GH_TOKEN:
+        req.add_header('Authorization', f'token {GH_TOKEN}')
     try:
         with urllib.request.urlopen(req, timeout=5) as r:
             commits = json.load(r)
