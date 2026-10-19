@@ -256,7 +256,9 @@ def get_ts(name, kind):
                 if ts: return ts
         return None
     if kind == 'formula':
-        return github_ts(f'Formula/{name[0]}/{name}.rb', 'Homebrew/homebrew-core')
+        # homebrew-core shards lib* formulae under lib/, everything else by first letter
+        shard = 'lib' if name.startswith('lib') else name[0]
+        return github_ts(f'Formula/{shard}/{name}.rb', 'Homebrew/homebrew-core')
     if kind == 'cask':
         return github_ts(f'Casks/{name[0]}/{name}.rb', 'Homebrew/homebrew-cask')
     return None
