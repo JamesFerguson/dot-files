@@ -151,10 +151,15 @@ for tool, info in data.items():
   _brew_now=$(date +%s)
   mkdir -p "${_brew_cache:h}"
 
-  # Python: seeds each new (name, version) with its real commit date, then walks the
-  # accumulated version history to find the newest version that has cleared cooldown.
-  # This prevents "eternal cooldown" for packages like awscli that release every few days:
-  # once any version in the installed→latest chain is 12d old, we're clear to upgrade.
+  # Python: seeds each new (name, version) with its real commit date, then ages the
+  # pending upgrade by date — never by ranking version strings. brew's outdated list is
+  # the sole authority on whether an upgrade exists; the cooldown only measures how long
+  # the oldest release newer than the one we installed has been available. The clock is
+  # anchored on the install time (receipt / keg mtime), which sidesteps two traps a
+  # version comparison hits: revision suffixes like 1.12_1 that an int-parse mis-ranks,
+  # and version-scheme rollbacks like openssl@3 3.6.5 → 3.5.9. Anchoring on the OLDEST
+  # pending release (never the latest) keeps a fast cadence like awscli from resetting
+  # the clock into eternal cooldown.
   # 3rd-party taps: local git (fast, no network). homebrew/core+cask: sequential GitHub API.
   # Output: name <TAB> current_latest <TAB> READY|COOLING <TAB> age_days|days_left
   while IFS=$'\t' read -r _brew_name _brew_version _brew_status _brew_val; do
@@ -166,12 +171,14 @@ for tool, info in data.items():
       printf '  COOLING  %-40s %s (%dd until ready)\n' "$_brew_name" "$_brew_version" "$_brew_val"
     fi
   done < <(brew outdated --json 2>/dev/null | python3 -c "
-import sys, json, os, re, subprocess, urllib.request
+import sys, json, os, subprocess, urllib.request
 from datetime import datetime, timezone
 
 _taps_dir = ''
+_prefix = ''
 for cand in ['/opt/homebrew', '/usr/local', os.path.expanduser('~/.linuxbrew')]:
     if os.path.isdir(cand + '/Library/Taps'):
+        _prefix = cand
         _taps_dir = cand + '/Library/Taps'
         break
 
@@ -241,13 +248,36 @@ def get_ts(name, kind):
         return github_ts(f'Casks/{name[0]}/{name}.rb', 'Homebrew/homebrew-cask')
     return None
 
-def ver_key(v):
-    # Convert '2.34.64', '2026.06.08.00', '1.3.19-stable' to comparable tuple
-    nums = []
-    for p in re.split(r'[.\-]', str(v)):
-        try: nums.append(int(p))
-        except: break
-    return tuple(nums) if nums else (0,)
+def install_time(name, installed, kind):
+    # When the version we currently run landed locally -- the cooldown clock starts here.
+    # Formulae use the per-keg install receipt (never stale). Casks use the per-version
+    # stamp dir Caskroom/<name>/.metadata/<version>/<YYYYMMDDHHMMSS>/ -- the cask-level
+    # INSTALL_RECEIPT.json is not per-version and goes stale (it can still name an older
+    # version), and the version dir's mtime gets bumped by later brew touches.
+    if not installed or not _prefix:
+        return None
+    short = name.split('/')[-1]
+    if kind == 'cask':
+        meta = _prefix + '/Caskroom/' + short + '/.metadata/' + installed
+        try:
+            stamps = [d for d in os.listdir(meta) if d[:8].isdigit()]
+            if stamps:
+                # the stamp dir name is UTC; parse as UTC (naive .timestamp() reads local -> ~10h early)
+                return int(datetime.strptime(max(stamps)[:14], '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc).timestamp())
+        except: pass
+        base = _prefix + '/Caskroom/' + short + '/' + installed
+    else:
+        base = _prefix + '/Cellar/' + short + '/' + installed
+        try:
+            with open(base + '/INSTALL_RECEIPT.json') as f:
+                t = json.load(f).get('time')
+                if t:
+                    return int(t)
+        except: pass
+    try:
+        return int(os.path.getmtime(base))
+    except: pass
+    return None
 
 now = int(datetime.now(timezone.utc).timestamp())
 
@@ -262,30 +292,37 @@ if new_entries:
             f.write(f'{name}\t{version}\t{seed_ts}\n')
 
 for name, latest, kind, installed in all_items:
-    inst_key = ver_key(installed)
+    t_install = install_time(name, installed, kind)
 
-    # All cached versions for this package that are genuine upgrades over installed.
-    # Using ver_key comparison filters out stale entries from before the last upgrade.
-    entries = [(v, ts) for (n, v), ts in cache.items()
-               if n == name and (not installed or ver_key(v) > inst_key)]
+    # Pending upgrades = cached releases that landed after the version we run. brew
+    # already flagged this item outdated, so we never rank version strings; we only
+    # age the pending change. The oldest pending release anchors the clock -- newer
+    # releases raise the max, never the min, so a fast cadence can't reset it.
+    pending = []
+    if t_install is not None:
+        pending = [ts for (n, v), ts in cache.items()
+                   if n == name and not v.startswith('pending:') and ts > t_install]
 
-    if not entries:
-        print(f'{name}\t{latest}\tCOOLING\t{COOLDOWN}')
-        continue
-
-    aged = [(v, ts) for v, ts in entries if (now - ts) // 86400 >= COOLDOWN]
-
-    if aged:
-        # Ready: report age of the most-recent version that cleared cooldown
-        # (the last safe step before the cooling zone)
-        newest_aged_ts = max(ts for _, ts in aged)
-        age_days = (now - newest_aged_ts) // 86400
-        print(f'{name}\t{latest}\tREADY\t{age_days}')
+    if pending:
+        anchor = min(pending)
     else:
-        # Cooling: report days until the oldest qualifying entry clears
-        oldest_ts = min(ts for _, ts in entries)
-        days_left = max(1, COOLDOWN - (now - oldest_ts) // 86400)
-        print(f'{name}\t{latest}\tCOOLING\t{days_left}')
+        # No dated evidence (install time unknown, or installed after the newer
+        # release's commit). Start the clock when we first saw this install fall
+        # behind; the marker is keyed on the installed version, so it never resets
+        # as new releases land and it clears COOLDOWN days later.
+        marker = (name, 'pending:' + installed)
+        anchor = cache.get(marker)
+        if anchor is None:
+            anchor = now
+            with open(cache_path, 'a') as f:
+                f.write(f'{name}\tpending:{installed}\t{now}\n')
+            cache[marker] = now
+
+    age = (now - anchor) // 86400
+    if age >= COOLDOWN:
+        print(f'{name}\t{latest}\tREADY\t{age}')
+    else:
+        print(f'{name}\t{latest}\tCOOLING\t{max(1, COOLDOWN - age)}')
 " 2>/dev/null)
 
   if [[ ${#_brew_safe_items[@]} -gt 0 ]]; then
