@@ -10,6 +10,9 @@
 
 emulate -L zsh
 set -u
+# A SwiftBar/GUI launch can start with a thin PATH; this is the shared cooldown entrypoint,
+# so make brew/gh/python3/mise resolve regardless of how it was invoked.
+export PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 DOTFILES="$HOME/code/personal/dot-files"
 SRC="$DOTFILES/dot_zshrc/includes/brew_refresh.zsh"
 
@@ -28,6 +31,13 @@ py=$(awk '/brew outdated --json.*python3 -c "$/{grab=1; next} /^" 2>\/dev\/null\
 if [[ -z "$py" ]]; then
   echo "brew-ready: could not extract cooldown python from $SRC" >&2
   exit 1
+fi
+
+# Machine-readable mode for the SwiftBar plugin: raw `name<TAB>latest<TAB>READY|COOLING<TAB>days`
+# straight from the cooldown python -- no human formatting, no exclusions applied.
+if [[ -n "${BREW_READY_TSV:-}" ]]; then
+  brew outdated --json 2>/dev/null | python3 -c "$py" 2>/dev/null
+  exit 0
 fi
 
 local name latest st val

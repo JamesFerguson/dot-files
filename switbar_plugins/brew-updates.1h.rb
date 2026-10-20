@@ -281,7 +281,9 @@ module Brew
       brew_check(printer)
       brew_update
 
-      printer.item("#{prefix}↑#{formulas.size + casks.size}", dropdown: false)
+      ready_count = (formulas + casks).count { |p| ready?(p.name) }
+      menu = ready_count.positive? ? "#{prefix}↑#{ready_count}" : prefix
+      printer.item(menu, dropdown: false)
       printer.sep
       printer.item('Brew Updates️') do |printer|
         print_settings(printer)
@@ -291,29 +293,14 @@ module Brew
         printer.item('⏳ Refresh', alt: '⏳ Refresh (⌘R)', refresh: true)
 
         printer.sep
-        all_formulas = formulas.reject { |f| upgrade_all_exclude?(f.name) }
-        all_casks = casks.reject { |c| upgrade_all_exclude?(c.name) }
-        excluded = (formulas - all_formulas) + (casks - all_casks)
+        all_formulas = formulas.reject { |f| upgrade_all_exclude?(f.name) || !ready?(f.name) }
+        # 'excluded' = manually-excluded packages only; cooling ones are dropped from the
+        # Upgrade-All list but still shown (with a ⏳ marker) in the main lists below.
+        excluded = (formulas + casks).select { |p| upgrade_all_exclude?(p.name) }
 
-        if all_formulas.size.positive? && all_casks.size.positive?
-          cmds = []
-          if all_formulas.size.positive?
-            cmds += [brew_path, 'upgrade', '--formula'] +
-                    all_formulas.map(&:name)
-          end
-
-          if all_casks.size.positive?
-            cmds << '&&' if cmds.size.positive?
-            cmds += [brew_path, 'upgrade', '--cask'] +
-                    all_casks.map(&:name)
-          end
-
-          printer.item(
-            "⬆️ Upgrade All (#{all_formulas.size + all_casks.size})",
-            terminal: true, refresh: true,
-            shell: (cmds + post_commands).flatten
-          )
-        end
+        # Bulk upgrades are formulae only. A one-click "upgrade all casks" is the exact action
+        # that wedged the UI (stacked App-Management modals), so upgrade casks one at a time
+        # from the list below, watched, in iTerm. Formulae are safe unattended.
         if all_formulas.size.positive?
           names = all_formulas.map(&:name)
           printer.item(
@@ -321,16 +308,6 @@ module Brew
             terminal: true, refresh: true,
             shell: [
               brew_path, 'upgrade', '--formula'
-            ] + names + post_commands
-          )
-        end
-        if all_casks.size.positive?
-          names = all_casks.map(&:name)
-          printer.item(
-            "⬆️ Upgrade All Casks (#{all_casks.size})",
-            terminal: true, refresh: true,
-            shell: [
-              brew_path, 'upgrade', '--cask'
             ] + names + post_commands
           )
         end
@@ -416,6 +393,38 @@ module Brew
       %w[true yes 1 on y t].include?(value.to_s.downcase)
     end
 
+    # Cooldown status per outdated package, from the shared brew-ready.zsh (same logic the
+    # nightly run uses). Returns name -> { status: 'READY'|'COOLING', days: Integer }. If the
+    # script is missing or fails, the map is empty, so every package reads as ready -- a broken
+    # cooldown check must never hide a pending update.
+    def cooldown
+      @cooldown ||= begin
+        script = File.join(Dir.home, 'code/personal/dot-files/nightly-skill-mise/brew-ready.zsh')
+        map = {}
+        begin
+          out, _err, st = Open3.capture3({ 'BREW_READY_TSV' => '1' }, script)
+          if st.success?
+            out.each_line do |line|
+              name, _latest, status, days = line.chomp.split("\t")
+              map[name] = { status: status, days: days.to_i } if name
+            end
+          end
+        rescue StandardError
+          # leave map empty -> everything reads as ready
+        end
+        map
+      end
+    end
+
+    def ready?(name)
+      cd = cooldown[name]
+      cd.nil? || cd[:status] == 'READY'
+    end
+
+    def cooling_days(name)
+      cooldown.dig(name, :days)
+    end
+
     def brew_update
       cmd(brew_path, 'update')
     rescue Xbar::CommandError
@@ -424,10 +433,15 @@ module Brew
     end
 
     def status_label
+      ready_formulas = formulas.count { |f| ready?(f.name) }
+      ready_casks = casks.count { |c| ready?(c.name) }
+      cooling = (formulas + casks).count { |p| !ready?(p.name) }
+
       label = []
-      label << "#{formulas.size} formulas" if formulas.size.positive?
-      label << "#{casks.size} casks" if casks.size.positive?
+      label << "#{ready_formulas} formulas" if ready_formulas.positive?
+      label << "#{ready_casks} casks" if ready_casks.positive?
       label << "#{pinned.size} pinned" if pinned.size.positive?
+      label << "#{cooling} cooling" if cooling.positive?
 
       label = ['no updates available'] if label.empty?
       label.join(', ')
@@ -475,6 +489,7 @@ module Brew
       formulas.each do |formula|
         name = formula.name
         name += ' ⤫' if upgrade_all_exclude?(name)
+        name += " ⏳#{cooling_days(formula.name)}d" unless ready?(formula.name)
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
@@ -530,6 +545,7 @@ module Brew
       casks.each do |cask|
         name = cask.name
         name += ' ⤫' if upgrade_all_exclude?(name)
+        name += " ⏳#{cooling_days(cask.name)}d" unless ready?(cask.name)
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
