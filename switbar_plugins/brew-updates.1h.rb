@@ -281,8 +281,12 @@ module Brew
       brew_check(printer)
       brew_update
 
-      ready_count = (formulas + casks).count { |p| ready?(p.name) }
-      menu = ready_count.positive? ? "#{prefix}↑#{ready_count}" : prefix
+      if !cooldown_ok? && (formulas + casks).any?
+        menu = "#{prefix}⚠️" # cooldown check failed: status unknown, don't imply "nothing pending"
+      else
+        ready_count = (formulas + casks).count { |p| ready?(p.name) && !upgrade_all_exclude?(p.name) }
+        menu = ready_count.positive? ? "#{prefix}↑#{ready_count}" : prefix
+      end
       printer.item(menu, dropdown: false)
       printer.sep
       printer.item('Brew Updates️') do |printer|
@@ -416,9 +420,16 @@ module Brew
       end
     end
 
+    def cooldown_ok?
+      !cooldown.empty?
+    end
+
+    def status_of(name)
+      cooldown.dig(name, :status) # 'READY' / 'COOLING' / nil (not in the map = unknown)
+    end
+
     def ready?(name)
-      cd = cooldown[name]
-      cd.nil? || cd[:status] == 'READY'
+      status_of(name) == 'READY'
     end
 
     def cooling_days(name)
@@ -433,15 +444,20 @@ module Brew
     end
 
     def status_label
-      ready_formulas = formulas.count { |f| ready?(f.name) }
-      ready_casks = casks.count { |c| ready?(c.name) }
-      cooling = (formulas + casks).count { |p| !ready?(p.name) }
+      return 'cooldown check unavailable' if !cooldown_ok? && (formulas + casks).any?
+
+      all = formulas + casks
+      ready_formulas = formulas.count { |f| ready?(f.name) && !upgrade_all_exclude?(f.name) }
+      ready_casks = casks.count { |c| ready?(c.name) && !upgrade_all_exclude?(c.name) }
+      cooling = all.count { |p| status_of(p.name) == 'COOLING' }
+      unknown = all.count { |p| status_of(p.name).nil? }
 
       label = []
       label << "#{ready_formulas} formulas" if ready_formulas.positive?
       label << "#{ready_casks} casks" if ready_casks.positive?
       label << "#{pinned.size} pinned" if pinned.size.positive?
       label << "#{cooling} cooling" if cooling.positive?
+      label << "#{unknown} unknown" if unknown.positive?
 
       label = ['no updates available'] if label.empty?
       label.join(', ')
@@ -489,7 +505,10 @@ module Brew
       formulas.each do |formula|
         name = formula.name
         name += ' ⤫' if upgrade_all_exclude?(name)
-        name += " ⏳#{cooling_days(formula.name)}d" unless ready?(formula.name)
+        case status_of(formula.name)
+        when 'COOLING' then name += " ⏳#{cooling_days(formula.name)}d"
+        when nil then name += ' ?'
+        end
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
@@ -545,7 +564,10 @@ module Brew
       casks.each do |cask|
         name = cask.name
         name += ' ⤫' if upgrade_all_exclude?(name)
-        name += " ⏳#{cooling_days(cask.name)}d" unless ready?(cask.name)
+        case status_of(cask.name)
+        when 'COOLING' then name += " ⏳#{cooling_days(cask.name)}d"
+        when nil then name += ' ?'
+        end
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
