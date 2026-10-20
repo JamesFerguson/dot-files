@@ -38,7 +38,6 @@ brew 'shared-mime-info' # Database of common MIME types
 brew 'pkg-config' # Manage compile and link flags for libraries
 brew 'terminal-notifier' # Clickable macOS notifications for the purchase-stats scheduled run (call by absolute path — asdf shim shadows it)
 
-brew 'awscli'
 brew 'docker-buildx' # Docker CLI plugin for extended build capabilities with BuildKit
 brew 'foreman' # a manager for Procfile-based applications
 brew 'localstack' # local AWS cloud stack
