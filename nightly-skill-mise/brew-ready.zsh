@@ -17,11 +17,11 @@ typeset -A excl
 local x
 for x in "$@"; do excl[$x]=1; done
 
-# Pull the embedded cooldown heredoc. brew_refresh.zsh carries several `python3 -c "`
-# heredocs (the brew cooldown, the mise-upgrades block, rubygems), so the opener must
-# be disambiguated by the brew-specific marker `brew outdated --json … python3 -c "` —
-# a bare `python3 -c "$` anchor also matches the mise block, whose `")` close doesn't
-# match the closer below, so it would over-grab into one unrunnable script.
+# Pull the embedded brew-cooldown heredoc. brew_refresh.zsh also has a one-line
+# `python3 -c "…"` for rubygems (content follows the quote, so a `"$`-ending anchor
+# skips it); the mise cooldown now lives in its own mise-ready.py, not a heredoc here.
+# Keep the brew-specific marker `brew outdated --json … python3 -c "` as the opener so
+# the anchor stays unambiguous if another multi-line heredoc is ever added back.
 # Grab from the line after that opener until the closing `" 2>/dev/null)`.
 local py
 py=$(awk '/brew outdated --json.*python3 -c "$/{grab=1; next} /^" 2>\/dev\/null\)/{grab=0} grab' "$SRC")

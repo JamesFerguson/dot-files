@@ -105,39 +105,30 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
     echo "  No mise plugins installed — core tools need no plugin update."
   fi
 
-  echo "  Checking mise installed versions against latest"
-  # `mise outdated --bump --json` keys tools by canonical name, each with a `bump`
-  # field: a version string when a newer version is available, else null. Reduce to
-  # <tool>\t<bump_version> lines for the tools that actually have an upgrade.
-  local mise_outdated mise_upgrades
-  mise_outdated=$(mise outdated --bump --json 2>/dev/null)
-  mise_upgrades=$(echo "$mise_outdated" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-except Exception:
-    sys.exit(0)
-for tool, info in data.items():
-    bump = info.get('bump')
-    if bump:
-        print(f'{tool}\t{bump}')
-")
-  echo "$mise_upgrades"
+  echo "  Checking mise tools against a ${MISE_COOLDOWN_DAYS:-10}-day cooldown"
+  # mise-ready.py picks, per outdated tool, the newest version that has soaked the
+  # cooldown within the same major and build variant -- the mise-side twin of the brew
+  # cooldown below, and the thing brew can't do: install a specific soaked version
+  # while newer ones keep cooling. It prints <tool>\t<version> for ready tools; its
+  # per-tool decision table (READY/COOLING/UNDATED/HELD) goes to stderr, shown here.
+  local mise_upgrades mise_answer
+  mise_upgrades=$(python3 "$HOME/code/personal/dot-files/dot_zshrc/includes/mise-ready.py")
 
   if [[ -n "$mise_upgrades" ]]; then
-    echo -n "\n  mise tools have newer versions available. Install latest and update .tool-versions? [y/N] "
+    echo -n "\n  Install these cooled mise versions and pin in .tool-versions? [y/N] "
     read -r mise_answer
     if [[ "$mise_answer" == "y" || "$mise_answer" == "Y" ]]; then
-      while IFS=$'\t' read -r tool latest; do
-        [[ -n "$tool" && -n "$latest" ]] || continue
-        echo "  Installing $tool $latest"
+      while IFS=$'\t' read -r tool ver; do
+        [[ -n "$tool" && -n "$ver" ]] || continue
+        echo "  Installing $tool $ver"
         # --path writes to ~/.tool-versions (which overrides ~/.config/mise/config.toml
-        # in precedence, so `mise use -g` would be silently ignored here).
-        if mise install "$tool@$latest"; then
-          mise use --path ~/.tool-versions "$tool@$latest"
-          echo "  $tool updated to $latest"
+        # in precedence, so `mise use -g` would be silently ignored); mise maps the
+        # canonical name to the matching .tool-versions line (node -> nodejs).
+        if mise install "$tool@$ver"; then
+          mise use --path ~/.tool-versions "$tool@$ver"
+          echo "  $tool pinned -> $ver"
         else
-          echo "  $tool $latest install failed, skipping"
+          echo "  $tool $ver install failed, skipping"
         fi
       done <<< "$mise_upgrades"
     fi

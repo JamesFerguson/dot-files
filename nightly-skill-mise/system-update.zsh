@@ -47,27 +47,19 @@ else
   echo "no plugins installed — mise core tools need no plugin update"
 fi
 
-echo "\n===== 4. mise: install newer pinned-tool versions ====="
-# `mise outdated --bump --json` keys each tool -> {requested,current,bump,latest,...};
-# a non-null `bump` is a version newer than what's pinned. Install it and pin it in
-# ~/.tool-versions (NOT `mise use -g`: ~/.tool-versions overrides ~/.config/mise, so a
-# -g write would be silently ignored). Use the canonical JSON key (e.g. node) — mise
-# rewrites the matching .tool-versions line (nodejs) in place.
-mise outdated --bump --json 2>/dev/null | python3 -c '
-import sys, json
-raw = sys.stdin.read().strip()
-data = json.loads(raw) if raw else {}
-for tool, info in data.items():
-    bump = info.get("bump")
-    if bump:
-        print(f"{tool}\t{bump}")
-' | while IFS=$'\t' read -r tool bump; do
-  [[ -n "$tool" ]] || continue
-  echo "  installing $tool $bump"
-  if mise install "$tool@$bump" 2>&1 | tail -1; then
-    mise use --path "$HOME/.tool-versions" "$tool@$bump" && echo "    $tool pinned -> $bump (~/.tool-versions)"
+echo "\n===== 4. mise: install cooled tool versions (${MISE_COOLDOWN_DAYS:-10}d cooldown) ====="
+# mise-ready.py picks, per outdated tool, the newest version that has soaked the cooldown
+# within the same major and build variant (the mise-side twin of brew-ready.zsh). It prints
+# <tool>\t<version> for ready tools and a READY/COOLING/UNDATED/HELD table to stderr; tools
+# that are undated (ruby) or would cross a major/variant (python, yarn) stay manual. mise maps
+# the canonical key (node) to the matching .tool-versions line (nodejs) on `use --path`.
+python3 "$HOME/code/personal/dot-files/dot_zshrc/includes/mise-ready.py" | while IFS=$'\t' read -r tool ver; do
+  [[ -n "$tool" && -n "$ver" ]] || continue
+  echo "  installing $tool $ver"
+  if mise install "$tool@$ver" 2>&1 | tail -1; then
+    mise use --path "$HOME/.tool-versions" "$tool@$ver" && echo "    $tool pinned -> $ver (~/.tool-versions)"
   else
-    echo "    $tool $bump install FAILED, skipping"
+    echo "    $tool $ver install FAILED, skipping"
   fi
 done
 
