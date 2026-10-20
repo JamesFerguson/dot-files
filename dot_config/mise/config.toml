@@ -26,3 +26,6 @@ disable_tools = ["elasticsearch", "opensearch"]
 # mise's own default from 2026.8.0 on (we're on 2026.8.8), so this is redundant
 # now — kept explicit to document intent and stay correct on older mise.
 compile = false
+
+[tools]
+awscli = { version = "2.38.2", symlink_bins = "true" }
