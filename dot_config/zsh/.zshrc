@@ -21,19 +21,21 @@ else
 fi
 
 export INCLUDES_DIR=$DOT_FILES_DIR/dot_zshrc/includes
-for include in `/bin/ls -1 $INCLUDES_DIR`
+# Only *.zsh fragments. Helper scripts that live here but aren't shell
+# (mise-ready.py, called by brew_refresh.zsh) and __pycache__/ must not be sourced.
+for include in "$INCLUDES_DIR"/*.zsh(N)
 do
-        echo "  Sourcing $include..."
-        source "$INCLUDES_DIR/$include"
+        echo "  Sourcing ${include:t}..."
+        source "$include"
 done
 
 # Fat Zebra-specific includes from the private work-dot-files repo, if it's present.
 # Loaded after the public includes so they can override (e.g. the `bk` alias).
 if [[ -n "$WORK_DOT_FILES_DIR" && -d "$WORK_DOT_FILES_DIR/zshrc/includes" ]]; then
-  for include in `/bin/ls -1 "$WORK_DOT_FILES_DIR/zshrc/includes"`
+  for include in "$WORK_DOT_FILES_DIR/zshrc/includes"/*.zsh(N)
   do
-          echo "  Sourcing (fz) $include..."
-          source "$WORK_DOT_FILES_DIR/zshrc/includes/$include"
+          echo "  Sourcing (fz) ${include:t}..."
+          source "$include"
   done
 fi
 
