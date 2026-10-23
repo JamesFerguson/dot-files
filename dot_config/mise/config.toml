@@ -29,3 +29,7 @@ compile = false
 
 [tools]
 awscli = { version = "2.38.2", symlink_bins = "true" }
+# Fallback for directories outside $HOME (/tmp, Claude's scratchpad, launchd's cwd=/), where mise never
+# reaches ~/.tool-versions and the shim would otherwise hand over macOS's ruby 2.6. A prefix, so it
+# follows patch upgrades. Under $HOME, ~/.tool-versions and each repo's .tool-versions still win.
+ruby = "4.0"
