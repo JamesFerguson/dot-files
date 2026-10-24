@@ -206,8 +206,14 @@ sweep_one() {
     if git -C "$repo" stash pop </dev/null >>"$DETAIL" 2>&1; then
       notes+="WIP-restored; "
     else
+      # Usually a generated file (Gemfile.lock, db/schema.rb) that gup just rewrote.
+      # Re-apply the WIP's own edits over the fresh tree; the stash stays only if one won't go.
       git -C "$repo" reset --hard HEAD </dev/null >>"$DETAIL" 2>&1
-      notes+="WIP-left-stashed(git stash pop to reapply); "
+      if "$HERE/restore-sweep-stash.zsh" "$repo" </dev/null 2>&1 | tee -a "$DETAIL" | grep -q 'stash dropped'; then
+        notes+="WIP-restored(generated files regenerated); "
+      else
+        notes+="WIP-left-stashed(git stash pop to reapply); "
+      fi
     fi
   fi
 
