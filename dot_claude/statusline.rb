@@ -238,6 +238,11 @@ def weak_advisor?(model_id, advisor_id)
 end
 
 ALERT = "\033[1;97;41m" # bold bright white on red
+WARN  = "\033[1;30;48;2;255;140;0m" # bold black on orange
+
+EFFORT_LEVELS = %w[low medium high xhigh max].freeze
+
+def low_effort?(effort) = (EFFORT_LEVELS.index(effort) || EFFORT_LEVELS.size) < EFFORT_LEVELS.index('high')
 
 ctx_part = context_bar(used)
 
@@ -262,6 +267,6 @@ if advisor_id
   name = model_name(advisor_id)
   out += (weak_advisor?(model_id, advisor_id) rescue false) ? " #{ALERT} 🎓 #{name} #{RESET}" : " #{CYAN}🎓 #{name}#{RESET}"
 end
-out += " #{MAGENTA}💪 #{effort}#{RESET}"
+out += low_effort?(effort) ? " #{WARN} 💪 #{effort} #{RESET}" : " #{MAGENTA}💪 #{effort}#{RESET}"
 
 print out
