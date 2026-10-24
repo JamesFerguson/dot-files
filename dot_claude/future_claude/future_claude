@@ -5,8 +5,8 @@
 #
 # Two kinds of job:
 #   notify  speaks a line and posts a macOS notification. No Claude involved.
-#   prompt  runs a headless `claude -p`. With --origin <session name>, that run first tries to hand
-#           the task back to the named session over SendMessage, so it's done with that session's
+#   prompt  runs a headless `claude -p`. Queued from a session, it first tries to hand the task back
+#           to that session over SendMessage (or to --origin), so it's done with that session's
 #           context; if the session isn't running it does the task itself. Any outcome other than a
 #           clean hand-back posts a notification, so nothing fails silently.
 #
@@ -28,7 +28,7 @@ OUTCOMES = { 'HANDED_BACK' => 'handed_back', 'DONE_MYSELF' => 'ran_headless', 'F
 def usage
   <<~USAGE
     Usage:
-      future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION])
+      future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION | --headless])
                         [--title TITLE] [--cwd DIR] [--permission-mode MODE] [--model MODEL]
                         [--timeout SECONDS] [--by WHO]
       future_claude list [--all]
@@ -37,7 +37,8 @@ def usage
       future_claude run            (what launchd calls every minute)
 
     TIME is local: '2026-10-27 09:47', an ISO 8601 time, or relative: +90s, +30m, +2h, +1d (also -1m).
-    SESSION is a session name as ListAgents prints it.
+    A prompt job queued from a session hands back to it by default. SESSION picks another one: a name
+    as ListAgents prints it, or a uds:<socket> address.
   USAGE
 end
 

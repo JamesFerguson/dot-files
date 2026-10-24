@@ -47,7 +47,10 @@ dot-files `dot_claude/future_claude/README.md`).
   open, or does it itself (`--headless` skips the hand-back). Anything but a clean hand-back posts a
   notification. Write the prompt so it stands alone.
 - `future_claude list` / `show <id>` / `rm <id>`. Tell James the job id and the time it will fire.
+- "Remind me…" requests go here too, not to the built-in `schedule` skill: its cloud routines can't
+  reach this Mac's sessions, `say` or notifications.
 - Session-only crons are still right for in-session polling (watching CI while you work).
+- `future_claude` jobs are one-shot. For a recurring job, write a LaunchAgent.
 
 ## Related
 - `working-style.md` — flag-before-you-act and shared-record rules.
