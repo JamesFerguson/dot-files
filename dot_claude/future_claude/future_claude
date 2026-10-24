@@ -1,0 +1,268 @@
+#!/usr/bin/env ruby
+# future_claude: a durable queue of scheduled work that any Claude session (or you) can hand off to.
+# A launchd agent (com.jamesf.future-claude) runs `future_claude run` every minute, so jobs fire
+# whether or not the session that queued them is still open. Missed ticks (Mac asleep) run on wake.
+#
+# Two kinds of job:
+#   notify  speaks a line and posts a macOS notification. No Claude involved.
+#   prompt  runs a headless `claude -p`. With --origin <session name>, that run first tries to hand
+#           the task back to the named session over SendMessage, so it's done with that session's
+#           context; if the session isn't running it does the task itself. Any outcome other than a
+#           clean hand-back posts a notification, so nothing fails silently.
+#
+# Kept compatible with macOS's /usr/bin/ruby 2.6, so a wrong runtime under launchd still works.
+require 'json'
+require 'time'
+require 'optparse'
+require 'securerandom'
+require 'fileutils'
+require 'shellwords'
+
+HOME_DIR = ENV.fetch('FUTURE_CLAUDE_HOME', File.expand_path('~/.claude/future_claude'))
+QUEUE = File.join(HOME_DIR, 'queue.jsonl')
+LOGS = File.join(HOME_DIR, 'logs')
+CLAUDE = ENV.fetch('FUTURE_CLAUDE_CLAUDE', '/opt/homebrew/bin/claude')
+DEFAULT_TIMEOUT = 15 * 60
+OUTCOMES = { 'HANDED_BACK' => 'handed_back', 'DONE_MYSELF' => 'ran_headless', 'FAILED' => 'claude_failed' }.freeze
+
+def usage
+  <<~USAGE
+    Usage:
+      future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION])
+                        [--title TITLE] [--cwd DIR] [--permission-mode MODE] [--model MODEL]
+                        [--timeout SECONDS] [--by WHO]
+      future_claude list [--all]
+      future_claude show ID
+      future_claude rm ID
+      future_claude run            (what launchd calls every minute)
+
+    TIME is local: '2026-10-27 09:47', an ISO 8601 time, or relative: +90s, +30m, +2h, +1d (also -1m).
+    SESSION is a session name as ListAgents prints it.
+  USAGE
+end
+
+def die(msg)
+  warn "future_claude: #{msg}"
+  exit 1
+end
+
+def parse_time(text)
+  if (m = text.match(/\A([+-])(\d+)([smhd])\z/))
+    secs = m[2].to_i * { 's' => 1, 'm' => 60, 'h' => 3600, 'd' => 86_400 }.fetch(m[3])
+    return Time.now.to_i + (m[1] == '+' ? secs : -secs)
+  end
+  if (m = text.match(/\A(\d{4})-(\d\d)-(\d\d)[ T](\d\d):(\d\d)\z/))
+    return Time.local(*m.captures.map(&:to_i)).to_i
+  end
+
+  Time.iso8601(text).to_i
+rescue ArgumentError
+  die "can't parse --at #{text.inspect}; use '2026-10-27 09:47', ISO 8601, or +30m"
+end
+
+def local(epoch)
+  Time.at(epoch).strftime('%a %d %b %H:%M %Z')
+end
+
+# Yields the queue's jobs under an exclusive lock and writes back whatever the block leaves.
+def with_queue
+  FileUtils.mkdir_p(HOME_DIR)
+  File.open(QUEUE, File::RDWR | File::CREAT, 0o600) do |f|
+    f.flock(File::LOCK_EX)
+    jobs = f.read.lines.reject { |l| l.strip.empty? }.map { |l| JSON.parse(l) }
+    result = yield jobs
+    f.rewind
+    f.truncate(0)
+    jobs.each { |j| f.puts(JSON.generate(j)) }
+    result
+  end
+end
+
+def update_job(id)
+  with_queue do |jobs|
+    job = jobs.find { |j| j['id'] == id }
+    yield job if job
+  end
+end
+
+def add(argv)
+  opts = { 'timeout' => DEFAULT_TIMEOUT, 'permission_mode' => 'auto', 'cwd' => Dir.home }
+  OptionParser.new do |o|
+    o.on('--at TIME') { |v| opts['at'] = parse_time(v) }
+    o.on('--notify TEXT') { |v| opts['notify'] = v }
+    o.on('--say TEXT') { |v| opts['say'] = v }
+    o.on('--prompt TEXT') { |v| opts['prompt'] = v }
+    o.on('--origin SESSION') { |v| opts['origin'] = v }
+    o.on('--headless') { opts['headless'] = true }
+    o.on('--title TITLE') { |v| opts['title'] = v }
+    o.on('--cwd DIR') { |v| opts['cwd'] = File.expand_path(v) }
+    o.on('--permission-mode MODE') { |v| opts['permission_mode'] = v }
+    o.on('--model MODEL') { |v| opts['model'] = v }
+    o.on('--timeout SECONDS', Integer) { |v| opts['timeout'] = v }
+    o.on('--by WHO') { |v| opts['by'] = v }
+  end.parse!(argv)
+
+  die 'add needs --at' unless opts['at']
+  die 'add needs exactly one of --notify and --prompt' unless [opts['notify'], opts['prompt']].compact.size == 1
+
+  # A session can't see its own name in ListAgents, but its Bash calls carry its messaging socket, so a
+  # prompt job queued from a session hands back to that session unless told otherwise.
+  socket = ENV['CLAUDE_CODE_MESSAGING_SOCKET'].to_s
+  opts['origin'] ||= "uds:#{socket}" if opts['prompt'] && !opts['headless'] && !socket.empty?
+  opts.delete('origin') if opts.delete('headless')
+
+  job = opts.merge(
+    'id' => SecureRandom.hex(3),
+    'kind' => opts['notify'] ? 'notify' : 'prompt',
+    'status' => 'pending',
+    'created_at' => Time.now.to_i
+  )
+  job.delete('timeout') if job['kind'] == 'notify'
+  with_queue { |jobs| jobs << job }
+  puts job['id']
+  warn "queued #{job['kind']} job #{job['id']} for #{local(job['at'])}"
+end
+
+def summary(job)
+  text = job['notify'] || job['prompt']
+  text = "#{text[0, 70]}…" if text.length > 71
+  extra = job['origin'] ? " → #{job['origin']}" : ''
+  outcome = job['outcome'] ? " (#{job['outcome']})" : ''
+  format('%-6s  %-21s  %-7s  %-8s%s  %s%s', job['id'], local(job['at']), job['kind'], job['status'], outcome, text, extra)
+end
+
+def list(argv)
+  all = argv.include?('--all')
+  jobs = with_queue { |js| js.dup }
+  jobs = jobs.select { |j| %w[pending running].include?(j['status']) } unless all
+  puts(jobs.empty? ? 'no jobs' : jobs.sort_by { |j| j['at'] }.map { |j| summary(j) })
+end
+
+def show(id)
+  job = with_queue { |js| js.find { |j| j['id'] == id } } || die("no job #{id}")
+  puts JSON.pretty_generate(job)
+  puts "\n--- log ---\n#{File.read(job['log'])}" if job['log'] && File.exist?(job['log'])
+end
+
+def rm(id)
+  removed = with_queue { |jobs| jobs.reject! { |j| j['id'] == id } }
+  die("no job #{id}") unless removed
+  puts "removed #{id}"
+end
+
+def notify(body, title, spoken = nil)
+  system('say', spoken) if spoken
+  system('osascript', '-e', 'on run argv', '-e',
+         'display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"',
+         '-e', 'end run', body, title)
+end
+
+def run_notify(job)
+  notify(job['notify'], "Claude: #{job['title'] || 'reminder'}", job['say'] || job['notify'])
+  { 'outcome' => 'notified' }
+end
+
+def prompt_text(job)
+  task = "Task (scheduled by #{job['by'] || job['origin'] || 'a Claude session'} " \
+         "at #{local(job['created_at'])}, due #{local(job['at'])}):\n\n#{job['prompt']}"
+  return "You are a headless run of future_claude, job #{job['id']}.\n\n#{task}\n\n" \
+         'When finished, end your reply with a line that is exactly DONE_MYSELF, or FAILED: <reason>.' unless job['origin']
+
+  <<~PROMPT
+    You are a headless run of future_claude, job #{job['id']}. Your first job is to hand this task back to
+    the Claude session that scheduled it, so it's done with that session's context.
+
+    1. #{find_origin(job['origin'])} First line:
+       "Scheduled task from future_claude (job #{job['id']}), queued by you for #{local(job['at'])}:".
+       Then the task below, verbatim. Do nothing else, and end your reply with a line that is exactly HANDED_BACK.
+    2. If that session isn't there, or the send fails, do the task yourself, then end your reply with a line
+       that is exactly DONE_MYSELF, or FAILED: <reason>.
+
+    #{task}
+  PROMPT
+end
+
+# A uds: address goes straight to SendMessage; a name has to be looked up first.
+def find_origin(origin)
+  return "SendMessage to exactly \"#{origin}\" (no ListAgents needed)." if origin.start_with?('uds:')
+
+  "Call ListAgents. If a session named exactly \"#{origin}\" is listed, SendMessage it."
+end
+
+def run_prompt(job)
+  FileUtils.mkdir_p(LOGS)
+  log = File.join(LOGS, "#{job['id']}.log")
+  args = [CLAUDE, '-p', prompt_text(job), '--permission-mode', job['permission_mode']]
+  args += ['--allowedTools', 'ListAgents,SendMessage'] if job['origin']
+  args += ['--model', job['model']] if job['model']
+  cwd = File.directory?(job['cwd'].to_s) ? job['cwd'] : Dir.home
+
+  pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
+  deadline = Time.now + (job['timeout'] || DEFAULT_TIMEOUT)
+  status = nil
+  until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
+    if Time.now > deadline
+      Process.kill('TERM', -pid) rescue nil
+      sleep 2
+      Process.kill('KILL', -pid) rescue nil
+      Process.waitpid(pid) rescue nil
+      return { 'log' => log, 'outcome' => 'timeout', 'failed' => true }
+    end
+    sleep 0.5
+  end
+
+  last = File.readlines(log).map(&:strip).reject(&:empty?).last.to_s
+  outcome = OUTCOMES.find { |marker, _| last.start_with?(marker) }&.last || 'no_marker'
+  failed = !status.success? || %w[claude_failed no_marker].include?(outcome)
+  { 'log' => log, 'exit' => status.exitstatus, 'outcome' => outcome, 'failed' => failed }
+end
+
+def report(job, result)
+  return if job['kind'] == 'notify' || result['outcome'] == 'handed_back'
+
+  what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
+  what = 'ran headless' if !result['failed'] && !job['origin']
+  notify("Job #{job['id']} #{what}: #{job['prompt'][0, 80]} — future_claude show #{job['id']}",
+         "Claude: #{job['title'] || 'scheduled task'}")
+end
+
+def run_due
+  now = Time.now.to_i
+  due = with_queue do |jobs|
+    jobs.each do |j|
+      next unless j['status'] == 'running' && !alive?(j['runner_pid'])
+
+      j.update('status' => 'failed', 'outcome' => 'runner_died')
+    end
+    picked = jobs.select { |j| j['status'] == 'pending' && j['at'] <= now }
+    picked.each { |j| j.update('status' => 'running', 'started_at' => now, 'runner_pid' => Process.pid) }
+    picked.map(&:dup)
+  end
+
+  due.each do |job|
+    result = job['kind'] == 'notify' ? run_notify(job) : run_prompt(job)
+    update_job(job['id']) do |j|
+      j.update(result.reject { |k, _| k == 'failed' })
+      j.update('status' => result['failed'] ? 'failed' : 'done', 'finished_at' => Time.now.to_i,
+               'late_by' => job['started_at'] - job['at'])
+    end
+    report(job, result)
+    puts "#{Time.now.strftime('%F %T')} #{job['id']} #{job['kind']} → #{result['outcome']}"
+  end
+end
+
+def alive?(pid)
+  pid && Process.kill(0, pid) && true
+rescue Errno::ESRCH, Errno::EPERM
+  false
+end
+
+case (cmd = ARGV.shift)
+when 'add' then add(ARGV)
+when 'list' then list(ARGV)
+when 'show' then show(ARGV.first || die('show needs an id'))
+when 'rm' then rm(ARGV.first || die('rm needs an id'))
+when 'run' then run_due
+when nil, '-h', '--help', 'help' then puts usage
+else die("unknown command #{cmd.inspect}\n#{usage}")
+end

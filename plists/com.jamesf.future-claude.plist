@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.future-claude</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <!-- ~/.future_claude.env (optional, not in the repo) can export secrets that headless Claude runs' MCP servers need. -->
+    <string>export PATH="$HOME/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 RUBYOPT=-EUTF-8; cd "$HOME" || exit 1; [[ -r ~/.future_claude.env ]] &amp;&amp; source ~/.future_claude.env; exec "$HOME/bin/future_claude" run</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>60</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/future-claude.out</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/future-claude.err</string>
+</dict>
+</plist>

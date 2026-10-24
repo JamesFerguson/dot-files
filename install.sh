@@ -62,6 +62,9 @@ ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-g
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-reminder.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-reminder.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-run.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-run.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.claude-default-model.plist $HOME/Library/LaunchAgents/com.jamesf.claude-default-model.plist
+# future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
+mkdir -p ~/bin && ln -fs $DOT_FILES_DIR/dot_claude/future_claude/future_claude ~/bin/future_claude
+ln -fs $DOT_FILES_DIR/plists/com.jamesf.future-claude.plist $HOME/Library/LaunchAgents/com.jamesf.future-claude.plist
 
 # VS Code user settings — path has spaces + capitals and lives outside ~/.config,
 # so it needs its own explicit symlink (the dot_config loop can't reach it).

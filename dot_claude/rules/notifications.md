@@ -27,12 +27,27 @@ Over-alerting trains him to ignore the noise — reserve it for genuine time pre
 
 ## Minimise disruption if he came straight back
 If it's not an emergency, **schedule** the noise for a short delay after the initial response rather than
-blaring immediately — a `ScheduleWakeup`/`CronCreate` a few minutes to a couple of hours later that fires
-`say` + the notification. If he came right back, he's already dealt with it in-session and the delayed
-noise is harmless; if he didn't, it ensures the item doesn't get buried. Have the delayed fire restate
-the deadline so the alert is self-contained.
+blaring immediately: a `future_claude` notify job (below) a few minutes to a couple of hours later. If he
+came right back, he's already dealt with it in-session and the delayed noise is harmless; if he didn't, it
+ensures the item doesn't get buried. Have the delayed fire restate the deadline so the alert is
+self-contained.
 
 For a **true emergency**, make noise immediately AND on the text response — don't wait.
+
+## Anything that must fire later goes to `future_claude`, not `CronCreate`/`ScheduleWakeup`
+`CronCreate` and `ScheduleWakeup` live in the session's memory and die with it, silently: an exit and
+resume is enough. A reminder for a real deadline was lost that way. `future_claude` is a queue that a
+launchd agent runs every minute, so its jobs fire whether or not the session is still open (details:
+dot-files `dot_claude/future_claude/README.md`).
+
+- **A reminder:** `future_claude add --at '2026-10-27 09:47' --title '<subject>' --notify '<body>' [--say '<spoken>']`.
+  `--at` also takes `+30m`/`+2h`/`+1d`.
+- **Work for later:** `future_claude add --at … --prompt '<task>'` from your Bash tool. At the time, a
+  headless Claude hands the task back to your session (it records your messaging socket) if it's still
+  open, or does it itself (`--headless` skips the hand-back). Anything but a clean hand-back posts a
+  notification. Write the prompt so it stands alone.
+- `future_claude list` / `show <id>` / `rm <id>`. Tell James the job id and the time it will fire.
+- Session-only crons are still right for in-session polling (watching CI while you work).
 
 ## Related
 - `working-style.md` — flag-before-you-act and shared-record rules.
