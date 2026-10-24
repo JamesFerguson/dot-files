@@ -1,0 +1,4 @@
+# yarn 1 (classic) home config, symlinked to ~/.yarnrc.
+# The self-update check would rewrite this file with a timestamp on every run.
+disable-self-update-check true
+yarn-path "/Users/james.ferguson/code/personal/dot-files/dot_yarnrc/yarn-guard"

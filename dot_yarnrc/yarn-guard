@@ -1,0 +1,32 @@
+#!/bin/zsh -f
+# The yarn-path hook in ~/.yarnrc: every yarn 1 run comes through here first.
+# Refuses yarn in npm and pnpm projects, where a stray `yarn install` ignores the
+# committed lockfile, resolves its own versions and leaves a yarn.lock behind.
+# yarn sets YARN_IGNORE_PATH=1 before calling this, so `exec yarn` runs the real one.
+
+dir=$PWD
+until [[ -f $dir/package.json || $dir == / ]]; do dir=${dir:h}; done
+
+# A committed lockfile says which manager the project uses; an untracked one may be
+# a stray from someone running the wrong tool.
+committed() { git -C $dir ls-files --error-unmatch $1 >/dev/null 2>&1 }
+
+if [[ -f $dir/package.json ]] && ! committed yarn.lock; then
+  pm=$(sed -nE 's/.*"packageManager"[[:space:]]*:[[:space:]]*"(npm|pnpm)@.*/\1/p' $dir/package.json | head -1)
+  [[ -z $pm ]] && committed pnpm-lock.yaml && pm=pnpm
+  [[ -z $pm ]] && committed package-lock.json && pm=npm
+  [[ -z $pm && ! -f $dir/yarn.lock && -f $dir/pnpm-lock.yaml ]] && pm=pnpm
+  [[ -z $pm && ! -f $dir/yarn.lock && -f $dir/package-lock.json ]] && pm=npm
+  if [[ -n $pm ]]; then
+    print -u2 "yarn: ${dir:t} uses $pm, not yarn. Instead:"
+    if [[ $pm == npm ]]; then
+      print -u2 '  yarn / yarn install -> npm install    yarn add <pkg> -> npm install <pkg>    yarn <script> -> npm run <script>'
+    else
+      print -u2 '  yarn / yarn install -> pnpm install   yarn add <pkg> -> pnpm add <pkg>       yarn <script> -> pnpm <script>'
+    fi
+    print -u2 "  (local guard: yarn-path in ~/.yarnrc -> ${0:A})"
+    exit 1
+  fi
+fi
+
+exec yarn "$@"
