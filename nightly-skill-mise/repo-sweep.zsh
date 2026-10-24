@@ -151,6 +151,9 @@ sweep_one() {
   # Always fetch first: even when we can't update main (dirty/diverged), fresh remote
   # refs cost nothing, make [gone] detection accurate, and keep the repo ready to pull.
   git -C "$repo" fetch --all --prune </dev/null >>"$DETAIL" 2>&1
+  # origin/HEAD is only set at clone time, so a repo that later renamed develop to main keeps
+  # pointing at develop, and the sweep keeps updating and re-pinning the dead branch.
+  git -C "$repo" remote set-head origin --auto </dev/null >>"$DETAIL" 2>&1
 
   # Uncommitted changes: gup's `pull --rebase --autostash` reapplies them over pulled
   # changes and CONFLICTS, leaving markers (sometimes while still returning 0). Instead

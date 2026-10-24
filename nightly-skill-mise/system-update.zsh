@@ -12,6 +12,8 @@
 #   4. mise: install any version newer than what's pinned (`bump` in `mise outdated`),
 #      and pin it in ~/.tool-versions as the global default
 #   5. rubygems: `gem update --system` for any installed ruby whose rubygems is behind
+#   6. report only: mise installs `mise prune` would remove, and drift between the global
+#      config's ruby fallback prefix and the ~/.tool-versions ruby
 #
 # Run this to completion BEFORE the repo sweep (repo bundles want current ruby/bundler,
 # and running it first avoids swapping mise/git out from under a running sweep).
@@ -81,4 +83,24 @@ for v in "${rubies[@]}"; do
     "$gem_bin" update --system 2>&1 | tail -1
   fi
 done
+echo "\n===== 6. mise: prune candidates and ruby fallback drift (report only) ====="
+# Nothing else removes superseded installs. mise only knows the configs it has loaded, so a pin
+# in a repo it hasn't seen can show up here: uninstall only what James approves.
+local -a prunable
+prunable=(${(f)"$(mise prune --dry-run 2>&1 | sed -nE 's/^mise ([^ ]+) is prunable:.*/\1/p')"})
+if (( ${#prunable} )); then
+  echo "  prunable (${#prunable}): ${prunable[*]}"
+  echo "  (why: mise prune --dry-run; remove approved ones with mise uninstall <tool>@<version>)"
+else
+  echo "  nothing to prune"
+fi
+# The global config's ruby prefix is the fallback outside $HOME; it should follow ~/.tool-versions.
+local home_ruby fallback_ruby
+home_ruby=$(awk '$1 == "ruby" {print $2}' "$HOME/.tool-versions")
+fallback_ruby=$(sed -nE 's/^ruby *= *"([^"]+)".*/\1/p' "$HOME/.config/mise/config.toml")
+if [[ -n "$home_ruby" && -n "$fallback_ruby" && "$home_ruby" != "$fallback_ruby"* ]]; then
+  echo "  RUBY FALLBACK DRIFT: ~/.config/mise/config.toml has ruby = \"$fallback_ruby\" but ~/.tool-versions pins $home_ruby; bump the prefix to \"${home_ruby%.*}\""
+else
+  echo "  ruby fallback \"$fallback_ruby\" matches ~/.tool-versions ($home_ruby)"
+fi
 echo "\n===== system-update complete ====="
