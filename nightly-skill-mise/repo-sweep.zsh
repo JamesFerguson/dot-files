@@ -158,14 +158,21 @@ sweep_one() {
   # and if that reapply conflicts, we back out cleanly (reset --hard) and leave the WIP
   # safely in the stash rather than leave conflict markers. SKIP_DIRTY=1 = don't touch
   # dirty repos at all (still fetched above).
+  #
+  # The ruby pins stay out of the stash: fix-ruby-pins keeps them as uncommitted bumps
+  # to an installed ruby, and without them gup bundles against an uninstalled one.
+  # Untracked files stay too (no -u), which keeps an untracked .tool-versions in place.
   local stashed=0
-  if [[ -n "$(git -C "$repo" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
+  local -a keep_pins=(':(exclude).ruby-version' ':(exclude).tool-versions')
+  if [[ -n "$(git -C "$repo" status --porcelain --untracked-files=no -- . $keep_pins 2>/dev/null)" ]]; then
     if [[ "${SKIP_DIRTY:-0}" == 1 ]]; then
       printf '%s\t%s\t%s\t-\tSKIP\t-\t-\tuncommitted changes — skipped (fetched, not updated)\n' "$name" "$class" "$branch" >> "$TSV"
       log "SKIP: dirty (fetched only)"
       return
     fi
-    if git -C "$repo" stash push -u -m "repo-sweep WIP $name" </dev/null >>"$DETAIL" 2>&1; then
+    local stash_before; stash_before=$(git -C "$repo" rev-parse -q --verify refs/stash)
+    if git -C "$repo" stash push -m "repo-sweep WIP $name" -- . $keep_pins </dev/null >>"$DETAIL" 2>&1 \
+       && [[ "$(git -C "$repo" rev-parse -q --verify refs/stash)" != "$stash_before" ]]; then
       stashed=1
     else
       printf '%s\t%s\t%s\t-\tSKIP\t-\t-\tdirty; stash failed — skipped\n' "$name" "$class" "$branch" >> "$TSV"
