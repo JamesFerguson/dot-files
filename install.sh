@@ -20,6 +20,7 @@ ln -fs $DOT_FILES_DIR/dot_agignore/agignore ~/.agignore
 ln -fs $DOT_FILES_DIR/dot_bash_profile/bash_profile ~/.bash_profile
 ln -fs $DOT_FILES_DIR/dot_bashrc/bashrc ~/.bashrc
 ln -fs $DOT_FILES_DIR/dot_claude-env/claude-env ~/.claude-env
+mkdir -p ~/.claude && ln -fs $DOT_FILES_DIR/dot_claude/statusline.rb ~/.claude/statusline.rb
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems
