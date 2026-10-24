@@ -71,7 +71,6 @@ brew 'mas' # mac app store cli tool, crippled by Apple
 brew 'mole' # system optimization tool, call w Raycast.
 brew 'aha-app/overitall/oit' # TUI combining process management and log viewing
 brew 'pigz' # multi-core gzip
-brew 'pipx' # run python tools in isolated environments
 brew 'pbzip2' # multi-core bzip2
 brew 'ripgrep' # grep with Rust
 brew 'robzolkos/tap/rollbar-cli' # Rollbar query CLI (list/triage/resolve items, browse occurrences). Its binary is `rollbar`; mcp-install.sh symlinks it to ~/bin/rollbar-rz. The companion delexw RQL CLI (also ships a `rollbar` binary) is npm-installed out of PATH and symlinked to ~/bin/rollbar-dx — see mcp-install.sh.
@@ -83,7 +82,6 @@ brew 'sleepwatcher', restart_service: :changed # run commands on sleep and wake
 brew 'tldr' # cheatsheets on commands
 brew 'unixodbc' # might be used by erlang/elixir to connect to dbs
 brew 'up' # write cli pipes with live preview
-brew 'watchman' # watch files and take action (used by Sorbet & some JS tools)
 brew 'whalebrew' # brew for dockerized tools
 brew 'wxmac', args: ["--build-from-source"] # might be used by erlang/elixir to build GUI apps
 brew 'xdg-ninja' # find files that can be converted to XDG spec
