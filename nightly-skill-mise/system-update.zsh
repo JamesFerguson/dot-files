@@ -7,7 +7,7 @@
 # Steps:
 #   1. brew update
 #   2. brew upgrade of packages past the 12-day cooldown, minus the exclusions
-#      passed as args (default: firefox visual-studio-code claude), + brew cleanup
+#      passed as args (default: firefox visual-studio-code claude claude-code), + brew cleanup
 #   3. mise plugins update (only when plugin-backed tools exist; core tools need none)
 #   4. mise: install any version newer than what's pinned (`bump` in `mise outdated`),
 #      and pin it in ~/.tool-versions as the global default
@@ -21,7 +21,7 @@
 emulate -L zsh
 set -u
 HERE="${0:A:h}"
-EXCLUDE=("$@"); [[ ${#EXCLUDE} -eq 0 ]] && EXCLUDE=(firefox visual-studio-code claude)
+EXCLUDE=("$@"); [[ ${#EXCLUDE} -eq 0 ]] && EXCLUDE=(firefox visual-studio-code claude claude-code)
 
 echo "===== 1. brew update ====="
 brew update 2>&1 | tail -3
