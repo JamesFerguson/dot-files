@@ -156,14 +156,17 @@ end
 
 # ── Non-default model alert ──
 # The payload carries the model id but nothing marking it as Claude Code's default, so learn the
-# default from sessions with no model override in effect. The default comes with the Claude Code
-# version, and a long-running session keeps the version (and default model) it started with, so
-# only a session on the newest version seen may teach it. Every session is then compared against
-# it. An undetected override would teach the wrong default, so check every place Claude reads a
-# model from.
+# default from freshly launched sessions with no model override in effect. The default comes with
+# the Claude Code version, and a long-running session keeps the version (and default model) it
+# started with, so only a session on the newest version seen may teach it. A resumed session keeps
+# the model its conversation was using, so it can't teach it either. Every session is then compared
+# against it. An undetected override would teach the wrong default, so check every place Claude
+# reads a model from. Not caught: a fresh launch that then loads an old conversation with /resume.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 
 def claude_argv
+  return ENV['STATUSLINE_CLAUDE_ARGV'] if ENV['STATUSLINE_CLAUDE_ARGV']
+
   pid = Process.ppid
   8.times do
     ppid, comm = `ps -o ppid=,comm= -p #{pid}`.split(' ', 2).map(&:strip)
@@ -174,7 +177,11 @@ def claude_argv
   ''
 end
 
-def model_override?(project_dir)
+def resumed?(argv)
+  argv.split.drop(1).any? { %w[-r -c --resume --continue].include?(_1) || _1.start_with?('--resume=') }
+end
+
+def model_override?(project_dir, argv)
   settings_files = [
     '~/.claude/settings.json', '~/.claude/settings.local.json',
     '/Library/Application Support/ClaudeCode/managed-settings.json'
@@ -184,7 +191,7 @@ def model_override?(project_dir)
 
   ENV['ANTHROPIC_MODEL'].to_s != '' ||
     settings.any? { _1['model'] || _1.dig('env', 'ANTHROPIC_MODEL') } ||
-    claude_argv.match?(/\s--model[\s=]/)
+    argv.split.drop(1).any? { _1 == '--model' || _1.start_with?('--model=') }
 end
 
 # Strips a context-size suffix such as "[1m]" so it doesn't count as a different model.
@@ -193,7 +200,8 @@ def non_default_model?(model_id, version, project_dir)
 
   id     = model_id.sub(/\[.*\]\z/, '')
   cached = (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
-  if version && !model_override?(project_dir) &&
+  argv   = claude_argv
+  if version && !resumed?(argv) && !model_override?(project_dir, argv) &&
      Gem::Version.new(version) >= Gem::Version.new(cached['version'] || '0')
     cached = { 'version' => version, 'default_id' => id }
     File.write(DEFAULT_MODEL_CACHE, JSON.generate(cached)) rescue nil
