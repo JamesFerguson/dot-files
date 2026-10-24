@@ -33,6 +33,9 @@ SOURCES = TAX / 'wfh_sources'
 DAY_START, DAY_END = time(6), time(23, 59)
 NOT_WORKING = {'leave', 'sick', 'toil', 'public-holiday', 'company-day-off'}
 AWAY = {'office', 'offsite'}
+# Sources that cover the whole year. Denser ones that only exist for part of it (e.g. Claude Code
+# prompts) would make estimated days look longer than calibrated ones, so they're left out.
+SOURCES_USED = ('slack', 'zsh_history', 'git_commits', 'github')
 
 
 def minutes(t):
@@ -53,7 +56,7 @@ def load_activity():
                 for key in ('first', 'last'):
                     if row.get(key):
                         acts[date.fromisoformat(row['date'])]['slack'].append(minutes(time.fromisoformat(row[key])))
-            elif 'ts' in row:
+            elif 'ts' in row and name in SOURCES_USED:
                 t = datetime.fromisoformat(row['ts'])
                 acts[t.date()][name].append(minutes(t.time()))
     lo, hi = minutes(DAY_START), minutes(DAY_END)
@@ -153,23 +156,27 @@ def main(fy_end):
           f'laptop wakes {lead:.0f} min before first activity and sleeps {lag:.0f} min after last (medians); '
           f'estimate minus log hours: median {statistics.median(errors):+.2f}h, '
           f'middle half {statistics.quantiles(errors, n=4)[0]:+.2f}..{statistics.quantiles(errors, n=4)[2]:+.2f}h')
-    print(f"{'month':8} {'wfh_days':>8} {'log_h':>7} {'est_h':>7} {'total_h':>8} {'off_days':>8} {'away_days':>9} {'no_act':>6}")
+    print(f"{'month':8} {'wfh_days':>8} {'log_h':>7} {'est_h':>7} {'total_h':>8} {'weekend_h':>9} {'off_days':>8} {'away_days':>9} {'no_act':>6}")
     totals = collections.Counter()
     for month in sorted({r['date'][:7] for r in rows}):
         m = [r for r in rows if r['date'][:7] == month]
         row = collections.Counter(
             wfh_days=sum(1 for r in m if r['status'] == 'wfh' and r['weekday'] not in ('Sat', 'Sun')),
-            log_h=sum(float(r['wfh_hours']) for r in m if r['source'] == 'log'),
+            log_h=sum(float(r['wfh_hours']) for r in m if r['source'] == 'log' and r['weekday'] not in ('Sat', 'Sun')),
             est_h=sum(float(r['wfh_hours']) for r in m if r['source'] == 'estimated'),
+            weekend_h=sum(float(r['wfh_hours']) for r in m if r['weekday'] in ('Sat', 'Sun')),
             off_days=sum(1 for r in m if r['status'].rstrip('?') in NOT_WORKING),
             away_days=sum(1 for r in m if r['status'] in AWAY),
             no_act=sum(1 for r in m if r['status'] == 'no-activity'))
         row['total_h'] = row['log_h'] + row['est_h']
         totals.update(row)
         print(f"{month:8} {row['wfh_days']:8d} {row['log_h']:7.1f} {row['est_h']:7.1f} {row['total_h']:8.1f} "
-              f"{row['off_days']:8d} {row['away_days']:9d} {row['no_act']:6d}")
+              f"{row['weekend_h']:9.1f} {row['off_days']:8d} {row['away_days']:9d} {row['no_act']:6d}")
     print(f"{'total':8} {totals['wfh_days']:8d} {totals['log_h']:7.1f} {totals['est_h']:7.1f} {totals['total_h']:8.1f} "
-          f"{totals['off_days']:8d} {totals['away_days']:9d} {totals['no_act']:6d}")
+          f"{totals['weekend_h']:9.1f} {totals['off_days']:8d} {totals['away_days']:9d} {totals['no_act']:6d}")
+    print('log hours not counted (day noted off/away):', ', '.join(
+        f"{r['date']} {r['status']} {float(r['log_hours']):.1f}h" for r in rows
+        if r['log_hours'] and float(r['log_hours']) and not float(r['wfh_hours'])))
     print('no-activity weekdays:', ', '.join(r['date'] for r in rows if r['status'] == 'no-activity'))
     print('activity on a day noted off/away:', ', '.join(
         f"{r['date']} {r['status']} ({r['activity_first']}-{r['activity_last']}, {r['activity_points']} pts)"
