@@ -33,9 +33,7 @@ setopt pipe_fail 2>/dev/null || true
 
 CODE_DIR="${CODE_DIR:-$HOME/code}"
 DOTFILES="$HOME/code/personal/dot-files"
-# Source gup + helpers from THIS worktree (the mise-ported copies), not live dot-files,
-# so the ported sweep is self-consistent (uses the ported gup, which resolves ruby via mise).
-INCLUDES="$HOME/code/personal/dot-files-mise-spike/dot_zshrc/includes"
+INCLUDES="$DOTFILES/dot_zshrc/includes"
 HERE="${0:A:h}"
 LOGDIR="${LOGDIR:-$PWD}"
 ONLY="${ONLY:-}"
