@@ -154,60 +154,72 @@ def spend_meter(cost_total)
   { pct: (cap.positive? ? (spend / cap * 100).round : 0), spend: spend, cap: cap }
 end
 
-# ── Non-default model alert ──
-# The payload carries the model id but nothing marking it as Claude Code's default, so learn the
-# default from freshly launched sessions with no model override in effect. The default comes with
-# the Claude Code version, and a long-running session keeps the version (and default model) it
-# started with, so only a session on the newest version seen may teach it. A resumed session keeps
-# the model its conversation was using, so it can't teach it either. Every session is then compared
-# against it. An undetected override would teach the wrong default, so check every place Claude
-# reads a model from. Not caught: a fresh launch that then loads an old conversation with /resume.
+# ── Model alerts ──
+# The payload carries the model id but nothing marking it as Claude Code's default. A launchd job
+# (statusline-default-model.zsh) records the default, read from a fresh session no setting can
+# override, plus the other models on offer. The model turns red when it isn't that default.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
+MODEL_TIERS = %w[haiku sonnet opus fable].freeze
 
-def claude_argv
-  return ENV['STATUSLINE_CLAUDE_ARGV'] if ENV['STATUSLINE_CLAUDE_ARGV']
+def model_info
+  @model_info ||= (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
+end
 
-  pid = Process.ppid
-  8.times do
-    ppid, comm = `ps -o ppid=,comm= -p #{pid}`.split(' ', 2).map(&:strip)
-    return `ps -o args= -p #{pid}`.strip if File.basename(comm.to_s) == 'claude'
-    return '' if ppid.to_i <= 1
-    pid = ppid.to_i
+def bare_model_id(id) = id.to_s.sub(/\[.*\]\z/, '')
+
+# Matches the family and version in an id such as claude-opus-5-5 or claude-haiku-4-5-20251001.
+MODEL_ID = /\Aclaude-(?<family>[a-z]+)-(?<major>\d+)(?:-(?<minor>\d{1,2}))?(?:-\d{8})?\z/
+
+def model_rank(id)
+  m = MODEL_ID.match(bare_model_id(id)) or return nil
+  tier = MODEL_TIERS.index(m[:family]) or return nil
+  [tier, Gem::Version.new([m[:major], m[:minor]].compact.join('.'))]
+end
+
+def model_name(id)
+  m = MODEL_ID.match(bare_model_id(id)) or return bare_model_id(id)
+  "#{m[:family].capitalize} #{[m[:major], m[:minor]].compact.join('.')}"
+end
+
+def non_default_model?(model_id)
+  default_id = model_info['default_id']
+  !!(model_id && default_id) && bare_model_id(model_id) != default_id
+end
+
+# A session keeps the advisor it started with until /clear or /compact, so settings.json can be
+# stale; each assistant entry in the transcript records the one in effect. Reads backwards from the
+# end, a chunk at a time, up to a cap.
+def session_advisor(transcript_path)
+  return nil unless transcript_path && File.file?(transcript_path)
+
+  File.open(transcript_path, 'rb') do |f|
+    pos  = f.size
+    tail = +''
+    while pos.positive? && f.size - pos < 8 << 20
+      step = [pos, 256 << 10].min
+      pos -= step
+      f.seek(pos)
+      lines = (f.read(step) + tail).split("\n")
+      tail  = pos.positive? ? lines.shift.to_s : ''
+      lines.reverse_each do |line|
+        next unless line.include?('"advisorModel"') && !line.include?('"isSidechain":true')
+
+        id = line[/"advisorModel":"([^"]+)"/, 1] and return id
+      end
+    end
   end
-  ''
+  nil
 end
 
-def resumed?(argv)
-  argv.split.drop(1).any? { %w[-r -c --resume --continue].include?(_1) || _1.start_with?('--resume=') }
-end
+# Red unless the advisor outranks the model it advises; an equal advisor is fine only when the
+# model is already the top one on offer. Unknown families aren't flagged.
+def weak_advisor?(model_id, advisor_id)
+  main, adv = model_rank(model_id), model_rank(advisor_id)
+  return false unless main && adv
+  return false if (adv <=> main).positive?
 
-def model_override?(project_dir, argv)
-  settings_files = [
-    '~/.claude/settings.json', '~/.claude/settings.local.json',
-    '/Library/Application Support/ClaudeCode/managed-settings.json'
-  ].map { File.expand_path(_1) }
-  settings_files += %w[settings.json settings.local.json].map { File.join(project_dir, '.claude', _1) } unless project_dir.empty?
-  settings = settings_files.filter_map { (JSON.parse(File.read(_1)) rescue nil) }
-
-  ENV['ANTHROPIC_MODEL'].to_s != '' ||
-    settings.any? { _1['model'] || _1.dig('env', 'ANTHROPIC_MODEL') } ||
-    argv.split.drop(1).any? { _1 == '--model' || _1.start_with?('--model=') }
-end
-
-# Strips a context-size suffix such as "[1m]" so it doesn't count as a different model.
-def non_default_model?(model_id, version, project_dir)
-  return false unless model_id
-
-  id     = model_id.sub(/\[.*\]\z/, '')
-  cached = (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
-  argv   = claude_argv
-  if version && !resumed?(argv) && !model_override?(project_dir, argv) &&
-     Gem::Version.new(version) >= Gem::Version.new(cached['version'] || '0')
-    cached = { 'version' => version, 'default_id' => id }
-    File.write(DEFAULT_MODEL_CACHE, JSON.generate(cached)) rescue nil
-  end
-
-  cached['default_id'] && id != cached['default_id']
+  top = [model_info['default_id'], *model_info['offered'], model_id].filter_map { model_rank(_1) }.max
+  !(adv == main && !(main <=> top).negative?)
 end
 
 ALERT = "\033[1;97;41m" # bold bright white on red
@@ -228,12 +240,13 @@ if sm
   reset_month = relative_time(month_reset_epoch)
   out += " #{pct_ansi(sm[:pct])}💵 ~#{sm[:pct]}%#{RESET}#{reset_month ? " #{DIM}#{reset_month}#{RESET}" : ''}"
 end
-project_dir = data.dig('workspace', 'project_dir') || cwd
-out += if non_default_model?(data.dig('model', 'id'), data['version'], project_dir)
-         " #{ALERT} ⚠️ #{model} #{RESET}"
-       else
-         " #{BLUE}🤖 #{model}#{RESET}"
-       end
+model_id   = data.dig('model', 'id')
+advisor_id = (session_advisor(data['transcript_path']) rescue nil)
+out += non_default_model?(model_id) ? " #{ALERT} ⚠️ #{model} #{RESET}" : " #{BLUE}🤖 #{model}#{RESET}"
+if advisor_id
+  name = model_name(advisor_id)
+  out += (weak_advisor?(model_id, advisor_id) rescue false) ? " #{ALERT} 🎓 #{name} #{RESET}" : " #{CYAN}🎓 #{name}#{RESET}"
+end
 out += " #{MAGENTA}💪 #{effort}#{RESET}"
 
 print out

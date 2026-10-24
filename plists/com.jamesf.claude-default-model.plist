@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.claude-default-model</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/james.ferguson/code/personal/dot-files/dot_claude/statusline-default-model.zsh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+  <key>WatchPaths</key>
+  <array>
+    <string>/opt/homebrew/Caskroom/claude-code</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/claude-default-model.out</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/claude-default-model.err</string>
+</dict>
+</plist>
