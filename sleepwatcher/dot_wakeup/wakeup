@@ -14,4 +14,7 @@ LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
 mkdir -p "$(dirname "$LOG_FILE")"
 echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Wake" >> "$LOG_FILE"
 
+# Backgrounded: it waits up to a minute for Wi-Fi to rejoin before checking for home.
+"$HOME/code/personal/dot-files/sleepwatcher/keep-awake-at-home" >> /tmp/sleepwatcher.log 2>&1 &
+
 echo -e "Finished .wakeup script\n\n" >> /tmp/sleepwatcher.log

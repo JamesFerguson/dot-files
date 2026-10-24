@@ -1,0 +1,51 @@
+#!/bin/bash
+# Keeps the Mac and display awake until 17:20 on weekdays, but only on the home network.
+# Run from the sleepwatcher wake hook. A script rather than an Amphetamine schedule + Wi-Fi
+# trigger: Amphetamine's Wi-Fi check needs Location Services and nags endlessly on macOS 27.
+#
+# macOS hides the Wi-Fi name (SSID) from anything without location permission, so home is
+# recognised by the router instead: the FRITZ!Box's TR-064 description lists device UUIDs that
+# end in its own MAC address. That ID lives in ~/.config/keep-awake/home-router-id (not in the
+# repo). Write it once from home:
+#   curl -s http://192.168.178.1:49000/tr64desc.xml | grep -o -m1 '[0-9A-F]\{12\}</UDN>' | cut -c1-12 \
+#     > ~/.config/keep-awake/home-router-id
+#
+# DRY_RUN=1 prints the decision without starting caffeinate; END_TIME=HH:MM and DAY_OF_WEEK=1-7
+# override the clock for testing.
+
+END_TIME=${END_TIME:-17:20}
+ID_FILE="$HOME/.config/keep-awake/home-router-id"
+PID_FILE="/tmp/keep-awake-at-home.pid"
+log() { echo "keep-awake: $*"; }
+
+# A fresh wake replaces whatever an earlier wake started.
+[[ -f $PID_FILE ]] && kill "$(cat "$PID_FILE")" 2>/dev/null && rm -f "$PID_FILE"
+
+(( ${DAY_OF_WEEK:-$(date +%u)} <= 5 )) || { log "weekend, skipping"; exit 0; }
+
+now=$(date +%s)
+end=$(date -j -f '%H:%M:%S' "$END_TIME:00" +%s)
+(( end > now )) || { log "past $END_TIME, skipping"; exit 0; }
+
+home_id=$(cat "$ID_FILE" 2>/dev/null)
+[[ -n $home_id ]] || { log "no $ID_FILE, skipping"; exit 0; }
+
+# Wi-Fi can take a while to rejoin after wake, so keep asking the router for a minute.
+at_home=0
+for _ in {1..12}; do
+  router=$(/sbin/route -n get default 2>/dev/null | awk '/gateway:/ {print $2}')
+  if [[ -n $router ]] && /usr/bin/curl -s -m 3 "http://$router:49000/tr64desc.xml" | grep -q -i "$home_id"; then
+    at_home=1; break
+  fi
+  sleep 5
+done
+(( at_home )) || { log "not on the home network, skipping"; exit 0; }
+
+secs=$(( end - $(date +%s) ))
+if [[ -n $DRY_RUN ]]; then
+  log "would keep awake for ${secs}s (until $END_TIME)"
+  exit 0
+fi
+/usr/bin/caffeinate -d -i -t "$secs" &
+echo $! > "$PID_FILE"
+log "keeping awake until $END_TIME (caffeinate pid $!)"
