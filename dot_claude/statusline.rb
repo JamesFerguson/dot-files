@@ -182,13 +182,13 @@ def model_name(id)
 end
 
 def non_default_model?(model_id)
-  default_id = model_info['default_id']
+  default_id = model_info['default_id'] && bare_model_id(model_info['default_id'])
   !!(model_id && default_id) && bare_model_id(model_id) != default_id
 end
 
 # A session keeps the advisor it started with until /clear or /compact, so settings.json can be
-# stale; each assistant entry in the transcript records the one in effect. Reads backwards from the
-# end, a chunk at a time, up to a cap.
+# stale; each assistant entry in the transcript records the one in effect, and has no key when the
+# advisor is off. Reads backwards from the end, a chunk at a time, to the latest such entry.
 def session_advisor(transcript_path)
   return nil unless transcript_path && File.file?(transcript_path)
 
@@ -202,9 +202,9 @@ def session_advisor(transcript_path)
       lines = (f.read(step) + tail).split("\n")
       tail  = pos.positive? ? lines.shift.to_s : ''
       lines.reverse_each do |line|
-        next unless line.include?('"advisorModel"') && !line.include?('"isSidechain":true')
+        next unless line.include?('"type":"assistant"') && !line.include?('"isSidechain":true')
 
-        id = line[/"advisorModel":"([^"]+)"/, 1] and return id
+        return line[/"advisorModel":"([^"]+)"/, 1]
       end
     end
   end

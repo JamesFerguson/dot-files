@@ -6,7 +6,9 @@
   <string>com.jamesf.claude-default-model</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/james.ferguson/code/personal/dot-files/dot_claude/statusline-default-model.zsh</string>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <string>exec "$HOME/.claude/statusline-default-model.zsh"</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
