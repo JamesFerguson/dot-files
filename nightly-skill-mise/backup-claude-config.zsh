@@ -26,7 +26,7 @@ fi
 git add -A
 git commit -q -m "nightly sync from ~/.claude"
 
-# push.sh handles the personal-vs-work gh account and restores the active one.
+# push.sh is a plain git push over the SSH remote (gh only holds the work account).
 if ./push.sh >/dev/null 2>&1; then
   echo "claude-config: backup updated + pushed ($(git rev-parse --short HEAD))."
 else
