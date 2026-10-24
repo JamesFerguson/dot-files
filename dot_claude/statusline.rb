@@ -160,6 +160,7 @@ end
 # override, plus the other models on offer. The model turns red when it isn't that default.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 MODEL_TIERS = %w[haiku sonnet opus fable].freeze
+SETTINGS_FILE = ENV['STATUSLINE_SETTINGS'] || File.expand_path('~/.claude/settings.json')
 
 def model_info
   @model_info ||= (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
@@ -188,9 +189,11 @@ end
 
 # A session keeps the advisor it started with until /clear or /compact, so settings.json can be
 # stale; each assistant entry in the transcript records the one in effect, and has no key when the
-# advisor is off. Reads backwards from the end, a chunk at a time, to the latest such entry.
+# advisor is off. Nothing records it at a compaction or a /clear, though, so when one of those comes
+# after the latest assistant entry, or there isn't one, the next turn picks up settings.json.
+# Reads backwards from the end, a chunk at a time.
 def session_advisor(transcript_path)
-  return nil unless transcript_path && File.file?(transcript_path)
+  return configured_advisor unless transcript_path && File.file?(transcript_path)
 
   File.open(transcript_path, 'rb') do |f|
     pos  = f.size
@@ -202,13 +205,25 @@ def session_advisor(transcript_path)
       lines = (f.read(step) + tail).split("\n")
       tail  = pos.positive? ? lines.shift.to_s : ''
       lines.reverse_each do |line|
-        next unless line.include?('"type":"assistant"') && !line.include?('"isSidechain":true')
+        next unless line.include?('"type":"assistant"') || line.include?('"compact_boundary"')
 
-        return line[/"advisorModel":"([^"]+)"/, 1]
+        entry = JSON.parse(line) rescue next
+        next if entry['isSidechain']
+        return entry['advisorModel'] if entry['type'] == 'assistant'
+        return configured_advisor if entry['subtype'] == 'compact_boundary'
       end
     end
   end
-  nil
+  configured_advisor
+end
+
+# settings.json holds an alias such as "fable"; resolve it to the newest id of that family on offer.
+def configured_advisor
+  setting = (JSON.parse(File.read(SETTINGS_FILE))['advisorModel'] rescue nil) or return nil
+  return setting if setting.start_with?('claude-')
+
+  [model_info['default_id'], *model_info['offered']].compact.map { bare_model_id(_1) }
+    .select { MODEL_ID.match(_1)&.[](:family) == setting }.max_by { model_rank(_1) } || "claude-#{setting}"
 end
 
 # Red unless the advisor outranks the model it advises; an equal advisor is fine only when the
