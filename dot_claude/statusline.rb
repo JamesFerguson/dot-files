@@ -156,9 +156,11 @@ end
 
 # ── Non-default model alert ──
 # The payload carries the model id but nothing marking it as Claude Code's default, so learn the
-# default: a session with no model override in effect is running it. A session with an override
-# is compared against the last learned id instead. An undetected override would teach the wrong
-# default, so check every place Claude reads a model from.
+# default from sessions with no model override in effect. The default comes with the Claude Code
+# version, and a long-running session keeps the version (and default model) it started with, so
+# only a session on the newest version seen may teach it. Every session is then compared against
+# it. An undetected override would teach the wrong default, so check every place Claude reads a
+# model from.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 
 def claude_argv
@@ -186,17 +188,18 @@ def model_override?(project_dir)
 end
 
 # Strips a context-size suffix such as "[1m]" so it doesn't count as a different model.
-def non_default_model?(model_id, project_dir)
+def non_default_model?(model_id, version, project_dir)
   return false unless model_id
 
-  id = model_id.sub(/\[.*\]\z/, '')
-  unless model_override?(project_dir)
-    File.write(DEFAULT_MODEL_CACHE, JSON.generate('default_id' => id)) rescue nil
-    return false
+  id     = model_id.sub(/\[.*\]\z/, '')
+  cached = (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
+  if version && !model_override?(project_dir) &&
+     Gem::Version.new(version) >= Gem::Version.new(cached['version'] || '0')
+    cached = { 'version' => version, 'default_id' => id }
+    File.write(DEFAULT_MODEL_CACHE, JSON.generate(cached)) rescue nil
   end
 
-  default_id = (JSON.parse(File.read(DEFAULT_MODEL_CACHE))['default_id'] rescue nil)
-  default_id.nil? || id != default_id
+  cached['default_id'] && id != cached['default_id']
 end
 
 ALERT = "\033[1;97;41m" # bold bright white on red
@@ -218,7 +221,7 @@ if sm
   out += " #{pct_ansi(sm[:pct])}💵 ~#{sm[:pct]}%#{RESET}#{reset_month ? " #{DIM}#{reset_month}#{RESET}" : ''}"
 end
 project_dir = data.dig('workspace', 'project_dir') || cwd
-out += if non_default_model?(data.dig('model', 'id'), project_dir)
+out += if non_default_model?(data.dig('model', 'id'), data['version'], project_dir)
          " #{ALERT} ⚠️ #{model} #{RESET}"
        else
          " #{BLUE}🤖 #{model}#{RESET}"
