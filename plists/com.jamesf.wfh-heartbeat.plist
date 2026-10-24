@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.wfh-heartbeat</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <string>exec "$HOME/code/personal/dot-files/sleepwatcher/wfh-heartbeat" >> "$HOME/Library/Logs/sleepwatcher.log" 2>&amp;1</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>900</integer>
+</dict>
+</plist>

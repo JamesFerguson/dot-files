@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # -e to interpret escape chars
-touch /tmp/sleepwatcher.log
-echo -e "\nRunning .sleep script $(date)" >> /tmp/sleepwatcher.log
+HOOK_LOG="$HOME/Library/Logs/sleepwatcher.log" # not /tmp, which a restart wipes
+echo -e "\nRunning .sleep script $(date)" >> "$HOOK_LOG"
 
-# echo -e  "$(env)" >> /tmp/sleepwatcher.log
+# echo -e  "$(env)" >> "$HOOK_LOG"
+
+# Log sleep event to work from home CSV
+LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Sleep" >> "$LOG_FILE"
 
 # Script may run in a restricted env, doesn't get /etc/zshenv vars
 HOMEBREW_PREFIX='/opt/homebrew'
@@ -12,9 +17,4 @@ HOMEBREW_PREFIX='/opt/homebrew'
 # $HOMEBREW_PREFIX/bin/blueutil -p 0
 $HOMEBREW_PREFIX/bin/blueutil --disconnect "70-5a-6f-6b-66-2f" # EarFun Air Pro 4
 
-# Log sleep event to work from home CSV
-LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
-mkdir -p "$(dirname "$LOG_FILE")"
-echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Sleep" >> "$LOG_FILE"
-
-echo -e  "Finished .sleep script\n\n" >> /tmp/sleepwatcher.log
+echo -e  "Finished .sleep script\n\n" >> "$HOOK_LOG"

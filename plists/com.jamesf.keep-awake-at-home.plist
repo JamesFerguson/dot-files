@@ -8,16 +8,12 @@
   <array>
     <string>/bin/zsh</string>
     <string>-fc</string>
-    <string>exec "$HOME/code/personal/dot-files/sleepwatcher/keep-awake-at-home"</string>
+    <string>exec "$HOME/code/personal/dot-files/sleepwatcher/keep-awake-at-home" >> "$HOME/Library/Logs/sleepwatcher.log" 2>&amp;1</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
   <!-- The script exits once caffeinate is running; without this launchd kills caffeinate with it. -->
   <key>AbandonProcessGroup</key>
   <true/>
-  <key>StandardOutPath</key>
-  <string>/tmp/sleepwatcher.log</string>
-  <key>StandardErrorPath</key>
-  <string>/tmp/sleepwatcher.log</string>
 </dict>
 </plist>

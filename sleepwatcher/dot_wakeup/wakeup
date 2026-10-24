@@ -1,7 +1,12 @@
 #!/bin/bash
 
-touch /tmp/sleepwatcher.log
-echo -e "\nRunning .wakeup script $(date)" >> /tmp/sleepwatcher.log
+HOOK_LOG="$HOME/Library/Logs/sleepwatcher.log" # not /tmp, which a restart wipes
+echo -e "\nRunning .wakeup script $(date)" >> "$HOOK_LOG"
+
+# Log wake event to work from home CSV
+LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Wake" >> "$LOG_FILE"
 
 # Script may run in a restricted env, doesn't get /etc/zshenv vars
 HOMEBREW_PREFIX='/opt/homebrew'
@@ -9,15 +14,10 @@ HOMEBREW_PREFIX='/opt/homebrew'
 # /opt/homebrew/bin/blueutil -p 1
 $HOMEBREW_PREFIX/bin/blueutil --connect "70-5a-6f-6b-66-2f" # EarFun Air Pro 4
 
-# Log wake event to work from home CSV
-LOG_FILE="$HOME/Documents/Financial/Tax/work_from_home_log.csv"
-mkdir -p "$(dirname "$LOG_FILE")"
-echo "$(date '+%Y-%m-%d'),$(date '+%H:%M:%S'),Wake" >> "$LOG_FILE"
-
 # Work laptop only (same hostname test as install.sh). Backgrounded: it waits up to a minute
 # for Wi-Fi to rejoin before checking for home.
 if [[ "$(hostname)" == *"fz-"* ]]; then
-  "$HOME/code/personal/dot-files/sleepwatcher/keep-awake-at-home" >> /tmp/sleepwatcher.log 2>&1 &
+  "$HOME/code/personal/dot-files/sleepwatcher/keep-awake-at-home" >> "$HOOK_LOG" 2>&1 &
 fi
 
-echo -e "Finished .wakeup script\n\n" >> /tmp/sleepwatcher.log
+echo -e "Finished .wakeup script\n\n" >> "$HOOK_LOG"

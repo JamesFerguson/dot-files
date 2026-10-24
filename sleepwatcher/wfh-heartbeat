@@ -1,0 +1,26 @@
+#!/bin/zsh -f
+# Writes an "Awake" line to the heartbeat CSV every 15 minutes while the Mac is awake (launchd
+# StartInterval, which doesn't fire during sleep), so work-from-home hours don't depend on
+# sleepwatcher catching every sleep and wake.
+#
+# sleepwatcher sees no shutdown or startup, so the first run after a restart also adds a "Boot" line
+# at the actual boot time. It goes in the heartbeat CSV, not the sleep/wake CSV: macOS only lets the
+# processes that already write that file (sleepwatcher's hooks) append to it. Restarts are recognised
+# by kern.boottime changing, not by a marker in /tmp, which macOS clears while the Mac is still up.
+
+TAX_DIR="$HOME/Documents/Financial/Tax"
+BEATS="$TAX_DIR/work_from_home_heartbeat.csv"
+HOOK_LOG="$HOME/Library/Logs/sleepwatcher.log"
+STATE="$HOME/.local/state/wfh-heartbeat/boottime"
+
+mkdir -p "$TAX_DIR" "${STATE:h}" "${HOOK_LOG:h}"
+
+boot=$(/usr/sbin/sysctl -n kern.boottime)
+boot=${${boot#*sec = }%%,*}
+if [[ $(cat "$STATE" 2>/dev/null) != "$boot" ]]; then
+  echo "$(/bin/date -r "$boot" '+%Y-%m-%d,%H:%M:%S'),Boot" >> "$BEATS" &&
+    echo "$boot" > "$STATE" &&
+    echo "wfh-heartbeat: logged Boot at $(/bin/date -r "$boot")" >> "$HOOK_LOG"
+fi
+
+echo "$(/bin/date '+%Y-%m-%d,%H:%M:%S'),Awake" >> "$BEATS"

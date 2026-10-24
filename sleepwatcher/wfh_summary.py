@@ -17,6 +17,11 @@ Cleaning rules:
     unknown. Its weekdays are flagged `left-awake` and estimated at the median full weekday.
   - A session of 72 hours or more is a gap in the log (the Mac was off, or away for days), so its
     days are flagged `no-data` and not counted.
+  - sleepwatcher doesn't see a shutdown or startup, so `wfh-heartbeat` adds a Boot line to the
+    heartbeat CSV after each restart. A Boot starts a session like a Wake, and ends any open session at the last heartbeat
+    before it (or drops that session when there's no heartbeat to end it).
+  - `heartbeat_hours` counts 15 minutes for each heartbeat that follows another within 20 minutes,
+    i.e. while the Mac stayed awake. It's a cross-check that doesn't depend on catching every wake.
 """
 import csv
 import collections
@@ -26,6 +31,8 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 LOG = Path.home() / 'Documents/Financial/Tax/work_from_home_log.csv'
+BEATS = LOG.parent / 'work_from_home_heartbeat.csv'
+BEAT, BEAT_GAP = timedelta(minutes=15), timedelta(minutes=20)
 MIN_SESSION = timedelta(minutes=5)
 MERGE_GAP = timedelta(minutes=10)
 LEFT_AWAKE = timedelta(hours=16)
@@ -33,6 +40,35 @@ LOG_GAP = timedelta(hours=72)
 DAY_START = time(6)
 CORE_START, CORE_END = time(8), time(18)  # a long session flags a day only if it spans an hour of these
 SHORT_WEEKDAY_HOURS = 4
+
+
+def read_csv_times(path):
+    if not path.exists():
+        return []
+    with path.open() as f:
+        return [(datetime.strptime(f'{d} {t}', '%Y-%m-%d %H:%M:%S'), k) for d, t, k in csv.reader(f)]
+
+
+def with_boots_as_wakes(events, beats):
+    """Turn each Boot into a Wake, closing the session it interrupted at the last heartbeat before it."""
+    out = []
+    for t, k in events:
+        if k == 'Boot':
+            if out and out[-1][1] == 'Wake':
+                last_beat = max((b for b in beats if out[-1][0] < b < t), default=None)
+                if last_beat:
+                    out.append((last_beat, 'Sleep'))
+            k = 'Wake'
+        out.append((t, k))
+    return out
+
+
+def heartbeat_hours(beats):
+    hours = collections.Counter()
+    for prev, t in zip(beats, beats[1:]):
+        if t - prev <= BEAT_GAP:
+            hours[t.date()] += BEAT.total_seconds() / 3600
+    return hours
 
 
 def sessions(events, lo, hi):
@@ -88,8 +124,11 @@ def flag(d, day):
 def main(fy_end):
     lo, hi = datetime(fy_end - 1, 7, 1), datetime(fy_end, 7, 1)
     label = f'FY{(fy_end - 1) % 100:02d}-{fy_end % 100:02d}'
-    with LOG.open() as f:
-        events = [(datetime.strptime(f'{d} {t}', '%Y-%m-%d %H:%M:%S'), k) for d, t, k in csv.reader(f)]
+    beat_rows = read_csv_times(BEATS)
+    beats = sorted(t for t, k in beat_rows if k == 'Awake')
+    boots = [(t, k) for t, k in beat_rows if k == 'Boot']
+    events = with_boots_as_wakes(sorted(read_csv_times(LOG) + boots, key=lambda e: e[0]), beats)  # stable: same-second Wake,Sleep pairs keep their order
+    beat_hours = heartbeat_hours(beats)
 
     in_fy = [(t, k) for t, k in events if lo <= t < hi]
     with (LOG.parent / f'work_from_home_{label}_events.csv').open('w', newline='') as f:
@@ -103,12 +142,12 @@ def main(fy_end):
 
     with (LOG.parent / f'work_from_home_{label}_daily.csv').open('w', newline='') as f:
         w = csv.writer(f, lineterminator='\n')
-        w.writerow(['date', 'weekday', 'recorded_hours', 'estimated_hours', 'first_active', 'last_active', 'sessions', 'flag'])
+        w.writerow(['date', 'weekday', 'recorded_hours', 'estimated_hours', 'first_active', 'last_active', 'sessions', 'flag', 'heartbeat_hours'])
         for d in sorted(days):
             v = days[d]
             w.writerow([d, d.strftime('%a'), f"{v['hours']:.2f}", f'{estimate(d, v):.2f}' if estimate(d, v) else '',
                         v['first'] and v['first'].strftime('%H:%M'), v['last'] and v['last'].strftime('%H:%M'),
-                        v['sessions'], flag(d, v)])
+                        v['sessions'], flag(d, v), f'{beat_hours[d]:.2f}' if beat_hours[d] else ''])
 
     first_day, last_day = in_fy[0][0].date(), in_fy[-1][0].date()
     print(f'{label}: {len(in_fy)} raw events, {in_fy[0][0]:%Y-%m-%d %H:%M} to {in_fy[-1][0]:%Y-%m-%d %H:%M}')
