@@ -1,0 +1,26 @@
+#!/bin/zsh -f
+# Claude Code hook (UserPromptSubmit and Stop): appends one line per prompt sent and per response
+# finished to a CSV, so a year's work-from-home hours can be rebuilt from Claude activity too.
+# Claude Code keeps prompt history and transcripts only for a while, so they can't do this later.
+#
+# Columns: date,time,event,project,session_id,entrypoint,attended. Only timestamps and where the
+# session ran are logged, never prompt or response text. `attended` comes from
+# CLAUDE_CODE_SESSION_ATTENDED, so headless runs (nightly jobs, future_claude) can be left out.
+# Always exits 0: logging must never get in the way of a prompt.
+
+LOG="$HOME/Documents/Financial/Tax/claude_activity_log.csv"
+FALLBACK="$HOME/.local/state/claude-activity/claude_activity_log.csv" # if macOS refuses ~/Documents to this process
+
+input=$(cat)
+jq=/opt/homebrew/bin/jq
+if [[ -x $jq ]]; then
+  fields=("${(@f)$(print -r -- "$input" | $jq -r '.hook_event_name // "", .cwd // "", .session_id // ""' 2>/dev/null)}")
+fi
+event=${fields[1]:-unknown} project=${fields[2]:-$PWD} session=${fields[3]:-}
+[[ $event == UserPromptSubmit ]] && event=Prompt
+
+line="$(/bin/date '+%Y-%m-%d,%H:%M:%S'),$event,\"${project//\"/\"\"}\",$session,${CLAUDE_CODE_ENTRYPOINT:-},${CLAUDE_CODE_SESSION_ATTENDED:-0}"
+{ print -r -- "$line" >> "$LOG" } 2>/dev/null || {
+  mkdir -p "${FALLBACK:h}" && print -r -- "$line" >> "$FALLBACK"
+} 2>/dev/null
+exit 0

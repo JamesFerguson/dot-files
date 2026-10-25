@@ -11,12 +11,14 @@ Reads, next to the log (~/Documents/Financial/Tax/):
                                              slack_weekend_*.jsonl {"date","times","last"} for weekends
   wfh_sources/day_notes.csv                  date,kind,part,note: leave, TOIL, holidays, office,
                                              offsite and appointments
+  claude_activity_log.csv                    prompts and finished responses in attended Claude Code
+                                             sessions, from the wfh-activity-log hook
 Writes work_from_home_FY<yy>-<yy>_full.csv and prints a monthly summary.
 
-Any Slack, git or GitHub activity counts as working. A weekday worked at home is:
+Any Slack message, git commit, GitHub action, Claude Code prompt or shell command counts as working. A weekday worked at home is:
   - a core day: activity from 06:00 to 19:30, continuing into the evening only while it has no
     gap of an hour or more (shell history helps fill in the day here, since Slack gives only each
-    day's first and last message). It starts at
+    weekday's first and last message). It starts at
     START, or the first activity if that's earlier. Days covered by the sleep/wake log count only the
     time the laptop was awake, ending when it last slept (often while supervising a long Claude
     task, with no other activity). Other days, and logged days where the log caught less than half
@@ -45,8 +47,9 @@ import wfh_summary  # noqa: E402
 
 TAX = Path.home() / 'Documents/Financial/Tax'
 SOURCES = TAX / 'wfh_sources'
-ACTIVITY = ('slack', 'git_commits', 'github', 'claude_prompts')
-PRESENCE = ACTIVITY + ('zsh_history',)  # shell use shows the working day's extent, but isn't counted out of hours
+CLAUDE_LOG = TAX / 'claude_activity_log.csv'  # from the wfh-activity-log Claude Code hook
+PERSONAL_PROJECTS = str(Path.home() / 'code/personal')
+ACTIVITY = ('slack', 'git_commits', 'github', 'claude_prompts', 'zsh_history')
 START = 9 * 60
 CLOCK_OFF_START = 19 * 60 + 30
 DAYTIME = (6 * 60, 24 * 60)
@@ -69,7 +72,7 @@ def load_activity():
     for path in glob.glob(str(SOURCES / '*.jsonl')):
         name = Path(path).stem
         source = 'slack' if name.startswith('slack') else name
-        if source not in PRESENCE:
+        if source not in ACTIVITY:
             continue
         for line in open(path):
             row = json.loads(line)
@@ -80,6 +83,10 @@ def load_activity():
             elif 'ts' in row:
                 t = datetime.fromisoformat(row['ts'])
                 acts[t.date()][source].append(minutes(t.time()))
+    if CLAUDE_LOG.exists():
+        for d, t, _event, project, _session, _entrypoint, attended in csv.reader(open(CLAUDE_LOG)):
+            if attended == '1' and not project.startswith(PERSONAL_PROJECTS):
+                acts[date.fromisoformat(d)]['claude_prompts'].append(minutes(time.fromisoformat(t)))
     return acts
 
 
@@ -159,7 +166,7 @@ def main(fy_end):
         r = daily_log.get(d)
         return log_from <= d <= log_to and r is not None and r['flag'] in ('', 'short-weekday') and sessions.get(d)
 
-    def points(d, sources=PRESENCE):
+    def points(d, sources=ACTIVITY):
         return sorted(m for s, ms in acts.get(d, {}).items() if s in sources for m in ms)
 
     # Calibrate on full logged weekdays: how far the laptop's first wake and last sleep sit outside activity.

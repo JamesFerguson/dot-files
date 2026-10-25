@@ -22,6 +22,7 @@ ln -fs $DOT_FILES_DIR/dot_bashrc/bashrc ~/.bashrc
 ln -fs $DOT_FILES_DIR/dot_claude-env/claude-env ~/.claude-env
 mkdir -p ~/.claude && ln -fs $DOT_FILES_DIR/dot_claude/statusline.rb ~/.claude/statusline.rb
 ln -fs $DOT_FILES_DIR/dot_claude/statusline-default-model.zsh ~/.claude/statusline-default-model.zsh
+mkdir -p ~/.claude/hooks && ln -fs $DOT_FILES_DIR/dot_claude/hooks/wfh-activity-log ~/.claude/hooks/wfh-activity-log  # UserPromptSubmit + Stop hook in settings.json
 # General Claude rules. A directory link, not per-file links, so the Edit tool can still write them.
 mkdir -p ~/.claude/rules && ln -sfh $DOT_FILES_DIR/dot_claude/rules ~/.claude/rules/general
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
