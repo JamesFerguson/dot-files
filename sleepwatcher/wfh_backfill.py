@@ -13,9 +13,13 @@ Reads, next to the log (~/Documents/Financial/Tax/):
                                              offsite and appointments
   claude_activity_log.csv                    prompts and finished responses in attended Claude Code
                                              sessions, from the wfh-activity-log hook
+  wfh_sources/outlook_sent.jsonl             sent emails: {"sent","attachments","words"}
+  wfh_sources/on_call.csv                    start,end,role of each on-call stretch
 Writes work_from_home_FY<yy>-<yy>_full.csv and prints a monthly summary.
 
-Any Slack message, git commit, GitHub action, Claude Code prompt or shell command counts as working. A weekday worked at home is:
+Any Slack message, git commit, GitHub action, Claude Code prompt, sent email or shell command counts
+as working. A long email (over EMAIL_LONG_WORDS words, or with an attachment) also counts the time
+spent writing it, before it was sent. A weekday worked at home is:
   - a core day: activity from 06:00 to 19:30, continuing into the evening only while it has no
     gap of an hour or more (shell history helps fill in the day here, since Slack gives only each
     weekday's first and last message). It starts at
@@ -28,7 +32,9 @@ Any Slack message, git commit, GitHub action, Claude Code prompt or shell comman
     for lunch.
   - plus out-of-hours blocks: activity outside the core day, grouped when less than an hour apart,
     each counted as its span plus half an hour. That's how on-call work at night, at weekends and on
-    days off is counted.
+    days off is counted. A lone Slack message or shell command out of hours is dropped, since it's
+    as likely a social message or personal use; one commit, GitHub action, Claude prompt or email is
+    kept. On weekends and days off, shell use counts only while on call.
 Leave, sick, TOIL, holidays and company days off have no core day, but on-call blocks still count
 unless the note's part says "no work". A `not-work` note with a time window strikes the activity in it. Office and offsite days count nothing, since they weren't at
 home.
@@ -49,11 +55,15 @@ TAX = Path.home() / 'Documents/Financial/Tax'
 SOURCES = TAX / 'wfh_sources'
 CLAUDE_LOG = TAX / 'claude_activity_log.csv'  # from the wfh-activity-log Claude Code hook
 PERSONAL_PROJECTS = str(Path.home() / 'code/personal')
-ACTIVITY = ('slack', 'git_commits', 'github', 'claude_prompts', 'zsh_history')
+ACTIVITY = ('slack', 'git_commits', 'github', 'claude_prompts', 'zsh_history', 'email', 'email_reply')
+STRONG = {'git_commits', 'github', 'claude_prompts', 'email'}  # one of these alone still shows work
+EMAIL_LONG_WORDS, EMAIL_WPM = 40, 15
+EMAIL_COMPOSE_MIN, EMAIL_COMPOSE_MAX, EMAIL_ATTACHMENT_MIN = 15, 120, 15
 START = 9 * 60
 CLOCK_OFF_START = 19 * 60 + 30
 DAYTIME = (6 * 60, 24 * 60)
 BLOCK_GAP, BLOCK_PAD = 60, 30
+LONE_BURST = 5  # minutes: a block shorter than this is a single data point (e.g. two replies in a row)
 APPOINTMENT, LUNCH = 75, 30
 NOT_WORKING = {'leave', 'sick', 'toil', 'public-holiday', 'company-day-off'}
 AWAY = {'office', 'offsite'}
@@ -92,7 +102,29 @@ def load_activity():
             last_event[session] = event
             if counts and attended == '1' and not project.startswith(PERSONAL_PROJECTS):
                 acts[date.fromisoformat(d)]['claude_prompts'].append(minutes(time.fromisoformat(t)))
+    for line in open(SOURCES / 'outlook_sent.jsonl') if (SOURCES / 'outlook_sent.jsonl').exists() else []:
+        e = json.loads(line)
+        if e.get('kind') == 'auto':
+            continue
+        sent = datetime.fromisoformat(e['sent'])
+        end = minutes(sent.time())
+        # A meeting accept or a reaction is a click, so out of hours it's no stronger than a lone Slack message
+        acts[sent.date()]['email_reply' if e.get('kind') == 'calendar' or not (e.get('words') or e.get('attachments')) else 'email'].append(end)
+        if (e.get('words') or 0) > EMAIL_LONG_WORDS or e.get('attachments'):
+            compose = min(max((e.get('words') or 0) / EMAIL_WPM, EMAIL_COMPOSE_MIN), EMAIL_COMPOSE_MAX)
+            compose += EMAIL_ATTACHMENT_MIN if e.get('attachments') else 0
+            m = max(end - compose, 0)
+            while m < end:  # points every 10 minutes keep the writing time in one block
+                acts[sent.date()]['email'].append(m)
+                m += 10
     return acts
+
+
+def load_on_call():
+    path = SOURCES / 'on_call.csv'
+    if not path.exists():
+        return []
+    return [(datetime.fromisoformat(r['start']), datetime.fromisoformat(r['end'])) for r in csv.DictReader(open(path))]
 
 
 def log_sessions(lo, hi):
@@ -115,14 +147,16 @@ def log_sessions(lo, hi):
 
 
 def blocks(points):
-    """Group activity minutes less than BLOCK_GAP apart; each block counts its span plus BLOCK_PAD."""
+    """Group (minute, source) points less than BLOCK_GAP apart; each block counts its span plus
+    BLOCK_PAD. A block that's only one burst of Slack, shell or meeting replies is dropped."""
     out = []
-    for p in sorted(points):
+    for p, src in sorted(points):
         if out and p - out[-1][1] < BLOCK_GAP:
             out[-1][1] = p
+            out[-1][2].add(src)
         else:
-            out.append([p, p])
-    return [(a, b, (b - a + BLOCK_PAD) / 60) for a, b in out]
+            out.append([p, p, {src}])
+    return [(a, b, (b - a + BLOCK_PAD) / 60) for a, b, srcs in out if b - a >= LONE_BURST or srcs & STRONG]
 
 
 def core_run(points):
@@ -162,6 +196,7 @@ def main(fy_end):
     for r in csv.DictReader(open(SOURCES / 'day_notes.csv')):
         notes[date.fromisoformat(r['date'])].append(r)
     acts = load_activity()
+    on_call = load_on_call()
     sessions = log_sessions(datetime.combine(lo, time()), datetime.combine(hi, time()))
 
     logged = [d for d, r in daily_log.items() if r['flag'] == '']
@@ -236,8 +271,17 @@ def main(fy_end):
         ooh = []
         if status not in AWAY and not any('no work' in n['part'] for n in day_notes):
             struck = [part_window(n['part']) for n in day_notes if n['kind'] == 'not-work']
-            ooh = blocks([p for p in points(d, ACTIVITY) if not (core and core[0] <= p <= core[1])
-                          and not any(w and w[0] <= p <= w[1] for w in struck)])
+            day_off = not weekday or status in NOT_WORKING
+
+            def counts(p, src):
+                if core and core[0] <= p <= core[1] or any(w and w[0] <= p <= w[1] for w in struck):
+                    return False
+                if src == 'zsh_history' and day_off:
+                    t = datetime.combine(d, time()) + timedelta(minutes=p)
+                    return any(a <= t < b for a, b in on_call)
+                return True
+
+            ooh = blocks([(p, s) for s, ms in acts.get(d, {}).items() if s in ACTIVITY for p in ms if counts(p, s)])
         ooh_hours = sum(h for _, _, h in ooh)
         net = max(core_min - cut_min - appt_min - lunch_min, 0) / 60 + ooh_hours
 
