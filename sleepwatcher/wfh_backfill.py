@@ -18,17 +18,17 @@ Any Slack, git or GitHub activity counts as working. A weekday worked at home is
     gap of an hour or more (shell history helps fill in the day here, since Slack gives only each
     day's first and last message). It starts at
     START, or the first activity if that's earlier. Days covered by the sleep/wake log count only the
-    time the laptop was awake, ending when it last slept but no more than an hour after the last
-    activity unless that's before CLOCK_OFF. Other days, and logged days where the log caught less
-    than half the activity, end at the last activity plus the typical gap between activity and the
-    laptop's sleep, measured on logged days.
+    time the laptop was awake, ending when it last slept (often while supervising a long Claude
+    task, with no other activity). Other days, and logged days where the log caught less than half
+    the activity, end at the last activity plus the typical gap between activity and the laptop's
+    sleep, measured on logged days.
   - minus a part-day note ("from 14:30", "09:30-11:00"), 75 minutes per appointment and 30 minutes
     for lunch.
   - plus out-of-hours blocks: activity outside the core day, grouped when less than an hour apart,
     each counted as its span plus half an hour. That's how on-call work at night, at weekends and on
     days off is counted.
 Leave, sick, TOIL, holidays and company days off have no core day, but on-call blocks still count
-unless the note's part says "no work". Office and offsite days count nothing, since they weren't at
+unless the note's part says "no work". A `not-work` note with a time window strikes the activity in it. Office and offsite days count nothing, since they weren't at
 home.
 """
 import csv
@@ -45,12 +45,11 @@ import wfh_summary  # noqa: E402
 
 TAX = Path.home() / 'Documents/Financial/Tax'
 SOURCES = TAX / 'wfh_sources'
-ACTIVITY = ('slack', 'git_commits', 'github')
+ACTIVITY = ('slack', 'git_commits', 'github', 'claude_prompts')
 PRESENCE = ACTIVITY + ('zsh_history',)  # shell use shows the working day's extent, but isn't counted out of hours
-START, CLOCK_OFF = 9 * 60, 19 * 60
+START = 9 * 60
 CLOCK_OFF_START = 19 * 60 + 30
 DAYTIME = (6 * 60, 24 * 60)
-END_TAIL = 60
 BLOCK_GAP, BLOCK_PAD = 60, 30
 APPOINTMENT, LUNCH = 75, 30
 NOT_WORKING = {'leave', 'sick', 'toil', 'public-holiday', 'company-day-off'}
@@ -183,7 +182,7 @@ def main(fy_end):
             if not ss:
                 return None
             start = min(max(START, ss[0][0]), run[0])
-            end = min(ss[-1][1], max(run[1] + END_TAIL, CLOCK_OFF))
+            end = ss[-1][1]  # the laptop staying awake past the last activity is usually supervising a long Claude task
         else:
             start = min(max(START, run[0] - lead), run[0])
             end = run[1] + lag
@@ -224,7 +223,9 @@ def main(fy_end):
 
         ooh = []
         if status not in AWAY and not any('no work' in n['part'] for n in day_notes):
-            ooh = blocks([p for p in points(d, ACTIVITY) if not (core and core[0] <= p <= core[1])])
+            struck = [part_window(n['part']) for n in day_notes if n['kind'] == 'not-work']
+            ooh = blocks([p for p in points(d, ACTIVITY) if not (core and core[0] <= p <= core[1])
+                          and not any(w and w[0] <= p <= w[1] for w in struck)])
         ooh_hours = sum(h for _, _, h in ooh)
         net = max(core_min - cut_min - appt_min - lunch_min, 0) / 60 + ooh_hours
 
