@@ -84,8 +84,13 @@ def load_activity():
                 t = datetime.fromisoformat(row['ts'])
                 acts[t.date()][source].append(minutes(t.time()))
     if CLAUDE_LOG.exists():
-        for d, t, _event, project, _session, _entrypoint, attended in csv.reader(open(CLAUDE_LOG)):
-            if attended == '1' and not project.startswith(PERSONAL_PROJECTS):
+        last_event = {}
+        for d, t, event, project, session, _entrypoint, attended in csv.reader(open(CLAUDE_LOG)):
+            # A Stop counts only when it ends a turn James prompted. Turns started by another
+            # session's message (a broadcast, a hand-back) log a Stop with no Prompt before it.
+            counts = event == 'Prompt' or (event == 'Stop' and last_event.get(session) == 'Prompt')
+            last_event[session] = event
+            if counts and attended == '1' and not project.startswith(PERSONAL_PROJECTS):
                 acts[date.fromisoformat(d)]['claude_prompts'].append(minutes(time.fromisoformat(t)))
     return acts
 
