@@ -25,6 +25,15 @@ ln -fs $DOT_FILES_DIR/dot_claude/statusline-default-model.zsh ~/.claude/statusli
 mkdir -p ~/.claude/hooks && ln -fs $DOT_FILES_DIR/dot_claude/hooks/wfh-activity-log ~/.claude/hooks/wfh-activity-log  # UserPromptSubmit + Stop hook in settings.json
 # General Claude rules. A directory link, not per-file links, so the Edit tool can still write them.
 mkdir -p ~/.claude/rules && ln -sfh $DOT_FILES_DIR/dot_claude/rules ~/.claude/rules/general
+# General Claude skills, one directory link each (Claude Code only finds skills one level down).
+# A real directory already at the target is newer local work: leave it and say so.
+mkdir -p ~/.claude/skills
+for skill in $DOT_FILES_DIR/dot_claude/skills/*(/N); do
+  [[ -f $skill/SKILL.md ]] || continue
+  target=~/.claude/skills/${skill:t}
+  if [[ -d $target && ! -L $target ]]; then echo "dot-files: $target is a real directory — reconcile it with the repo copy by hand"; continue; fi
+  ln -sfh $skill $target
+done
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems

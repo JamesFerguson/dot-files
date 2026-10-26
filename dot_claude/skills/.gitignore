@@ -1,0 +1,11 @@
+# Run output the skills write next to themselves (reports, caches, scratch). Never versioned:
+# it holds work data, and claude-config never backed it up either.
+data/
+work/
+tmp/
+*.log
+node_modules/
+__pycache__/
+.venv/
+.pytest_cache/
+.DS_Store
