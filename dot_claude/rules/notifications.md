@@ -50,7 +50,9 @@ dot-files `dot_claude/future_claude/README.md`).
 - "Remind me…" requests go here too, not to the built-in `schedule` skill: its cloud routines can't
   reach this Mac's sessions, `say` or notifications.
 - Session-only crons are still right for in-session polling (watching CI while you work).
-- `future_claude` jobs are one-shot. For a recurring job, write a LaunchAgent.
+- **Repeating work:** add `--every 1d` (or `2h`, `1w`…), plus `--weekdays` and `--until TIME` if
+  needed. For a hand-back to a long-lived session use `--origin <its name>`, since the default socket
+  dies with a resume; otherwise `--headless`.
 
 ## Related
 - `working-style.md` — flag-before-you-act and shared-record rules.

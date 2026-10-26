@@ -21,6 +21,26 @@ future_claude rm <id>
 
 `--at` takes `'YYYY-MM-DD HH:MM'` (local), ISO 8601, or relative `+90s`/`+30m`/`+2h`/`+1d`.
 
+### Repeating jobs
+
+```sh
+# Weekdays at 09:00, 13:00 and 16:00: one job per time of day.
+future_claude add --at '2026-10-27 09:00' --every 1d --weekdays --headless --prompt 'Work through the queue'
+future_claude add --at '2026-10-27 13:00' --every 1d --weekdays --headless --prompt 'Work through the queue'
+```
+
+- `--every` takes `90s`, `30m`, `2h`, `1d` or `1w`. Days and weeks keep the wall-clock time across a
+  daylight saving change.
+- After each run the job goes back to `pending` at its next slot, counted on from the scheduled time.
+  A Mac asleep through several slots fires once on wake, not once per missed slot.
+- `--weekdays` moves a Saturday or Sunday slot on to Monday. `--until TIME` ends the series.
+  `future_claude rm <id>` stops it.
+- A failed run still reschedules, and notifies. A repeating prompt job that runs headless because its
+  origin session has gone doesn't notify, since that's the usual case.
+- A hand-back by socket only lasts as long as the session that queued the job. To hand back to a
+  long-lived session, use `--origin <name>`, which survives a resume. Otherwise use `--headless`.
+- `show` has the last run's log only; each run overwrites it.
+
 ### Prompt jobs
 
 At the due time `future_claude run` starts a headless `claude -p` in `--cwd` (default `$HOME`):

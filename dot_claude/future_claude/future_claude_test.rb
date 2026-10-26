@@ -141,6 +141,94 @@ class FutureClaudeTest < Minitest::Test
     assert_equal 'timeout', job(id)['outcome']
   end
 
+  def test_a_repeating_job_is_listed_with_its_interval
+    fc!('add', '--at', '+1h', '--every', '1d', '--notify', 'Daily')
+    assert_includes fc!('list'), 'every 1d'
+  end
+
+  def test_add_refuses_a_bad_interval
+    refute fc('add', '--at', '+1h', '--every', 'fortnightly', '--notify', 'x')[2].success?
+    refute fc('add', '--at', '+1h', '--every', '0h', '--notify', 'x')[2].success?
+    assert_empty queue
+  end
+
+  def test_a_repeating_job_fires_once_and_is_rescheduled_for_its_next_slot
+    id = fc!('add', '--at', '-1m', '--every', '1h', '--notify', 'Hourly').strip
+    at = job(id)['at']
+    fc!('run')
+
+    assert_equal 1, calls.scan('say Hourly').size
+    assert_equal 'pending', job(id)['status']
+    assert_equal at + 3600, job(id)['at']
+    assert_equal 1, job(id)['runs']
+    assert_equal 'notified', job(id)['last_outcome']
+  end
+
+  def test_a_repeating_job_that_missed_several_slots_fires_once_and_skips_to_the_next_future_slot
+    id = fc!('add', '--at', '-190m', '--every', '1h', '--notify', 'Hourly').strip
+    at = job(id)['at']
+    fc!('run')
+
+    assert_equal 1, calls.scan('say Hourly').size
+    assert_equal at + 4 * 3600, job(id)['at']
+  end
+
+  def test_a_daily_job_keeps_its_wall_clock_time_across_a_daylight_saving_change
+    sydney = { 'TZ' => 'Australia/Sydney' }
+    id = fc!('add', '--at', '2026-07-01 09:00', '--every', '1d', '--notify', 'x', env: sydney).strip
+    fc!('run', env: sydney)
+
+    out, = Open3.capture2({ 'TZ' => 'Australia/Sydney' }, 'date', '-r', job(id)['at'].to_s, '+%H:%M')
+    assert_equal '09:00', out.strip
+    assert_operator job(id)['at'], :>, Time.now.to_i
+  end
+
+  def test_weekdays_moves_a_weekend_start_to_monday
+    id = fc!('add', '--at', '2031-03-08 09:00', '--every', '1d', '--weekdays', '--notify', 'x').strip # a Saturday
+    assert_equal Time.local(2031, 3, 10, 9, 0).to_i, job(id)['at']
+  end
+
+  def test_weekdays_reschedules_onto_a_weekday
+    id = fc!('add', '--at', '-1m', '--every', '1d', '--weekdays', '--notify', 'x').strip
+    fc!('run')
+    refute_includes [0, 6], Time.at(job(id)['at']).wday
+  end
+
+  def test_a_repeating_job_ends_once_its_next_slot_is_past_until
+    id = fc!('add', '--at', '-1m', '--every', '1h', '--until', '+30m', '--notify', 'Last').strip
+    fc!('run')
+
+    assert_equal 'done', job(id)['status']
+    assert_includes calls, 'say Last'
+  end
+
+  def test_a_failed_run_of_a_repeating_job_still_reschedules_it
+    fake_claude('exit 3')
+    id = fc!('add', '--at', '-1m', '--every', '1h', '--prompt', 'Check').strip
+    fc!('run')
+
+    assert_equal 'pending', job(id)['status']
+    assert_equal 'failed', job(id)['last_status']
+    assert_match(/osascript .*failed/, calls)
+  end
+
+  def test_a_repeating_prompt_job_that_ran_headless_does_not_notify_every_time
+    fake_claude('echo DONE_MYSELF')
+    fc!('add', '--at', '-1m', '--every', '1h', '--prompt', 'Check', '--origin', 'gone-session')
+    fc!('run')
+    refute_includes calls, 'osascript'
+  end
+
+  def test_a_repeating_job_whose_runner_died_is_rescheduled_not_ended
+    id = fc!('add', '--at', '-2h', '--every', '1d', '--notify', 'x').strip
+    rewrite_job(id, 'status' => 'running', 'runner_pid' => 999_999)
+    fc!('run')
+
+    assert_equal 'pending', job(id)['status']
+    assert_equal 'runner_died', job(id)['last_outcome']
+    assert_operator job(id)['at'], :>, Time.now.to_i
+  end
+
   def test_rm_removes_a_pending_job
     id = fc!('add', '--at', '+1h', '--notify', 'x').strip
     fc!('rm', id)
@@ -183,6 +271,11 @@ class FutureClaudeTest < Minitest::Test
 
   def job(id)
     queue.find { |j| j['id'] == id }
+  end
+
+  def rewrite_job(id, changes)
+    jobs = queue.map { |j| j['id'] == id ? j.merge(changes) : j }
+    File.write(File.join(@dir, 'queue.jsonl'), jobs.map { |j| "#{JSON.generate(j)}\n" }.join)
   end
 
   def calls

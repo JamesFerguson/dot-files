@@ -10,9 +10,14 @@
 #           context; if the session isn't running it does the task itself. Any outcome other than a
 #           clean hand-back posts a notification, so nothing fails silently.
 #
+# With --every, a job repeats: after each run it goes back to pending at its next slot. Slots step on
+# from the scheduled time, so a daily 09:00 job stays at 09:00 and a Mac asleep through several slots
+# fires once on wake.
+#
 # Kept compatible with macOS's /usr/bin/ruby 2.6, so a wrong runtime under launchd still works.
 require 'json'
 require 'time'
+require 'date'
 require 'optparse'
 require 'securerandom'
 require 'fileutils'
@@ -29,14 +34,16 @@ def usage
   <<~USAGE
     Usage:
       future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION | --headless])
-                        [--title TITLE] [--cwd DIR] [--permission-mode MODE] [--model MODEL]
-                        [--timeout SECONDS] [--by WHO]
+                        [--every INTERVAL [--weekdays] [--until TIME]] [--title TITLE] [--cwd DIR]
+                        [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
       future_claude list [--all]
       future_claude show ID
       future_claude rm ID
       future_claude run            (what launchd calls every minute)
 
     TIME is local: '2026-10-27 09:47', an ISO 8601 time, or relative: +90s, +30m, +2h, +1d (also -1m).
+    INTERVAL is 90s, 30m, 2h, 1d or 1w. Days and weeks keep the wall-clock time across daylight saving.
+    --weekdays moves any Saturday or Sunday slot on to Monday.
     A prompt job queued from a session hands back to it by default. SESSION picks another one: a name
     as ListAgents prints it, or a uds:<socket> address.
   USAGE
@@ -59,6 +66,57 @@ def parse_time(text)
   Time.iso8601(text).to_i
 rescue ArgumentError
   die "can't parse --at #{text.inspect}; use '2026-10-27 09:47', ISO 8601, or +30m"
+end
+
+UNIT_SECONDS = { 's' => 1, 'm' => 60, 'h' => 3600 }.freeze
+UNIT_DAYS = { 'd' => 1, 'w' => 7 }.freeze
+
+def parse_every(text)
+  m = text.match(/\A(\d+)([smhdw])\z/)
+  die "can't parse --every #{text.inspect}; use 30m, 2h, 1d or 1w" unless m && m[1].to_i.positive?
+  text
+end
+
+def weekend?(epoch)
+  [0, 6].include?(Time.at(epoch).wday)
+end
+
+# Steps by calendar days for d/w, so the wall-clock time survives a daylight saving change.
+def step(epoch, every)
+  n = every.to_i
+  unit = every[-1]
+  return epoch + n * UNIT_SECONDS.fetch(unit) unless UNIT_DAYS.key?(unit)
+
+  shift_days(epoch, n * UNIT_DAYS.fetch(unit))
+end
+
+def shift_days(epoch, days)
+  t = Time.at(epoch)
+  d = Date.new(t.year, t.month, t.day) + days
+  Time.local(d.year, d.month, d.day, t.hour, t.min, t.sec).to_i
+end
+
+def skip_weekend(epoch)
+  epoch = shift_days(epoch, 1) while weekend?(epoch)
+  epoch
+end
+
+def next_slot(job, now)
+  slot = job['at']
+  slot = step(slot, job['every']) while slot <= now
+  job['weekdays'] ? skip_weekend(slot) : slot
+end
+
+# Puts a repeating job back in the queue at its next slot, or ends it once that's past --until.
+def reschedule(job, now, status, outcome)
+  slot = next_slot(job, now)
+  job.update('last_status' => status, 'last_outcome' => outcome, 'last_run_at' => now,
+             'runs' => job['runs'].to_i + 1)
+  if job['until'] && slot > job['until']
+    job.update('status' => 'done')
+  else
+    job.update('status' => 'pending', 'at' => slot)
+  end
 end
 
 def local(epoch)
@@ -95,6 +153,9 @@ def add(argv)
     o.on('--prompt TEXT') { |v| opts['prompt'] = v }
     o.on('--origin SESSION') { |v| opts['origin'] = v }
     o.on('--headless') { opts['headless'] = true }
+    o.on('--every INTERVAL') { |v| opts['every'] = parse_every(v) }
+    o.on('--weekdays') { opts['weekdays'] = true }
+    o.on('--until TIME') { |v| opts['until'] = parse_time(v) }
     o.on('--title TITLE') { |v| opts['title'] = v }
     o.on('--cwd DIR') { |v| opts['cwd'] = File.expand_path(v) }
     o.on('--permission-mode MODE') { |v| opts['permission_mode'] = v }
@@ -105,6 +166,8 @@ def add(argv)
 
   die 'add needs --at' unless opts['at']
   die 'add needs exactly one of --notify and --prompt' unless [opts['notify'], opts['prompt']].compact.size == 1
+  die '--weekdays and --until need --every' if (opts['weekdays'] || opts['until']) && !opts['every']
+  opts['at'] = skip_weekend(opts['at']) if opts['weekdays']
 
   # A session can't see its own name in ListAgents, but its Bash calls carry its messaging socket, so a
   # prompt job queued from a session hands back to that session unless told otherwise.
@@ -128,6 +191,7 @@ def summary(job)
   text = job['notify'] || job['prompt']
   text = "#{text[0, 70]}…" if text.length > 71
   extra = job['origin'] ? " → #{job['origin']}" : ''
+  extra = " (every #{job['every']}#{' weekdays' if job['weekdays']})#{extra}" if job['every']
   outcome = job['outcome'] ? " (#{job['outcome']})" : ''
   format('%-6s  %-21s  %-7s  %-8s%s  %s%s', job['id'], local(job['at']), job['kind'], job['status'], outcome, text, extra)
 end
@@ -220,6 +284,8 @@ end
 
 def report(job, result)
   return if job['kind'] == 'notify' || result['outcome'] == 'handed_back'
+  # A repeating job's origin session is often long gone; running headless then is normal, not news.
+  return if job['every'] && !result['failed']
 
   what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
   what = 'ran headless' if !result['failed'] && !job['origin']
@@ -233,7 +299,7 @@ def run_due
     jobs.each do |j|
       next unless j['status'] == 'running' && !alive?(j['runner_pid'])
 
-      j.update('status' => 'failed', 'outcome' => 'runner_died')
+      j['every'] ? reschedule(j, now, 'failed', 'runner_died') : j.update('status' => 'failed', 'outcome' => 'runner_died')
     end
     picked = jobs.select { |j| j['status'] == 'pending' && j['at'] <= now }
     picked.each { |j| j.update('status' => 'running', 'started_at' => now, 'runner_pid' => Process.pid) }
@@ -242,10 +308,11 @@ def run_due
 
   due.each do |job|
     result = job['kind'] == 'notify' ? run_notify(job) : run_prompt(job)
+    status = result['failed'] ? 'failed' : 'done'
     update_job(job['id']) do |j|
       j.update(result.reject { |k, _| k == 'failed' })
-      j.update('status' => result['failed'] ? 'failed' : 'done', 'finished_at' => Time.now.to_i,
-               'late_by' => job['started_at'] - job['at'])
+      j.update('status' => status, 'finished_at' => Time.now.to_i, 'late_by' => job['started_at'] - job['at'])
+      reschedule(j, Time.now.to_i, status, result['outcome']) if j['every']
     end
     report(job, result)
     puts "#{Time.now.strftime('%F %T')} #{job['id']} #{job['kind']} → #{result['outcome']}"
