@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""PreToolUse guard: audit the code comments a `git commit` adds before it runs.
+
+Replaces an agent hook whose `if: Bash(git commit:*)` filter let through commands it
+couldn't tokenize, which started a Sonnet agent for commands that weren't commits. This
+script does the cheap checks itself and only calls the model when there's something to read:
+  1. the command really runs `git commit` (any segment, after `cd`/`-C`/global options);
+  2. the staged diff adds at least one comment line in a non-prose file.
+The model gets the numbered diff inline with no tools, so one call returns the verdict.
+
+Rules live in commit-comment-audit-prompt.md next to this file.
+Bypass with GUARD_SKIP_COMMENTS=user in the command (every added comment is James's own).
+Fails open: any parse, git, model or timeout problem lets the commit through.
+"""
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+MODEL = "claude-sonnet-5"
+MODEL_TIMEOUT = 170  # the hook's own timeout is 180
+MAX_DIFF_CHARS = 100_000
+PROMPT_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "commit-comment-audit-prompt.md")
+
+GIT_OPTS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"}
+
+SKIP_PATH = re.compile(
+    r"(\.(md|markdown|txt|lock|sum|json|jsonl|csv|svg)$"
+    r"|(^|/)CHANGELOG"
+    r"|(^|/)docs?/"
+    r"|(^|/)vendor/"
+    r"|(^|/)node_modules/"
+    r"|(^|/)db/(schema\.rb|structure\.sql)$)"
+)
+# A whole-line comment, or code followed by ` # ` / ` // `. `#{` (Ruby interpolation) and
+# `--flag` (shell continuation lines) don't count.
+COMMENT = re.compile(r"^\s*(#(?![!{])|//|--\s|/\*|\*(\s|/|$)|<!--|=begin|\"\"\"|''')|\s(#|//)\s")
+# Magic comments and linter directives carry no prose to audit.
+DIRECTIVE = re.compile(
+    r"#\s*(frozen_string_literal|rubocop:|typed:|encoding|-\*-|shellcheck |noqa|type: ignore)"
+    r"|//\s*(eslint-|@ts-|nolint|go:)"
+)
+
+
+def commit_repo(cmd, cwd):
+    """The directory a `git commit` in cmd runs in, or None if cmd doesn't commit."""
+    # Heredoc bodies are data (often the commit message itself), not commands.
+    cmd = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?\n.*?^\1$", "", cmd, flags=re.S | re.M)
+    for segment in re.split(r"&&|\|\||;|\||\n", cmd):
+        segment = segment.strip().lstrip("(").rstrip(")").strip()
+        try:
+            tokens = shlex.split(segment)
+        except ValueError:
+            # Can't tokenize: audit if it looks like a commit, rather than miss one.
+            if re.search(r"\bgit\b.*\bcommit\b", segment):
+                return cwd
+            continue
+        while tokens and (re.match(r"^\w+=", tokens[0]) or tokens[0] in ("env", "command", "exec", "time")):
+            tokens.pop(0)
+        if not tokens:
+            continue
+        if tokens[0] == "cd" and len(tokens) > 1:
+            cwd = os.path.join(cwd, os.path.expanduser(tokens[1]))
+            continue
+        if os.path.basename(tokens[0]) != "git":
+            continue
+        repo, i = cwd, 1
+        while i < len(tokens) and tokens[i].startswith("-"):
+            opt = tokens[i].split("=", 1)[0]
+            if opt in GIT_OPTS_WITH_VALUE and "=" not in tokens[i]:
+                if opt == "-C" and i + 1 < len(tokens):
+                    repo = os.path.join(repo, os.path.expanduser(tokens[i + 1]))
+                i += 2
+            else:
+                i += 1
+        if i < len(tokens) and tokens[i] == "commit":
+            return repo
+    return None
+
+
+def numbered_diff(diff):
+    """The diff with each new-file line numbered, keeping only files that add a comment.
+    Returns "" when no file does."""
+    files, current, keep, new_line = [], [], False, 0
+    path = None
+
+    def flush():
+        if current and keep:
+            files.append("\n".join(current))
+
+    for line in diff.splitlines():
+        if line.startswith("diff --git"):
+            flush()
+            current, keep, path = [line], False, None
+        elif line.startswith("+++ "):
+            path = line[6:] if line.startswith("+++ b/") else None
+            current.append(line)
+        elif line.startswith("@@"):
+            m = re.search(r"\+(\d+)", line)
+            new_line = int(m.group(1)) if m else 0
+            current.append(line)
+        elif line.startswith("+"):
+            current.append(f"{new_line:>5} {line}")
+            if path and not SKIP_PATH.search(path) and COMMENT.search(line[1:]) and not DIRECTIVE.search(line[1:]):
+                keep = True
+            new_line += 1
+        elif line.startswith(" "):
+            current.append(f"{new_line:>5} {line}")
+            new_line += 1
+        elif not line.startswith("-"):
+            current.append(line)
+        else:
+            current.append(f"      {line}")
+    flush()
+    return "\n\n".join(files)
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)
+    except Exception:
+        return 0
+    cmd = (payload.get("tool_input") or {}).get("command", "")
+    if "GUARD_SKIP_COMMENTS=user" in cmd:
+        return 0
+    repo = commit_repo(cmd, payload.get("cwd") or os.getcwd())
+    if not repo:
+        return 0
+
+    try:
+        diff = subprocess.run(
+            ["git", "-C", repo, "diff", "--cached", "--no-color", "--no-ext-diff", "-U3"],
+            capture_output=True, text=True, timeout=30, check=True,
+        ).stdout
+    except Exception:
+        return 0
+    body = numbered_diff(diff)
+    if not body:
+        return 0
+    if len(body) > MAX_DIFF_CHARS:
+        body = body[:MAX_DIFF_CHARS] + "\n[diff truncated]"
+
+    schema = json.dumps({
+        "type": "object",
+        "properties": {"ok": {"type": "boolean"}, "reason": {"type": "string"}},
+        "required": ["ok", "reason"],
+    })
+    try:
+        with open(PROMPT_FILE) as f:
+            prompt = f.read()
+        out = subprocess.run(
+            ["claude", "-p", "--model", MODEL, "--tools", "", "--setting-sources", "",
+             "--no-session-persistence", "--output-format", "json", "--json-schema", schema,
+             "--system-prompt", prompt, "Audit the comments this staged diff adds."],
+            input=body, capture_output=True, text=True, timeout=MODEL_TIMEOUT,
+            cwd=os.path.expanduser("~"),
+        )
+        result = json.loads(out.stdout)
+        verdict = result.get("structured_output") or json.loads(result.get("result") or "{}")
+    except Exception:
+        return 0
+    if verdict.get("ok") is False:
+        print(verdict.get("reason") or "An added comment failed the comment audit.", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
