@@ -5,6 +5,7 @@
 
 require 'json'
 require 'shellwords'
+require_relative 'usage_credits'
 
 input = $stdin.read
 data = begin
@@ -259,6 +260,14 @@ sm = spend_meter(cost_total)
 if sm
   reset_month = relative_time(month_reset_epoch)
   out += " #{pct_ansi(sm[:pct])}💵 ~#{sm[:pct]}%#{RESET}#{reset_month ? " #{DIM}#{reset_month}#{RESET}" : ''}"
+end
+credits = (UsageCredits::Meter.new(config_path: File.expand_path('~/.claude/usage-credits.json'),
+                                   state_path: File.expand_path('~/.claude/usage-credits-state.json'),
+                                   projects_dir: File.expand_path('~/.claude/projects'))
+                              .update(limit_hit: used_5h >= 100 || used_7d >= 100) rescue nil)
+if credits
+  out += " #{pct_ansi(credits[:pct])}💳 $#{format('%.2f', credits[:spent])}/$#{credits[:budget].round}" \
+         "#{credits[:unpriced].empty? ? '' : '?'}#{RESET}"
 end
 model_id   = data.dig('model', 'id')
 advisor_id = (session_advisor(data['transcript_path']) rescue nil)
