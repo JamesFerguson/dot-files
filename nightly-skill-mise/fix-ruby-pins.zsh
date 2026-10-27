@@ -2,16 +2,21 @@
 # fix-ruby-pins.zsh — normalise each repo's ruby pins so they (a) point at an
 # INSTALLED ruby and (b) are internally consistent.
 #
-# mise only honours .tool-versions here (legacy_version_file = false), so a repo with
-# only a .ruby-version silently runs on the GLOBAL ruby. To make repos actually run
-# on their declared ruby, .tool-versions is the source of truth and every ruby repo
-# gets one. Per repo root:
+# mise ignores .ruby-version here (idiomatic version files are off), so a repo with only
+# a .ruby-version silently runs on the home ruby. To make repos actually run on their
+# declared ruby, every ruby repo gets a .tool-versions. A repo's mise.toml / .mise.toml
+# outranks its .tool-versions, though, so the ruby a repo runs is whatever
+# `mise current ruby` says there. Per repo root:
 #   - if .tool-versions has a ruby line: it's authoritative. Bump it to the newest
 #     installed ruby in its major.minor if the pin is uninstalled (fallback
 #     $FALLBACK_RUBY). Then sync .ruby-version to match.
 #   - else if .ruby-version exists: CREATE .tool-versions with `ruby <that version>`
 #     (bumped to installed if needed), so the repo actually uses its declared ruby.
-#   - a `ruby "..."` Gemfile directive on an uninstalled version is bumped too.
+#   - a `ruby "..."` Gemfile directive, or a mise.toml / .mise.toml ruby entry, on an
+#     uninstalled version is bumped too.
+#   - pins that still disagree afterwards print a RUBY PIN CONFLICT line naming each pin
+#     and the ruby mise actually runs. Those are left alone: which pin is right is a call
+#     for whoever owns the repo.
 # Nested .ruby-version files (test fixtures etc.) just get their uninstalled pin
 # bumped in place — no .tool-versions is created for non-root dirs.
 #
@@ -32,6 +37,8 @@ target_for() { local mm; mm=$(printf '%s\n' "$1" | awk -F. '{print $1"."$2}')
   printf '%s\n' "${installed[@]}" | grep -E "^${mm//./\\.}\." | sort -V | tail -1 }
 rv_val() { sed 's/^ruby-//;s/[[:space:]]//g' "$1" 2>/dev/null }
 tv_val() { grep '^ruby ' "$1" 2>/dev/null | awk '{print $2}' }
+toml_val() { grep -E '^[[:space:]]*ruby[[:space:]]*=' "$1" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1 }
+mise_ruby() { ( cd "$1" && MISE_AUTO_INSTALL=false MISE_NOT_FOUND_AUTO_INSTALL=false mise current ruby 2>/dev/null ) }
 
 changed=0
 # echoes "installed-target|flag" for a pin (bumps to newest-in-minor, else fallback)
@@ -95,6 +102,28 @@ for repo in "${repos[@]}"; do
       [[ "$DRY" == 1 ]] || perl -i -pe "s/(ruby\s+['\"])[0-9.]+(['\"])/\${1}$tgt\${2}/ if /^\s*ruby\s+['\"][0-9]/" "$gf"
       changed=$((changed+1))
     fi
+  fi
+
+  # mise.toml / .mise.toml ruby entry on an uninstalled version
+  local -a toml_pins=()
+  for mt in "$repo/mise.toml" "$repo/.mise.toml"; do
+    mv=$(toml_val "$mt"); [[ -n "$mv" ]] || continue
+    if [[ "$mv" == <->.<->.<-> ]] && ! is_installed "$mv"; then   # a prefix pin ("4.0") is deliberate
+      r=$(resolve "$mv"); tgt="${r%%|*}"
+      echo "  bump $name/${mt:t} : ruby $mv -> $tgt${r#*|}"
+      [[ "$DRY" == 1 ]] || perl -i -pe "s/^(\s*ruby\s*=\s*\[?\s*[\"'])[0-9.]+/\${1}$tgt/" "$mt"
+      changed=$((changed+1)); mv="$tgt"
+    fi
+    toml_pins+=("${mt:t} $mv")
+  done
+
+  # pins that still disagree: report, don't pick a winner
+  local -a pins=("${toml_pins[@]}")
+  tv=$(tv_val "$tvf"); rv=$(rv_val "$rvf")
+  [[ -n "$tv" ]] && pins+=(".tool-versions $tv")
+  [[ -n "$rv" ]] && pins+=(".ruby-version $rv")
+  if (( ${#pins} > 1 )) && (( $(printf '%s\n' "${pins[@]}" | awk '{print $2}' | sort -u | wc -l) > 1 )); then
+    echo "  RUBY PIN CONFLICT $name: ${(j:, :)pins} (mise runs $(mise_ruby "$repo" || echo '?'))"
   fi
 done
 echo "fix-ruby-pins: $changed change(s) (DRY=$DRY, fallback=$FALLBACK_RUBY)"

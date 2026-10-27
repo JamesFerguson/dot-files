@@ -232,6 +232,9 @@ sweep_one() {
   local fixres
   fixres=$("$HERE/fix-ruby-pins.zsh" "$repo" 2>>"$DETAIL")
   if [[ "$fixres" != *": 0 change"* ]]; then notes+="ruby-pins-fixed; "; fi
+  if [[ "$fixres" == *"RUBY PIN CONFLICT"* ]]; then
+    notes+="RUBY-PIN-CONFLICT($(print -r -- "$fixres" | sed -n 's/.*RUBY PIN CONFLICT [^:]*: //p')); "
+  fi
 
   # 6. BUNDLED_WITH bump — FULL repos you CONTRIBUTE to, clean bundler known
   if [[ "$class" == FULL && -n "$BUNDLER_LATEST" && -f "$repo/Gemfile.lock" ]] && is_contributor "$repo"; then
@@ -250,6 +253,10 @@ sweep_one() {
   if [[ -f "$repo/Gemfile" ]]; then
     if ( cd "$repo" && bundle list </dev/null ) >>"$DETAIL" 2>&1; then
       smoke="bundle-ok"
+    # Each mise ruby has its own gem home, so a repo that now resolves to a different ruby
+    # (a pin bump, or a ruby reinstalled bare by auto_install) needs one install.
+    elif ( cd "$repo" && bundle install </dev/null && bundle list </dev/null ) >>"$DETAIL" 2>&1; then
+      smoke="bundle-ok"; notes+="bundle-installed; "
     elif ( cd "$repo" && ruby -e 'exit 0' ) >>"$DETAIL" 2>&1; then
       smoke="ruby-ok/bundle-FAIL"; notes+="bundle-list-failed; "
     else

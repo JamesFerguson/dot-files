@@ -43,15 +43,10 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
     printf '%s' "${version_repos[$oldest_used]}" | sort -u | sed "s|^$CODE_DIR/|    |"
   fi
 
-  # Candidate for removal: not used AND not newer than or equal to newest used version.
-  local -a unused_versions=()
-  for v in "${installed_versions[@]}"; do
-    # Keep if it's a used version.
-    [[ ${used_versions[(ie)$v]} -le ${#used_versions} ]] && continue
-    # Keep if it's newer than or equal to the newest used version.
-    [[ "$(printf '%s\n' "$v" "$newest_used" | sort -V | tail -1)" != "$newest_used" ]] && continue
-    unused_versions+=("$v")
-  done
+  # Removal candidates come from ruby-unused.zsh, which also asks mise what each repo
+  # resolves to: a ruby pinned only in a mise.toml is in use, and removing it lets
+  # auto_install bring it back without the repo's gems.
+  local -a unused_versions=(${(f)"$(CODE_DIR="$CODE_DIR" "$DOT_FILES_DIR/nightly-skill-mise/ruby-unused.zsh" 2>/dev/null)"})
 
   if [[ ${#unused_versions[@]} -gt 0 ]]; then
     echo "  The following ruby versions are installed but not used in any repo under $CODE_DIR:"
@@ -63,6 +58,7 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
         echo "  Uninstalling ruby $v"
         mise uninstall ruby@"$v"
       done
+      "$DOT_FILES_DIR/nightly-skill-mise/mcp-smoke.zsh"
     fi
   fi
 
@@ -131,6 +127,9 @@ if [[ $[RANDOM % 16] -eq 0 ]]; then
           echo "  $tool $ver install failed, skipping"
         fi
       done <<< "$mise_upgrades"
+      # A new home ruby moves every repo without its own pin onto an empty gem home.
+      [[ "$mise_upgrades" == ruby$'\t'* || "$mise_upgrades" == *$'\n'ruby$'\t'* ]] && \
+        "$DOT_FILES_DIR/nightly-skill-mise/mcp-smoke.zsh"
     fi
   fi
 
