@@ -1,5 +1,5 @@
 # Run: ruby dot_claude/rules_changes/rules_changes_test.rb
-# Drives the CLI against a temp register, with future_claude swapped for a recorder.
+# Drives the CLI against a temp register and seen-markers dir, with future_claude swapped for a recorder.
 require 'minitest/autorun'
 require 'tmpdir'
 require 'json'
@@ -21,35 +21,50 @@ class RulesChangesTest < Minitest::Test
     FileUtils.rm_rf(@dir)
   end
 
-  # 27 Oct 2026 is a Tuesday, 30 Oct a Friday, 31 Oct a Saturday, 2 Nov a Monday.
-  def test_next_slot_is_the_next_review_time_on_a_weekday
-    assert_equal '2026-10-27 13:00', slot_at('2026-10-27 12:59')
-    assert_equal '2026-10-27 17:15', slot_at('2026-10-27 13:00')
-    assert_equal '2026-10-28 13:00', slot_at('2026-10-27 17:15')
-    assert_equal '2026-11-02 13:00', slot_at('2026-10-30 17:20')
-    assert_equal '2026-11-02 13:00', slot_at('2026-10-31 10:00')
-  end
-
-  def test_add_registers_the_change_and_queues_one_headless_digest_job_keyed_to_the_slot
+  def test_add_registers_the_change_without_queuing_a_job
     out = rc!('add', '--file', '~/.claude/rules/fz/tooling.md', '--section', 'mise',
               '--gist', 'mise.toml outranks .tool-versions', '--commit', '5d27337', '--session', 'nightly',
               now: '2026-10-27 14:54')
-
+  
     row = register.first
     assert_equal ['~/.claude/rules/fz/tooling.md'], row['files']
     assert_equal 'mise.toml outranks .tool-versions', row['gist']
     assert_nil row['sent_at']
-    assert_match(/2026-10-27 17:15/, out)
-
-    args = File.read(@fc_calls).lines.map(&:chomp)
-    assert_equal 'add', args.first
-    assert_equal '2026-10-27 17:15', args[args.index('--at') + 1]
-    assert_equal 'rules-digest:2026-10-27 17:15', args[args.index('--key') + 1]
-    assert_includes args, '--headless'
-    assert_includes args[args.index('--allowed-tools') + 1], 'SendMessage'
-    assert_includes File.read(@fc_calls), 'rules-changes digest' # the prompt spans several recorded lines
+    assert_match(/registered #{row['id']}/, out)
+    refute File.exist?(@fc_calls)
   end
-
+  
+  def test_prompt_hook_shows_changes_made_since_the_session_started
+    rc!('add', '--file', 'fz/old.md', '--gist', 'before the session', now: '2026-10-27 09:00')
+    rc!('add', '--file', 'fz/tooling.md', '--gist', 'mise note', '--commit', 'aaa111', now: '2026-10-27 11:00')
+    transcript = transcript_started_at('2026-10-26T23:30:00Z') # 10:30 AEDT
+  
+    out = hook!('s1', transcript, now: '2026-10-27 12:00')
+  
+    context = JSON.parse(out).dig('hookSpecificOutput', 'additionalContext')
+    assert_equal 'UserPromptSubmit', JSON.parse(out).dig('hookSpecificOutput', 'hookEventName')
+    assert_includes context, 'fz/tooling.md'
+    assert_includes context, 'mise note (aaa111)'
+    refute_includes context, 'before the session'
+  end
+  
+  def test_prompt_hook_shows_each_change_once_per_session
+    transcript = transcript_started_at('2026-10-26T22:00:00Z')
+    rc!('add', '--file', 'a.md', '--gist', 'one', now: '2026-10-27 10:00')
+    hook!('s1', transcript, now: '2026-10-27 10:05')
+  
+    assert_empty hook!('s1', transcript, now: '2026-10-27 10:10')
+  
+    rc!('add', '--file', 'b.md', '--gist', 'two', now: '2026-10-27 10:20')
+    context = JSON.parse(hook!('s1', transcript, now: '2026-10-27 10:30')).dig('hookSpecificOutput', 'additionalContext')
+    assert_includes context, 'two'
+    refute_includes context, 'one'
+  end
+  
+  def test_prompt_hook_prints_nothing_when_nothing_changed
+    assert_empty hook!('s2', transcript_started_at('2026-10-27T00:00:00Z'), now: '2026-10-27 12:00')
+  end
+  
   def test_add_needs_a_file_and_a_gist
     refute rc('add', '--gist', 'x')[2].success?
     refute rc('add', '--file', 'a.md')[2].success?
@@ -90,13 +105,28 @@ class RulesChangesTest < Minitest::Test
 
   private
 
-  def slot_at(now) = rc!('next-slot', now: now).strip
-
+  def transcript_started_at(utc)
+    path = File.join(@dir, "t#{rand(1_000_000)}.jsonl")
+    File.write(path, JSON.generate('type' => 'user', 'timestamp' => utc) + "\n")
+    path
+  end
+  
+  def hook!(session, transcript, now:)
+    input = JSON.generate('session_id' => session, 'transcript_path' => transcript, 'hook_event_name' => 'UserPromptSubmit')
+    out, err, status = Open3.capture3(env(now), SCRIPT, 'prompt-hook', stdin_data: input)
+    assert status.success?, "prompt-hook failed: #{err}"
+    out
+  end
+  
+  def env(now)
+    { 'RULES_CHANGES_FILE' => File.join(@dir, 'register.jsonl'),
+      'RULES_CHANGES_SEEN_DIR' => File.join(@dir, 'seen'),
+      'RULES_CHANGES_FUTURE_CLAUDE' => File.join(@dir, 'future_claude'),
+      'RULES_CHANGES_NOW' => now, 'TZ' => 'Australia/Sydney' }
+  end
+  
   def rc(*args, now: nil)
-    env = { 'RULES_CHANGES_FILE' => File.join(@dir, 'register.jsonl'),
-            'RULES_CHANGES_FUTURE_CLAUDE' => File.join(@dir, 'future_claude'),
-            'RULES_CHANGES_NOW' => now, 'TZ' => 'Australia/Sydney' }
-    Open3.capture3(env, SCRIPT, *args)
+    Open3.capture3(env(now), SCRIPT, *args)
   end
 
   def rc!(*args, now: nil)

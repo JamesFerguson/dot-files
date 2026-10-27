@@ -1,16 +1,15 @@
 #!/usr/bin/env ruby
-# rules-changes: a register of edits to Claude's shared instructions (rules files, CLAUDE.md, hooks),
-# sent to every running session as one digest at fixed review times instead of a broadcast per edit.
+# rules-changes: a register of edits to Claude's shared instructions (rules files, CLAUDE.md, hooks).
+# Each running session sees the edits made since it started on its next prompt, via the UserPromptSubmit hook.
 #
 #   rules-changes add --file PATH [--file PATH…] [--section NAME] --gist TEXT [--commit SHA] [--session NAME]
+#   rules-changes prompt-hook       UserPromptSubmit hook: hook JSON on stdin, unseen changes out as context
 #   rules-changes pending           unsent changes, one per line
-#   rules-changes digest            the message to send, then a last line "IDS: …"
-#   rules-changes mark-sent ID…     record those changes as sent
-#   rules-changes next-slot         the next review time
+#   rules-changes digest            a broadcast message, for when James asks for one, then a last line "IDS: …"
+#   rules-changes mark-sent ID…     record those changes as broadcast
 #
-# `add` also queues one headless future_claude job for the next review time (weekdays 13:00 and 17:15
-# local), keyed to that slot, so however many changes land before it there's one digest. The job runs
-# `digest`, sends it to every peer session, then `mark-sent`. No public-holiday awareness.
+# Delivering on the next prompt costs nothing extra: a broadcast wakes every idle session and makes it
+# re-cache its whole context, which cost ~18M tokens a week when the digest ran twice a day.
 #
 # Kept compatible with macOS's /usr/bin/ruby 2.6.
 require 'json'
@@ -21,18 +20,7 @@ require 'securerandom'
 require 'fileutils'
 
 REGISTER = ENV.fetch('RULES_CHANGES_FILE', File.expand_path('~/.claude/rules-changes.jsonl'))
-FUTURE_CLAUDE = ENV.fetch('RULES_CHANGES_FUTURE_CLAUDE', 'future_claude')
-SLOTS = ENV.fetch('RULES_CHANGES_SLOTS', '13:00,17:15').split(',').map { |s| s.split(':').map(&:to_i) }.sort
-ALLOWED_TOOLS = 'ListAgents,SendMessage,Bash(rules-changes *)'.freeze
-
-DIGEST_PROMPT = <<~PROMPT.freeze
-  You are sending the rules digest: the edits to Claude's shared instruction files since the last one.
-  1. Run `rules-changes digest`. If it prints "nothing pending", end with a line that is exactly DONE_MYSELF.
-  2. Otherwise its last line is "IDS: …". The message is everything above that line, sent verbatim.
-  3. Call ListAgents, then SendMessage that message to every peer session listed (not subagents).
-  4. Run `rules-changes mark-sent` with the ids from the IDS line.
-  5. End with a line that is exactly DONE_MYSELF, or FAILED: <reason> if any step failed.
-PROMPT
+SEEN_DIR = ENV.fetch('RULES_CHANGES_SEEN_DIR', File.expand_path('~/.claude/rules-changes-seen'))
 
 def die(msg)
   warn "rules-changes: #{msg}"
@@ -45,24 +33,6 @@ def now
 
   m = text.match(/\A(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)\z/) or die("can't parse RULES_CHANGES_NOW #{text.inspect}")
   Time.local(*m.captures.map(&:to_i))
-end
-
-# The first review time strictly after `from`, on a weekday.
-def next_slot(from)
-  day = Date.new(from.year, from.month, from.day)
-  loop do
-    unless day.saturday? || day.sunday?
-      SLOTS.each do |h, m|
-        t = Time.local(day.year, day.month, day.day, h, m)
-        return t if t > from
-      end
-    end
-    day += 1
-  end
-end
-
-def fmt(time)
-  time.strftime('%Y-%m-%d %H:%M')
 end
 
 def with_register
@@ -93,12 +63,7 @@ def add(argv)
   row = opts.merge('id' => SecureRandom.hex(3), 'at' => now.iso8601, 'sent_at' => nil)
   with_register { |rows| rows << row }
 
-  slot = fmt(next_slot(now))
-  job = IO.popen([FUTURE_CLAUDE, 'add', '--at', slot, '--key', "rules-digest:#{slot}", '--headless',
-                  '--title', 'Rules digest', '--by', 'rules-changes', '--allowed-tools', ALLOWED_TOOLS,
-                  '--prompt', DIGEST_PROMPT], err: File::NULL, &:read).strip
-  die "registered #{row['id']}, but queuing the digest failed" unless $?.success?
-  puts "registered #{row['id']}; digest job #{job} sends it at #{slot}"
+  puts "registered #{row['id']}; each session sees it on its next prompt"
 end
 
 def pending_rows
@@ -109,20 +74,50 @@ def pending
   pending_rows.each { |r| puts "#{r['id']}  #{r['at']}  #{r['files'].join(', ')}  #{r['gist']}" }
 end
 
+# When this session last saw the register: its marker, else when its transcript started (rules load
+# then), else now, so a session with no transcript isn't shown the whole history.
+def seen_since(marker, transcript)
+  return Time.parse(File.read(marker).strip) if File.exist?(marker)
+
+  first = File.exist?(transcript.to_s) && File.foreach(transcript).lazy.map { |l| (JSON.parse(l)['timestamp'] rescue nil) }.find(&:itself)
+  first ? Time.parse(first) : now
+end
+
+def prompt_hook
+  input = JSON.parse(STDIN.read) rescue {}
+  session = input['session_id'].to_s
+  return if session.empty? || session.include?('/')
+
+  FileUtils.mkdir_p(SEEN_DIR)
+  marker = File.join(SEEN_DIR, session)
+  since = seen_since(marker, input['transcript_path'])
+  File.write(marker, now.iso8601)
+  rows = with_register { |all| all.select { |r| Time.parse(r['at']) > since } }
+  return if rows.empty?
+
+  text = "Instruction files changed since this session last loaded them. Read the parts named below " \
+         "and follow the new versions from now on.\n#{describe(rows)}"
+  puts JSON.generate('hookSpecificOutput' => { 'hookEventName' => 'UserPromptSubmit', 'additionalContext' => text })
+end
+
+def describe(rows)
+  rows.group_by { |r| r['files'].join(', ') }.map do |files, changes|
+    lines = changes.map do |r|
+      where = r['section'] ? "§ #{r['section']}: " : ''
+      tail = [r['commit'], r['session'] && "from #{r['session']}"].compact.join(', ')
+      "- #{where}#{r['gist']}#{tail.empty? ? '' : " (#{tail})"}"
+    end
+    "\n#{files}\n#{lines.join("\n")}"
+  end.join("\n")
+end
+
 def digest
   rows = pending_rows
   return puts('nothing pending') if rows.empty?
 
-  puts 'Rules digest: instruction files changed since the last digest. Re-read the parts named below, ' \
+  puts 'Rules digest: instruction files changed. Re-read the parts named below, ' \
        'and follow the new versions from now on. Reply only if something conflicts with work in progress.'
-  rows.group_by { |r| r['files'].join(', ') }.each do |files, changes|
-    puts "\n#{files}"
-    changes.each do |r|
-      where = r['section'] ? "§ #{r['section']}: " : ''
-      tail = [r['commit'], r['session'] && "from #{r['session']}"].compact.join(', ')
-      puts "- #{where}#{r['gist']}#{tail.empty? ? '' : " (#{tail})"}"
-    end
-  end
+  puts describe(rows)
   puts "IDS: #{rows.map { |r| r['id'] }.join(' ')}"
 end
 
@@ -138,7 +133,7 @@ when 'add' then add(ARGV)
 when 'pending' then pending
 when 'digest' then digest
 when 'mark-sent' then mark_sent(ARGV)
-when 'next-slot' then puts fmt(next_slot(now))
+when 'prompt-hook' then prompt_hook
 else
   puts File.readlines(__FILE__)[1, 10].map { |l| l.sub(/\A# ?/, '') }.join
   exit(cmd.nil? || %w[-h --help help].include?(cmd) ? 0 : 1)
