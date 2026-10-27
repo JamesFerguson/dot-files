@@ -53,9 +53,17 @@ At the due time `future_claude run` starts a headless `claude -p` in `--cwd` (de
 - **`--origin <name>`** hands back to another session by its `ListAgents` name instead.
 - **`--headless`**, or `add` run outside a session, skips the hand-back: the run just does the task.
 
-Anything other than a clean hand-back (ran headless, failed, timed out) posts a notification pointing at
-`future_claude show <id>`. Other flags: `--permission-mode` (default `auto`), `--model`, `--timeout`
-seconds (default 900), `--by` (who queued it, shown in the prompt).
+A failure or timeout posts a notification pointing at `future_claude show <id>`, and so does a run that
+fell back to doing the task because its origin session had gone. A `--headless` job that succeeds stays
+quiet. Other flags: `--permission-mode` (default `auto`), `--model`, `--timeout` seconds (default
+900), `--by` (who queued it, shown in the prompt), and `--allowed-tools` to pre-approve tools for the
+run (`'ListAgents,SendMessage,Bash(some-cli *)'`).
+
+### One job per key
+
+`--key <text>` makes `add` idempotent: if a pending job already has that key, `add` prints that job's id
+and queues nothing. The check runs under the queue lock, so callers racing to queue the same thing still
+end up with one job. Once the job has run, the key is free again.
 
 A hand-back lands only if the origin session is alive and in a mode that doesn't hold peer messages for
 approval. Otherwise the message waits there or the run falls back to doing the task itself.

@@ -1,0 +1,145 @@
+#!/usr/bin/env ruby
+# rules-changes: a register of edits to Claude's shared instructions (rules files, CLAUDE.md, hooks),
+# sent to every running session as one digest at fixed review times instead of a broadcast per edit.
+#
+#   rules-changes add --file PATH [--file PATH…] [--section NAME] --gist TEXT [--commit SHA] [--session NAME]
+#   rules-changes pending           unsent changes, one per line
+#   rules-changes digest            the message to send, then a last line "IDS: …"
+#   rules-changes mark-sent ID…     record those changes as sent
+#   rules-changes next-slot         the next review time
+#
+# `add` also queues one headless future_claude job for the next review time (weekdays 13:00 and 17:15
+# local), keyed to that slot, so however many changes land before it there's one digest. The job runs
+# `digest`, sends it to every peer session, then `mark-sent`. No public-holiday awareness.
+#
+# Kept compatible with macOS's /usr/bin/ruby 2.6.
+require 'json'
+require 'time'
+require 'date'
+require 'optparse'
+require 'securerandom'
+require 'fileutils'
+
+REGISTER = ENV.fetch('RULES_CHANGES_FILE', File.expand_path('~/.claude/rules-changes.jsonl'))
+FUTURE_CLAUDE = ENV.fetch('RULES_CHANGES_FUTURE_CLAUDE', 'future_claude')
+SLOTS = ENV.fetch('RULES_CHANGES_SLOTS', '13:00,17:15').split(',').map { |s| s.split(':').map(&:to_i) }.sort
+ALLOWED_TOOLS = 'ListAgents,SendMessage,Bash(rules-changes *)'.freeze
+
+DIGEST_PROMPT = <<~PROMPT.freeze
+  You are sending the rules digest: the edits to Claude's shared instruction files since the last one.
+  1. Run `rules-changes digest`. If it prints "nothing pending", end with a line that is exactly DONE_MYSELF.
+  2. Otherwise its last line is "IDS: …". The message is everything above that line, sent verbatim.
+  3. Call ListAgents, then SendMessage that message to every peer session listed (not subagents).
+  4. Run `rules-changes mark-sent` with the ids from the IDS line.
+  5. End with a line that is exactly DONE_MYSELF, or FAILED: <reason> if any step failed.
+PROMPT
+
+def die(msg)
+  warn "rules-changes: #{msg}"
+  exit 1
+end
+
+def now
+  text = ENV['RULES_CHANGES_NOW'].to_s
+  return Time.now if text.empty?
+
+  m = text.match(/\A(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)\z/) or die("can't parse RULES_CHANGES_NOW #{text.inspect}")
+  Time.local(*m.captures.map(&:to_i))
+end
+
+# The first review time strictly after `from`, on a weekday.
+def next_slot(from)
+  day = Date.new(from.year, from.month, from.day)
+  loop do
+    unless day.saturday? || day.sunday?
+      SLOTS.each do |h, m|
+        t = Time.local(day.year, day.month, day.day, h, m)
+        return t if t > from
+      end
+    end
+    day += 1
+  end
+end
+
+def fmt(time)
+  time.strftime('%Y-%m-%d %H:%M')
+end
+
+def with_register
+  FileUtils.mkdir_p(File.dirname(REGISTER))
+  File.open(REGISTER, File::RDWR | File::CREAT, 0o600) do |f|
+    f.flock(File::LOCK_EX)
+    rows = f.read.lines.reject { |l| l.strip.empty? }.map { |l| JSON.parse(l) }
+    result = yield rows
+    f.rewind
+    f.truncate(0)
+    rows.each { |r| f.puts(JSON.generate(r)) }
+    result
+  end
+end
+
+def add(argv)
+  opts = { 'files' => [] }
+  OptionParser.new do |o|
+    o.on('--file PATH') { |v| opts['files'] << v }
+    o.on('--section NAME') { |v| opts['section'] = v }
+    o.on('--gist TEXT') { |v| opts['gist'] = v }
+    o.on('--commit SHA') { |v| opts['commit'] = v }
+    o.on('--session NAME') { |v| opts['session'] = v }
+  end.parse!(argv)
+  die 'add needs at least one --file' if opts['files'].empty?
+  die 'add needs --gist' if opts['gist'].to_s.empty?
+
+  row = opts.merge('id' => SecureRandom.hex(3), 'at' => now.iso8601, 'sent_at' => nil)
+  with_register { |rows| rows << row }
+
+  slot = fmt(next_slot(now))
+  job = IO.popen([FUTURE_CLAUDE, 'add', '--at', slot, '--key', "rules-digest:#{slot}", '--headless',
+                  '--title', 'Rules digest', '--by', 'rules-changes', '--allowed-tools', ALLOWED_TOOLS,
+                  '--prompt', DIGEST_PROMPT], err: File::NULL, &:read).strip
+  die "registered #{row['id']}, but queuing the digest failed" unless $?.success?
+  puts "registered #{row['id']}; digest job #{job} sends it at #{slot}"
+end
+
+def pending_rows
+  with_register { |rows| rows.reject { |r| r['sent_at'] } }
+end
+
+def pending
+  pending_rows.each { |r| puts "#{r['id']}  #{r['at']}  #{r['files'].join(', ')}  #{r['gist']}" }
+end
+
+def digest
+  rows = pending_rows
+  return puts('nothing pending') if rows.empty?
+
+  puts 'Rules digest: instruction files changed since the last digest. Re-read the parts named below, ' \
+       'and follow the new versions from now on. Reply only if something conflicts with work in progress.'
+  rows.group_by { |r| r['files'].join(', ') }.each do |files, changes|
+    puts "\n#{files}"
+    changes.each do |r|
+      where = r['section'] ? "§ #{r['section']}: " : ''
+      tail = [r['commit'], r['session'] && "from #{r['session']}"].compact.join(', ')
+      puts "- #{where}#{r['gist']}#{tail.empty? ? '' : " (#{tail})"}"
+    end
+  end
+  puts "IDS: #{rows.map { |r| r['id'] }.join(' ')}"
+end
+
+def mark_sent(ids)
+  die 'mark-sent needs ids' if ids.empty?
+  stamp = now.iso8601
+  marked = with_register { |rows| rows.select { |r| ids.include?(r['id']) }.each { |r| r['sent_at'] = stamp }.size }
+  puts "marked #{marked} sent"
+end
+
+case (cmd = ARGV.shift)
+when 'add' then add(ARGV)
+when 'pending' then pending
+when 'digest' then digest
+when 'mark-sent' then mark_sent(ARGV)
+when 'next-slot' then puts fmt(next_slot(now))
+else
+  puts File.readlines(__FILE__)[1, 10].map { |l| l.sub(/\A# ?/, '') }.join
+  exit(cmd.nil? || %w[-h --help help].include?(cmd) ? 0 : 1)
+end

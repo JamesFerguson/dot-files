@@ -110,13 +110,52 @@ class FutureClaudeTest < Minitest::Test
     refute_includes File.read(File.join(@dir, 'claude_args')), 'SendMessage'
   end
 
-  def test_a_prompt_job_that_ran_headless_notifies
+  def test_a_prompt_job_whose_origin_was_gone_notifies
     fake_claude('echo DONE_MYSELF')
     id = fc!('add', '--at', '-1m', '--prompt', 'Check the deploy', '--origin', 'gone-session').strip
     fc!('run')
 
     assert_equal 'ran_headless', job(id)['outcome']
     assert_match(/osascript .*#{id}/, calls)
+  end
+
+  def test_a_headless_job_that_succeeds_makes_no_noise
+    fake_claude('echo DONE_MYSELF')
+    id = fc!('add', '--at', '-1m', '--prompt', 'Send the digest', '--headless').strip
+    fc!('run')
+
+    assert_equal 'done', job(id)['status']
+    refute_includes calls, 'osascript'
+  end
+
+  def test_a_key_already_pending_returns_that_job_instead_of_adding_another
+    first = fc!('add', '--at', '+1h', '--key', 'digest:13:00', '--notify', 'x').strip
+    second = fc!('add', '--at', '+1h', '--key', 'digest:13:00', '--notify', 'y').strip
+
+    assert_equal first, second
+    assert_equal 1, queue.size
+  end
+
+  def test_different_keys_add_separate_jobs
+    fc!('add', '--at', '+1h', '--key', 'digest:13:00', '--notify', 'x')
+    fc!('add', '--at', '+5h', '--key', 'digest:17:15', '--notify', 'x')
+    assert_equal 2, queue.size
+  end
+
+  def test_a_finished_job_with_the_key_does_not_block_a_new_one
+    first = fc!('add', '--at', '-1m', '--key', 'digest:13:00', '--notify', 'x').strip
+    fc!('run')
+    second = fc!('add', '--at', '+1h', '--key', 'digest:13:00', '--notify', 'x').strip
+
+    refute_equal first, second
+  end
+
+  def test_allowed_tools_are_passed_to_claude
+    fc!('add', '--at', '-1m', '--prompt', 'Send the digest', '--headless',
+        '--allowed-tools', 'ListAgents,SendMessage,Bash(rules-changes *)')
+    fc!('run')
+    assert_includes File.read(File.join(@dir, 'claude_args')),
+                    '--allowedTools ListAgents,SendMessage,Bash(rules-changes *)'
   end
 
   def test_a_failing_prompt_job_is_marked_failed_and_notifies

@@ -36,6 +36,7 @@ def usage
       future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION | --headless])
                         [--every INTERVAL [--weekdays] [--until TIME]] [--title TITLE] [--cwd DIR]
                         [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
+                        [--key KEY] [--allowed-tools TOOLS]
       future_claude list [--all]
       future_claude show ID
       future_claude rm ID
@@ -44,6 +45,8 @@ def usage
     TIME is local: '2026-10-27 09:47', an ISO 8601 time, or relative: +90s, +30m, +2h, +1d (also -1m).
     INTERVAL is 90s, 30m, 2h, 1d or 1w. Days and weeks keep the wall-clock time across daylight saving.
     --weekdays moves any Saturday or Sunday slot on to Monday.
+    --key makes add idempotent: if a pending job has the same key, add prints its id and adds nothing.
+    --allowed-tools pre-approves tools for a prompt job's claude run (comma-separated, as claude takes them).
     A prompt job queued from a session hands back to it by default. SESSION picks another one: a name
     as ListAgents prints it, or a uds:<socket> address.
   USAGE
@@ -156,6 +159,8 @@ def add(argv)
     o.on('--every INTERVAL') { |v| opts['every'] = parse_every(v) }
     o.on('--weekdays') { opts['weekdays'] = true }
     o.on('--until TIME') { |v| opts['until'] = parse_time(v) }
+    o.on('--key KEY') { |v| opts['key'] = v }
+    o.on('--allowed-tools TOOLS') { |v| opts['allowed_tools'] = v }
     o.on('--title TITLE') { |v| opts['title'] = v }
     o.on('--cwd DIR') { |v| opts['cwd'] = File.expand_path(v) }
     o.on('--permission-mode MODE') { |v| opts['permission_mode'] = v }
@@ -182,7 +187,17 @@ def add(argv)
     'created_at' => Time.now.to_i
   )
   job.delete('timeout') if job['kind'] == 'notify'
-  with_queue { |jobs| jobs << job }
+  # Under the queue lock, so two callers racing with the same key still leave one pending job.
+  existing = with_queue do |jobs|
+    found = job['key'] && jobs.find { |j| j['key'] == job['key'] && j['status'] == 'pending' }
+    jobs << job unless found
+    found
+  end
+  if existing
+    puts existing['id']
+    warn "already queued: #{existing['kind']} job #{existing['id']} for #{local(existing['at'])} (key #{job['key']})"
+    return
+  end
   puts job['id']
   warn "queued #{job['kind']} job #{job['id']} for #{local(job['at'])}"
 end
@@ -258,7 +273,10 @@ def run_prompt(job)
   FileUtils.mkdir_p(LOGS)
   log = File.join(LOGS, "#{job['id']}.log")
   args = [CLAUDE, '-p', prompt_text(job), '--permission-mode', job['permission_mode']]
-  args += ['--allowedTools', 'ListAgents,SendMessage'] if job['origin']
+  tools = []
+  tools += %w[ListAgents SendMessage] if job['origin']
+  tools += job['allowed_tools'].split(',') if job['allowed_tools']
+  args += ['--allowedTools', tools.uniq.join(',')] unless tools.empty?
   args += ['--model', job['model']] if job['model']
   cwd = File.directory?(job['cwd'].to_s) ? job['cwd'] : Dir.home
 
@@ -284,11 +302,10 @@ end
 
 def report(job, result)
   return if job['kind'] == 'notify' || result['outcome'] == 'handed_back'
-  # A repeating job's origin session is often long gone; running headless then is normal, not news.
-  return if job['every'] && !result['failed']
+  # A headless job succeeding is the plan, and a repeating job's origin is often long gone: no news.
+  return if !result['failed'] && (job['every'] || !job['origin'])
 
   what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
-  what = 'ran headless' if !result['failed'] && !job['origin']
   notify("Job #{job['id']} #{what}: #{job['prompt'][0, 80]} — future_claude show #{job['id']}",
          "Claude: #{job['title'] || 'scheduled task'}")
 end

@@ -78,6 +78,8 @@ if (( ON_WORK_LAPTOP )); then
 fi
 # future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
 mkdir -p ~/bin && ln -fs $DOT_FILES_DIR/dot_claude/future_claude/future_claude ~/bin/future_claude
+# rules-changes: register of instruction edits, sent to every session as a twice-daily digest via future_claude
+ln -fs $DOT_FILES_DIR/dot_claude/rules_changes/rules-changes ~/bin/rules-changes
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.future-claude.plist $HOME/Library/LaunchAgents/com.jamesf.future-claude.plist
 
 # VS Code user settings — path has spaces + capitals and lives outside ~/.config,
