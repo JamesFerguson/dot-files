@@ -6,6 +6,7 @@
 require 'json'
 require 'shellwords'
 require_relative 'usage_credits'
+require_relative 'quota_bar'
 
 input = $stdin.read
 data = begin
@@ -252,10 +253,11 @@ branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
 repo_part   = repo.empty?   ? '' : "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
 
 out = "🧠 #{repo_part}#{repo_part.empty? ? '' : ' '}#{ctx_part}"
-reset_5h = relative_time(resets_at_5h)
-reset_7d = relative_time(resets_at_7d)
-out += " #{CYAN}⏱️ #{used_5h}%#{reset_5h ? " #{DIM}#{reset_5h}#{RESET}#{CYAN}" : ''}#{RESET}"
-out += " #{CYAN}📆 #{used_7d}%#{reset_7d ? " #{DIM}#{reset_7d}#{RESET}#{CYAN}" : ''}#{RESET}"
+QUOTA_BAR_WIDTH = 10
+[['⏱️', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
+  reset = relative_time(resets_at)
+  out += " #{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
+end
 sm = spend_meter(cost_total)
 if sm
   reset_month = relative_time(month_reset_epoch)
@@ -277,5 +279,15 @@ if advisor_id
   out += (weak_advisor?(model_id, advisor_id) rescue false) ? " #{ALERT} 🎓 #{name} #{RESET}" : " #{CYAN}🎓 #{name}#{RESET}"
 end
 out += low_effort?(effort) ? " #{WARN} 💪 #{effort} #{RESET}" : " #{MAGENTA}💪 #{effort}#{RESET}"
+
+# ── Claude Code version ──
+# The newest cask on disk is what a restart would run; the session keeps the version it started on.
+CASKROOM = ENV['STATUSLINE_CASKROOM'] || '/opt/homebrew/Caskroom/claude-code'
+running = data['version']
+latest  = (Dir.children(CASKROOM).filter_map { Gem::Version.new(_1) rescue nil }.max&.to_s rescue nil)
+if running
+  behind = latest && Gem::Version.new(running) < Gem::Version.new(latest)
+  out += behind ? " #{RED}v#{running}#{RESET}#{DIM}→#{RESET}#{GREEN}#{latest}#{RESET}" : " #{DIM}v#{running}#{RESET}"
+end
 
 print out
