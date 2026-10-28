@@ -7,3 +7,6 @@
 - Leave it, and tell James in a line, when the PR is urgent (incident, hotfix, time-boxed release), sensitive (security, money movement, needs a narrow diff), or the todo would need testing of its own.
 - Never commit the comment: stage those files with `local-todo stage <path>`, and don't `--no-verify` past the hook.
 - On merge, `pr-task` runs `local-todo merged`. For any other PR it names as also claiming the todo, tell that session to drop the change.
+- **Anchor a new todo on a line that's both on disk and in `git show origin/main:<file>`.** The main checkout is often behind and can't always fast-forward; an anchor on both survives the catch-up, and `check --restore` still finds it. Don't fast-forward or touch someone else's conflicted checkout for a fresher anchor.
+- `local-todo list` flags a repo with more than five open todos: suggest James a PR that clears them.
+- `local-todo check` finds comments lost to git mishaps (a `checkout --`, a dropped stash). Run it in the nightly or when `list` shows `COMMENT MISSING`, and restore with `--restore`.
