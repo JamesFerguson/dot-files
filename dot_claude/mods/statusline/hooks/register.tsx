@@ -49,8 +49,10 @@ const failed = (reason: string): Run[] => [{ text: `statusline: ${reason}`, fg: 
 
 const run = async ($: EngineInterface): Promise<Run[]> => {
   const home = await $.env.get('HOME')
-  const { exitCode, stdout, stderr } = await $.process.run(['ruby', `${home}/.claude/statusline.rb`], {
+  const { exitCode, stdout, stderr } = await $.process.run([`${home}/.local/share/mise/shims/ruby`, `${home}/.claude/statusline.rb`], {
     stdin: JSON.stringify(await statusInput($)),
+    // The mod gets no mise on its PATH, and a repo may pin an older Ruby; the global one is 4.0.
+    cwd: home,
     timeoutMs: 10_000,
   })
   return exitCode === 0 ? parseAnsi(stdout.trimEnd()) : failed(`statusline.rb exited ${exitCode}: ${stderr.trim().slice(0, 200)}`)
