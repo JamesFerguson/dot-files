@@ -41,7 +41,6 @@ used_5h      = (data.dig('rate_limits', 'five_hour', 'used_percentage') || 0).ro
 used_7d      = (data.dig('rate_limits', 'seven_day', 'used_percentage') || 0).round
 resets_at_5h = data.dig('rate_limits', 'five_hour', 'resets_at')
 resets_at_7d = data.dig('rate_limits', 'seven_day', 'resets_at')
-cost_total   = data.dig('cost', 'total_cost_usd')
 
 # ── Git info ──
 branch = ''
@@ -124,15 +123,6 @@ def token_count(tokens)
   tokens >= 999_500 ? "#{(tokens / 1e6).round(1)}M" : "#{(tokens / 1e3).round}k"
 end
 
-# ── Org monthly-spend meter ──
-# The status-line payload has no org monthly-spend field — only `cost.total_cost_usd`, a
-# cumulative figure. So we synthesise a calendar-month meter: snapshot the cumulative total at
-# the first render of each month, show the delta since, and measure it against an ASSUMED cap
-# (we don't get the real one). The assumed cap self-corrects: if a month's spend blows past it,
-# the real cap must be higher, so next month starts from the higher figure.
-SPEND_STATE   = File.expand_path('~/.claude/spend-meter.json')
-SPEND_CAP_DEF = 340.0 # best guess: last month's spend hit the org limit at ~this figure
-
 def month_reset_epoch
   now = Time.now
   y = now.year
@@ -147,28 +137,6 @@ def money(minor, credits, cents: true)
   amount = minor.to_f / (10**credits.fetch('exponent', 2))
   sign   = CURRENCY_SIGNS.fetch(credits['currency']) { "#{credits['currency']} " }
   "#{sign}#{cents ? format('%.2f', amount) : amount.round}"
-end
-
-def spend_meter(cost_total)
-  return nil unless cost_total
-
-  state    = (JSON.parse(File.read(SPEND_STATE)) rescue nil) || {}
-  now_month = Time.now.strftime('%Y-%m')
-  cap       = (state['assumed_cap_usd'] || SPEND_CAP_DEF).to_f
-  baseline  = state['baseline_usd']&.to_f
-
-  # Re-baseline on a new calendar month, first run, or if the cumulative total reset under us.
-  if state['month'] != now_month || baseline.nil? || cost_total < baseline
-    if baseline && state['month'] && cost_total >= baseline
-      last_spend = cost_total - baseline               # the month that just ended
-      cap = last_spend.ceil.to_f if last_spend > cap   # learn: the real cap was at least this
-    end
-    baseline = cost_total
-  end
-
-  spend = cost_total - baseline
-  File.write(SPEND_STATE, JSON.generate('month' => now_month, 'baseline_usd' => baseline, 'assumed_cap_usd' => cap)) rescue nil
-  { pct: (cap.positive? ? (spend / cap * 100).round : 0), spend: spend, cap: cap }
 end
 
 # ── Model alerts ──
@@ -269,16 +237,11 @@ QUOTA_BAR_WIDTH = 10
   reset = relative_time(resets_at)
   out += " #{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
 end
-sm = spend_meter(cost_total)
-if sm
-  reset_month = relative_time(month_reset_epoch)
-  out += " #{pct_ansi(sm[:pct])}💵 ~#{sm[:pct]}%#{RESET}#{reset_month ? " #{DIM}#{reset_month}#{RESET}" : ''}"
-end
 # Usage credits: the extra-usage spend cap as /usage reports it, fetched by the mod. The spend resets
 # on the 1st. Grey until a quota runs out, when credits are what's being spent.
 if (credits = data['usage_credits'])
   colour = used_5h >= 100 || used_7d >= 100 ? RED : GREY
-  out += " #{colour}💳 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
+  out += " #{colour}💵 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
          "#{Time.at(month_reset_epoch).strftime('%-d %b')}#{RESET}"
 end
 model_id   = data.dig('model', 'id')
