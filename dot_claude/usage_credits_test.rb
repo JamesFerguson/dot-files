@@ -27,6 +27,12 @@ class UsageCreditsCostTest < Minitest::Test
     assert_in_delta 4 + 10, UsageCredits.message_cost(usage, 'claude-opus-5-5'), 1e-9
   end
 
+  def test_messages_claude_code_writes_itself_cost_nothing_and_are_not_reported
+    unpriced = []
+    assert_equal 0.0, UsageCredits.message_cost({ 'output_tokens' => 10 }, '<synthetic>', unpriced: unpriced)
+    assert_empty unpriced
+  end
+
   def test_unknown_models_are_priced_at_the_default_rate_and_reported
     unpriced = []
     cost = UsageCredits.message_cost({ 'input_tokens' => 1_000_000 }, 'claude-new-9', unpriced: unpriced)

@@ -49,6 +49,9 @@ module UsageCredits
 
   def tokens_cost(usage, model, unpriced)
     id = model.to_s.sub(/\[.*\]\z/, '')
+    # Claude Code writes these replies itself (an interrupted turn, an API error), with no API call.
+    return 0.0 if id == '<synthetic>'
+
     unless PRICES.key?(id)
       unpriced << id unless unpriced.include?(id)
       id = DEFAULT_MODEL
