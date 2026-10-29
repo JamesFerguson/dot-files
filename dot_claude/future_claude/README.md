@@ -53,9 +53,10 @@ At the due time `future_claude run` starts a headless `claude -p` in `--cwd` (de
 - **`--origin <name>`** hands back to another session by its `ListAgents` name instead.
 - **`--headless`**, or `add` run outside a session, skips the hand-back: the run just does the task.
 
-A failure or timeout posts a notification pointing at `future_claude show <id>`, and so does a run that
-fell back to doing the task because its origin session had gone. A `--headless` job that succeeds stays
-quiet. Other flags: `--permission-mode` (default `auto`), `--model`, `--timeout` seconds (default
+A failure or timeout posts a notification pointing at `future_claude show <id>`, and so does a one-off
+run that fell back to doing the task because its origin session had gone. A `--headless` or repeating
+job that succeeds stays quiet, so a headless job whose result James needs has to notify him itself
+(its prompt ends with an `osascript` notification). Other flags: `--permission-mode` (default `auto`), `--model`, `--timeout` seconds (default
 900), `--by` (who queued it, shown in the prompt), and `--allowed-tools` to pre-approve tools for the
 run (`'ListAgents,SendMessage,Bash(some-cli *)'`).
 
