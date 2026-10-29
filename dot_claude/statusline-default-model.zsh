@@ -3,8 +3,9 @@
 # anything else. A fresh headless session with no setting sources can't be overridden by a
 # settings `model`, a resumed conversation or /model, so the model it starts on is the default.
 # Also records the models on offer, so the status line can name an advisor set by alias in
-# settings.json. Runs from launchd (com.jamesf.claude-default-model); leaves the existing
-# file alone on any failure.
+# settings.json. The prompt is /cost, which Claude Code answers itself, so no request goes to the
+# API and the probe uses no tokens. Runs from launchd (com.jamesf.claude-default-model); leaves
+# the existing file alone on any failure.
 
 export PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin"
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
@@ -14,7 +15,7 @@ cd "$HOME" || exit 1
 OUT="${STATUSLINE_DEFAULT_MODEL_CACHE:-$HOME/.claude/statusline-default-model.json}"
 
 init=$(timeout 90 claude -p --output-format stream-json --verbose --setting-sources '' \
-  --no-session-persistence --max-turns 1 'Reply with just: ok' 2>/dev/null | head -1)
+  --no-session-persistence /cost 2>/dev/null | head -1)
 model=$(jq -r 'select(.subtype == "init") | .model // empty' <<<"$init" 2>/dev/null)
 version=$(jq -r '.claude_code_version // empty' <<<"$init" 2>/dev/null)
 if [[ -z $model || -z $version ]]; then
