@@ -34,6 +34,9 @@ for skill in $DOT_FILES_DIR/dot_claude/skills/*(/N); do
   if [[ -d $target && ! -L $target ]]; then echo "dot-files: $target is a real directory — reconcile it with the repo copy by hand"; continue; fi
   ln -sfh $skill $target
 done
+# General Claude subagents, one file link each so the work overlay can add its own beside them.
+mkdir -p ~/.claude/agents
+for agent in $DOT_FILES_DIR/dot_claude/agents/*.md(.N); do ln -sf $agent ~/.claude/agents/${agent:t}; done
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems
