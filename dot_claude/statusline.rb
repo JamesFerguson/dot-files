@@ -5,7 +5,6 @@
 
 require 'json'
 require 'shellwords'
-require_relative 'usage_credits'
 require_relative 'quota_bar'
 require_relative 'cache_clock'
 
@@ -29,6 +28,7 @@ BLUE    = "\033[1;34m"
 BOLD    = "\033[1m"
 RESET   = "\033[0m"
 DIM     = rgb(60, 60, 60)
+GREY    = rgb(140, 140, 140)
 
 
 # ── Parse fields ──
@@ -139,6 +139,14 @@ def month_reset_epoch
   m = now.month + 1
   (m > 12) && (y += 1) && (m = 1)
   Time.new(y, m, 1, 0, 0, 0).to_i
+end
+
+CURRENCY_SIGNS = { 'AUD' => 'A$', 'USD' => '$' }.freeze
+
+def money(minor, credits, cents: true)
+  amount = minor.to_f / (10**credits.fetch('exponent', 2))
+  sign   = CURRENCY_SIGNS.fetch(credits['currency']) { "#{credits['currency']} " }
+  "#{sign}#{cents ? format('%.2f', amount) : amount.round}"
 end
 
 def spend_meter(cost_total)
@@ -266,13 +274,12 @@ if sm
   reset_month = relative_time(month_reset_epoch)
   out += " #{pct_ansi(sm[:pct])}💵 ~#{sm[:pct]}%#{RESET}#{reset_month ? " #{DIM}#{reset_month}#{RESET}" : ''}"
 end
-credits = (UsageCredits::Meter.new(config_path: File.expand_path('~/.claude/usage-credits.json'),
-                                   state_path: File.expand_path('~/.claude/usage-credits-state.json'),
-                                   projects_dir: File.expand_path('~/.claude/projects'))
-                              .update(limit_hit: used_5h >= 100 || used_7d >= 100) rescue nil)
-if credits
-  out += " #{pct_ansi(credits[:pct])}💳 $#{format('%.2f', credits[:spent])}/$#{credits[:budget].round}" \
-         "#{credits[:unpriced].empty? ? '' : '?'}#{RESET}"
+# Usage credits: the extra-usage spend cap as /usage reports it, fetched by the mod. The spend resets
+# on the 1st. Grey until a quota runs out, when credits are what's being spent.
+if (credits = data['usage_credits'])
+  colour = used_5h >= 100 || used_7d >= 100 ? RED : GREY
+  out += " #{colour}💳 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
+         "#{Time.at(month_reset_epoch).strftime('%-d %b')}#{RESET}"
 end
 model_id   = data.dig('model', 'id')
 model    ||= model_id ? model_name(model_id) : 'Unknown'

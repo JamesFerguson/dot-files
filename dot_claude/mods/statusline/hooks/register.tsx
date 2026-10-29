@@ -7,11 +7,16 @@ import { parseAnsi } from './ansi'
 // ~/.claude/statusline.rb draws the line, as it does for the status line command; this mod feeds it
 // the same JSON on a timer, so the countdowns keep moving while nobody types.
 const TICK_MS = 20 * 1000
+// The account-wide figures /usage shows; they change slowly, so they are fetched less often.
+const USAGE_MS = 5 * 60 * 1000
+const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const line = atom({ plugin: 'statusline', key: 'line' } as const, null as Run[] | null)
 
 let drawing = false
 let reported = false
 let ticking: unknown
+let polling: unknown
+let credits: { used_minor: number, limit_minor: number, exponent: number, currency: string } | undefined
 
 const window = (limits: readonly SessionRateLimit[], kind: string) => {
   const limit = limits.find(one => one.kind === kind)
@@ -20,6 +25,27 @@ const window = (limits: readonly SessionRateLimit[], kind: string) => {
     used_percentage: limit.percentUsed,
     resets_at: limit.resetsAt ? Math.floor(Date.parse(limit.resetsAt) / 1000) : undefined,
   }
+}
+
+// Usage credits (the extra-usage spend cap) from the endpoint /usage reads, with the session's own login.
+const fetchCredits = async ($: EngineInterface) => {
+  const auth = (await $.session.authorize())?.handle
+  const response = await $.http.fetch(USAGE_URL, { auth, headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
+  if (!response.ok) return
+  const spend = JSON.parse(response.text)?.spend
+  if (!spend?.enabled || !spend.used || !spend.limit) { credits = undefined; return }
+  credits = {
+    used_minor: spend.used.amount_minor,
+    limit_minor: spend.limit.amount_minor,
+    exponent: spend.used.exponent,
+    currency: spend.used.currency,
+  }
+  void redraw($)
+}
+
+const pollCredits = ($: EngineInterface) => {
+  polling ??= $.clock.every(USAGE_MS, () => void fetchCredits($).catch(() => undefined))
+  void fetchCredits($).catch(() => undefined)
 }
 
 const statusInput = async ($: EngineInterface) => {
@@ -42,6 +68,7 @@ const statusInput = async ($: EngineInterface) => {
     rate_limits: { five_hour: window(usage.rateLimits, 'five_hour'), seven_day: window(usage.rateLimits, 'seven_day') },
     cost: usage.cost ? { total_cost_usd: usage.cost.usd } : undefined,
     version: version.version,
+    usage_credits: credits,
   }
 }
 
@@ -79,6 +106,7 @@ const redraw = async ($: EngineInterface) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    pollCredits($)
     void redraw($)
     return result
   })
