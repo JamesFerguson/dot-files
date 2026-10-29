@@ -7,6 +7,7 @@ require 'json'
 require 'shellwords'
 require_relative 'usage_credits'
 require_relative 'quota_bar'
+require_relative 'cache_clock'
 
 input = $stdin.read
 data = begin
@@ -32,9 +33,10 @@ DIM     = rgb(60, 60, 60)
 
 
 # ── Parse fields ──
-model   = data.dig('model', 'display_name') || 'Unknown'
-effort  = data.dig('effort', 'level')       || 'Unknown'
+model   = data.dig('model', 'display_name')
+effort  = data.dig('effort', 'level')
 used    = data.dig('context_window', 'used_percentage')
+ctx_tokens = data.dig('context_window', 'total_input_tokens')
 cwd     = data.dig('workspace', 'current_dir') || data['cwd'] || ''
 used_5h      = (data.dig('rate_limits', 'five_hour', 'used_percentage') || 0).round
 used_7d      = (data.dig('rate_limits', 'seven_day', 'used_percentage') || 0).round
@@ -52,7 +54,7 @@ unless cwd.empty?
 end
 
 # ── Context bar ──
-BAR_WIDTH = 20
+BAR_WIDTH = 10
 
 def bar_color_at(pos)
   # Maps bar position (0–100) to an RGB color along a green -> yellow -> red gradient
@@ -110,11 +112,17 @@ def relative_time(resets_at)
   end
 end
 
-def context_bar(used)
+def context_bar(used, tokens)
   return "🟢 #{DIM}#{'░' * BAR_WIDTH}#{RESET} --%" unless used
 
   used_int = used.round
-  "#{ctx_emoji(used_int)}#{build_bar(used_int)} #{pct_ansi(used_int)}#{used_int}%#{RESET}"
+  "#{ctx_emoji(used_int)}#{build_bar(used_int)} #{pct_ansi(used_int)}#{used_int}%#{RESET}" \
+    "#{tokens ? " #{DIM}#{token_count(tokens)}#{RESET}" : ''}"
+end
+
+# 92k, 1.2M
+def token_count(tokens)
+  tokens >= 999_500 ? "#{(tokens / 1e6).round(1)}M" : "#{(tokens / 1e3).round}k"
 end
 
 # ── Org monthly-spend meter ──
@@ -246,7 +254,14 @@ EFFORT_LEVELS = %w[low medium high xhigh max].freeze
 
 def low_effort?(effort) = (EFFORT_LEVELS.index(effort) || EFFORT_LEVELS.size) < EFFORT_LEVELS.index('high')
 
-ctx_part = context_bar(used)
+ctx_part = context_bar(used, ctx_tokens)
+
+# The status line command gets a transcript path; the mod that draws this above the prompt passes
+# the session id instead.
+transcript = data['transcript_path'] ||
+             (data['session_id'] && Dir.glob(File.expand_path("~/.claude/projects/*/#{data['session_id']}.jsonl")).first)
+cache = (CacheClock.read(transcript) rescue nil)
+ctx_part += " #{CacheClock.render(*cache)}" if cache
 
 # ── Assemble output ──
 branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
@@ -272,6 +287,14 @@ if credits
          "#{credits[:unpriced].empty? ? '' : '?'}#{RESET}"
 end
 model_id   = data.dig('model', 'id')
+model    ||= model_id ? model_name(model_id) : 'Unknown'
+# Only hooks fired inside a turn carry the effort, so the mod has none until the first turn ends.
+effort   ||= (begin
+  settings = JSON.parse(File.read(SETTINGS_FILE))
+  settings.dig('modelSettings', bare_model_id(model_id), 'effortLevel') || settings['effortLevel']
+rescue StandardError
+  nil
+end) || 'Unknown'
 advisor_id = (session_advisor(data['transcript_path']) rescue nil)
 out += non_default_model?(model_id) ? " #{ALERT} ⚠️ #{model} #{RESET}" : " #{BLUE}🤖 #{model}#{RESET}"
 if advisor_id
