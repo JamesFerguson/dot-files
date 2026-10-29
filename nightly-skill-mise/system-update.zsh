@@ -98,4 +98,6 @@ else
 fi
 echo "\n===== 7. MCP servers that run from a repo ====="
 "$HERE/mcp-smoke.zsh" || echo "  (a failed server needs a look before the next /mcp reconnect)"
+echo "\n===== 8. claude.ai connectors, synced plugins and account skills ====="
+"$HERE/connector-check.zsh" || echo "  (the org turned something back on: deny or disable it, or add it to ALLOWED)"
 echo "\n===== system-update complete ====="
