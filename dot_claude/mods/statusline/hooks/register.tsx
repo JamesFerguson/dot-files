@@ -10,6 +10,8 @@ const TICK_MS = 20 * 1000
 const line = atom({ plugin: 'statusline', key: 'line' } as const, null as Run[] | null)
 
 let drawing = false
+let reported = false
+let ticking: unknown
 
 const window = (limits: readonly SessionRateLimit[], kind: string) => {
   const limit = limits.find(one => one.kind === kind)
@@ -43,20 +45,30 @@ const statusInput = async ($: EngineInterface) => {
   }
 }
 
+const failed = (reason: string): Run[] => [{ text: `statusline: ${reason}`, fg: 'red' }]
+
+const run = async ($: EngineInterface): Promise<Run[]> => {
+  const home = await $.env.get('HOME')
+  const { exitCode, stdout, stderr } = await $.process.run(['ruby', `${home}/.claude/statusline.rb`], {
+    stdin: JSON.stringify(await statusInput($)),
+    timeoutMs: 10_000,
+  })
+  return exitCode === 0 ? parseAnsi(stdout.trimEnd()) : failed(`statusline.rb exited ${exitCode}: ${stderr.trim().slice(0, 200)}`)
+}
+
+// A failure shows in the band, and once in the transcript, rather than leaving the band empty.
 const redraw = async ($: EngineInterface) => {
   if (drawing) return
   drawing = true
+  ticking ??= $.clock.every(TICK_MS, () => void redraw($))
   try {
-    const home = await $.env.get('HOME')
-    const { exitCode, stdout, stderr } = await $.process.run(['ruby', `${home}/.claude/statusline.rb`], {
-      stdin: JSON.stringify(await statusInput($)),
-      timeoutMs: 10_000,
-    })
-    if (exitCode !== 0) {
-      $.ui.log(`statusline: statusline.rb exited ${exitCode}: ${stderr.slice(0, 200)}`, { to: 'debug' })
-      return
+    const runs = await run($).catch((error: unknown) => failed(String(error).slice(0, 200)))
+    const first = runs[0]
+    if (first?.text.startsWith('statusline: ') && !reported) {
+      reported = true
+      $.ui.log(first.text)
     }
-    await update($, line, () => parseAnsi(stdout.trimEnd()))
+    await update($, line, () => runs)
   } finally {
     drawing = false
   }
@@ -66,7 +78,6 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     void redraw($)
-    $.clock.every(TICK_MS, () => void redraw($))
     return result
   })
 
