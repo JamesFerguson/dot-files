@@ -1,0 +1,6 @@
+{
+  "name": "statusline",
+  "version": "0.1.0",
+  "description": "James's status line drawn above the prompt and redrawn every 20 seconds, so the cache countdown and quota pace stay current while the session is idle.",
+  "types": "./types/index.d.ts"
+}
