@@ -1,0 +1,5 @@
+{
+  "name": "james-mods",
+  "owner": { "name": "James Ferguson" },
+  "plugins": [{ "name": "statusline", "source": "./statusline" }]
+}
