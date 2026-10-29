@@ -21,7 +21,6 @@ def rgb(red, grn, blu)
   "\033[38;2;#{red};#{grn};#{blu}m"
 end
 
-CYAN    = "\033[1;36m"
 GREEN   = "\033[32m"
 YELLOW  = "\033[33m"
 RED     = "\033[31m"
@@ -236,17 +235,6 @@ def configured_advisor
     .select { MODEL_ID.match(_1)&.[](:family) == setting }.max_by { model_rank(_1) } || "claude-#{setting}"
 end
 
-# Red unless the advisor outranks the model it advises; an equal advisor is fine only when the
-# model is already the top one on offer. Unknown families aren't flagged.
-def weak_advisor?(model_id, advisor_id)
-  main, adv = model_rank(model_id), model_rank(advisor_id)
-  return false unless main && adv
-  return false if (adv <=> main).positive?
-
-  top = [model_info['default_id'], *model_info['offered'], model_id].filter_map { model_rank(_1) }.max
-  !(adv == main && !(main <=> top).negative?)
-end
-
 ALERT = "\033[1;97;41m" # bold bright white on red
 WARN  = "\033[1;30;48;2;255;140;0m" # bold black on orange
 
@@ -297,10 +285,8 @@ rescue StandardError
 end) || 'Unknown'
 advisor_id = (session_advisor(data['transcript_path']) rescue nil)
 out += non_default_model?(model_id) ? " #{ALERT} ⚠️ #{model} #{RESET}" : " #{BLUE}🤖 #{model}#{RESET}"
-if advisor_id
-  name = model_name(advisor_id)
-  out += (weak_advisor?(model_id, advisor_id) rescue false) ? " #{ALERT} 🎓 #{name} #{RESET}" : " #{CYAN}🎓 #{name}#{RESET}"
-end
+# Sessions run with no advisor; one that has an advisor is flagged.
+out += " #{ALERT} 🎓 #{model_name(advisor_id)} #{RESET}" if advisor_id
 out += low_effort?(effort) ? " #{WARN} 💪 #{effort} #{RESET}" : " #{MAGENTA}💪 #{effort}#{RESET}"
 
 # ── Claude Code version ──

@@ -2,8 +2,8 @@
 # Records Claude Code's current default model for the status line, which flags sessions running
 # anything else. A fresh headless session with no setting sources can't be overridden by a
 # settings `model`, a resumed conversation or /model, so the model it starts on is the default.
-# Also records the top model on offer, so the status line can tell whether an advisor outranks
-# the model it advises. Runs from launchd (com.jamesf.claude-default-model); leaves the existing
+# Also records the models on offer, so the status line can name an advisor set by alias in
+# settings.json. Runs from launchd (com.jamesf.claude-default-model); leaves the existing
 # file alone on any failure.
 
 export PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin"
