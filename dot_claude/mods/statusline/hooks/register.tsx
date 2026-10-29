@@ -90,22 +90,18 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const below = await next(e)
     const runs = await read($, line)
-    if (e.props.hasSurvey || !runs) return below
+    if (e.props.hasSurvey || !runs) return next(e)
 
-    const { Box, Text } = $.ui.resolve(e)
+    const { Text } = $.ui.resolve(e)
     return (
-      <Box flexDirection="column">
-        <Text>
-          {runs.map(run => (
-            <Text color={run.fg} backgroundColor={run.bg} bold={run.bold}>
-              {run.text}
-            </Text>
-          ))}
-        </Text>
-        {below}
-      </Box>
+      <Text>
+        {runs.map(run => (
+          <Text color={run.fg} backgroundColor={run.bg} bold={run.bold}>
+            {run.text}
+          </Text>
+        ))}
+      </Text>
     )
   })
 }
