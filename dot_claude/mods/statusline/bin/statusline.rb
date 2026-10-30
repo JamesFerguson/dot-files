@@ -2,7 +2,8 @@
 # frozen_string_literal: true
 
 # Claude Code status line, drawn above the prompt by the statusline mod. Reads the mod's JSON on stdin
-# and prints one line of ANSI-coloured text. `parts` in the JSON switches each part off with false.
+# and prints one line of ANSI-coloured text. `options` in the JSON holds the mod's settings: each part
+# switched off with false, the quota target, and what the model, advisor and effort warnings expect.
 
 require 'json'
 require 'shellwords'
@@ -33,8 +34,8 @@ DIM     = rgb(60, 60, 60)
 GREY    = rgb(140, 140, 140)
 
 # ── Parse fields ──
-PARTS = data['parts'] || {}
-def on?(part) = PARTS[part] != false
+OPTIONS = data['options'] || {}
+def on?(part) = OPTIONS[part] != false
 
 model   = data.dig('model', 'display_name')
 effort  = data.dig('effort', 'level')
@@ -52,7 +53,8 @@ repo   = ''
 if on?('repo') && !cwd.empty?
   branch   = `git -C #{cwd.shellescape} --no-optional-locks symbolic-ref --short HEAD 2>/dev/null`.chomp
   toplevel = `git -C #{cwd.shellescape} --no-optional-locks rev-parse --show-toplevel 2>/dev/null`.chomp
-  repo     = File.basename(toplevel) unless toplevel.empty?
+  # Outside a repo, the folder alone.
+  repo     = File.basename(toplevel.empty? ? cwd : toplevel)
 end
 
 # ── Context bar ──
@@ -73,12 +75,12 @@ def blend(from, to, pct)
   (from + (to - from) * pct).round
 end
 
-def ctx_emoji(pct)
-  case pct
+# The context part's icon, which turns into a warning as the window fills.
+def ctx_icon(pct)
+  case pct.to_i
   when 90.. then '🚨'
   when 70.. then '🔥'
-  when 20.. then '⚡'
-  else '🟢'
+  else '🧠'
   end
 end
 
@@ -115,10 +117,10 @@ def relative_time(resets_at)
 end
 
 def context_bar(used, tokens)
-  return "🟢 #{DIM}#{'░' * BAR_WIDTH}#{RESET} --%" unless used
+  return "#{DIM}#{'░' * BAR_WIDTH}#{RESET} --%" unless used
 
   used_int = used.round
-  "#{ctx_emoji(used_int)}#{build_bar(used_int)} #{pct_ansi(used_int)}#{used_int}%#{RESET}" \
+  "#{build_bar(used_int)} #{pct_ansi(used_int)}#{used_int}%#{RESET}" \
     "#{tokens ? " #{DIM}#{token_count(tokens)}#{RESET}" : ''}"
 end
 
@@ -137,16 +139,16 @@ end
 
 CURRENCY_SIGNS = { 'AUD' => 'A$', 'USD' => '$' }.freeze
 
-def money(minor, credits, cents: true)
+def money(minor, credits)
   amount = minor.to_f / (10**credits.fetch('exponent', 2))
   sign   = CURRENCY_SIGNS.fetch(credits['currency']) { "#{credits['currency']} " }
-  "#{sign}#{cents ? format('%.2f', amount) : amount.round}"
+  "#{sign}#{format('%.2f', amount)}"
 end
 
 # ── Model alerts ──
 # The payload carries the model id but nothing marking it as Claude Code's default.
 # default_model.rb records the default, read from a fresh session no setting can
-# override, plus the other models on offer. The model turns red when it isn't that default.
+# override, plus the other models on offer.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 MODEL_TIERS = %w[haiku sonnet opus fable].freeze
 SETTINGS_FILE = ENV['STATUSLINE_SETTINGS'] || File.expand_path('~/.claude/settings.json')
@@ -225,7 +227,31 @@ WARN  = "\033[1;30;48;2;255;140;0m" # bold black on orange
 
 EFFORT_LEVELS = %w[low medium high xhigh max].freeze
 
-def low_effort?(effort) = (EFFORT_LEVELS.index(effort) || EFFORT_LEVELS.size) < EFFORT_LEVELS.index('high')
+# What the warnings expect, from the mod's options. A model expectation is 'default' (Claude Code's
+# default), 'any' or a family; an advisor expectation is 'none', 'any' or a family.
+EXPECTED_MODEL   = OPTIONS['expected_model'] || 'default'
+EXPECTED_ADVISOR = OPTIONS['expected_advisor'] || 'none'
+MIN_EFFORT       = EFFORT_LEVELS.include?(OPTIONS['min_effort']) ? OPTIONS['min_effort'] : 'high'
+
+def low_effort?(effort) = (EFFORT_LEVELS.index(effort) || EFFORT_LEVELS.size) < EFFORT_LEVELS.index(MIN_EFFORT)
+
+def family(id) = MODEL_ID.match(bare_model_id(id))&.[](:family)
+
+def unexpected_model?(model_id)
+  case EXPECTED_MODEL
+  when 'any' then false
+  when 'default' then non_default_model?(model_id)
+  else !!model_id && family(model_id) != EXPECTED_MODEL
+  end
+end
+
+def unexpected_advisor?(advisor_id)
+  case EXPECTED_ADVISOR
+  when 'any' then false
+  when 'none' then !advisor_id.nil?
+  else advisor_id.nil? || family(advisor_id) != EXPECTED_ADVISOR
+  end
+end
 
 # The status line command gets a transcript path; the mod passes the session id instead.
 transcript = data['transcript_path'] ||
@@ -239,35 +265,41 @@ if on?('repo') && !repo.empty?
   parts << "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
 end
 
-parts << "🧠 #{context_bar(used, ctx_tokens)}" if on?('context')
+parts << "#{ctx_icon(used)} #{context_bar(used, ctx_tokens)}" if on?('context')
 if on?('cache') && (cache = (CacheClock.read(transcript) rescue nil))
   parts << CacheClock.render(*cache)
 end
 
 QUOTA_BAR_WIDTH = 10
+QUOTA_TARGET = (OPTIONS['quota_target'] || QuotaBar::TARGET).to_f.clamp(1.0, 100.0)
 [['⏱️', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
   next unless on?(window)
 
   reset = relative_time(resets_at)
-  parts << "#{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
+  parts << "#{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH, target: QUOTA_TARGET)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
 end
 
 # Usage credits: the extra-usage spend cap as /usage reports it, fetched by the mod. The spend resets
 # on the 1st. Grey until a quota runs out, when credits are what's being spent.
 if on?('credits') && (credits = data['usage_credits'])
   colour = used_5h >= 100 || used_7d >= 100 ? RED : GREY
-  parts << "#{colour}💵 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
+  parts << "#{colour}💵 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits)} " \
            "#{Time.at(month_reset_epoch).strftime('%-d %b')}#{RESET}"
 end
 
 model_id = data.dig('model', 'id')
 model  ||= model_id ? model_name(model_id) : 'Unknown'
 if on?('model')
-  parts << (non_default_model?(model_id) ? "#{ALERT} ⚠️ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
+  parts << (unexpected_model?(model_id) ? "#{ALERT} ⚠️ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
 end
-# Sessions run with no advisor; one that has an advisor is flagged.
-if on?('advisor') && (advisor_id = (session_advisor(transcript) rescue nil))
-  parts << "#{ALERT} 🎓 #{model_name(advisor_id)} #{RESET}"
+if on?('advisor')
+  advisor_id = (session_advisor(transcript) rescue nil)
+  advisor    = advisor_id ? model_name(advisor_id) : 'no advisor'
+  if unexpected_advisor?(advisor_id)
+    parts << "#{ALERT} 🎓 #{advisor} #{RESET}"
+  elsif advisor_id
+    parts << "#{BLUE}🎓 #{advisor}#{RESET}"
+  end
 end
 
 if on?('effort')

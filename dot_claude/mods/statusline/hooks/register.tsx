@@ -16,7 +16,7 @@ let drawing = false
 let reported = false
 let ticking: unknown
 let polling: unknown
-let parts: PluginOptions = {}
+let options: PluginOptions = {}
 let credits: { used_minor: number, limit_minor: number, exponent: number, currency: string } | undefined
 
 const window = (limits: readonly SessionRateLimit[], kind: string) => {
@@ -70,7 +70,7 @@ const statusInput = async ($: EngineInterface) => {
     cost: usage.cost ? { total_cost_usd: usage.cost.usd } : undefined,
     version: version.version,
     usage_credits: credits,
-    parts,
+    options,
   }
 }
 
@@ -130,8 +130,8 @@ const redraw = async ($: EngineInterface) => {
   }
 }
 
-export const register: Register = (on, options) => {
-  parts = options
+export const register: Register = (on, given) => {
+  options = given
 
   on('session.start', async ($, e, next) => {
     const result = await next(e)
