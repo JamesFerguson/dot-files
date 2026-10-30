@@ -7,6 +7,7 @@ require 'json'
 require 'shellwords'
 require_relative 'quota_bar'
 require_relative 'cache_clock'
+require_relative 'default_model'
 
 input = $stdin.read
 data = begin
@@ -140,12 +141,16 @@ def money(minor, credits, cents: true)
 end
 
 # ── Model alerts ──
-# The payload carries the model id but nothing marking it as Claude Code's default. A launchd job
-# (statusline-default-model.zsh) records the default, read from a fresh session no setting can
+# The payload carries the model id but nothing marking it as Claude Code's default.
+# statusline-default-model.zsh records the default, read from a fresh session no setting can
 # override, plus the other models on offer. The model turns red when it isn't that default.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 MODEL_TIERS = %w[haiku sonnet opus fable].freeze
 SETTINGS_FILE = ENV['STATUSLINE_SETTINGS'] || File.expand_path('~/.claude/settings.json')
+
+DefaultModel.refresh(record: DEFAULT_MODEL_CACHE, lock: "#{DEFAULT_MODEL_CACHE}.lock",
+                     probe: ['/bin/zsh', '-f', File.join(__dir__, 'statusline-default-model.zsh')].shelljoin,
+                     log: File.expand_path('~/.claude/statusline-default-model.log'))
 
 def model_info
   @model_info ||= (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
