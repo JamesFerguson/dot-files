@@ -51,7 +51,7 @@ Set these on the install screen, or later in `/config`, where they're listed und
 - **Usage credits:** `GET https://api.anthropic.com/api/oauth/usage`, the endpoint `/usage` reads, with your session's login. Fetched every 5 minutes. It's an account call, not a model call, so it uses no tokens. The reset date is the 1st of next month in local time, worked out the same way `/usage` does.
 - **Cache countdown:** the end of the session's transcript. Each reply restarts the cache's clock, and the TTL is whichever the last cache write used (5 minutes or 1 hour).
 - **Default model:** `bin/default_model.rb` opens a fresh `claude -p` session with no settings and records the model it starts on. Its prompt is `/cost`, which Claude Code answers itself, so it uses no tokens. A draw starts it in the background when the record (`~/.claude/statusline-default-model.json`) is over 10 minutes old, and a lock file keeps it to one at a time.
-- **Advisor:** the latest reply in the session's transcript, which records the advisor in effect.
+- **Advisor:** the `advisorModel` setting in `~/.claude/settings.json`, which is what `/advisor` reports. A session keeps the advisor it started with until `/clear` or `/compact`, so for a while after you change it the badge is ahead of the session. The transcript's `advisorModel` field doesn't help: replies carry it whether or not the advisor is on.
 
 ## Tests
 

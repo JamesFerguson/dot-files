@@ -183,36 +183,9 @@ def non_default_model?(model_id)
   !!(model_id && default_id) && bare_model_id(model_id) != default_id
 end
 
-# A session keeps the advisor it started with until /clear or /compact, so settings.json can be
-# stale; each assistant entry in the transcript records the one in effect, and has no key when the
-# advisor is off. Nothing records it at a compaction or a /clear, though, so when one of those comes
-# after the latest assistant entry, or there isn't one, the next turn picks up settings.json.
-# Reads backwards from the end, a chunk at a time.
-def session_advisor(transcript_path)
-  return configured_advisor unless transcript_path && File.file?(transcript_path)
-
-  File.open(transcript_path, 'rb') do |f|
-    pos  = f.size
-    tail = +''
-    while pos.positive? && f.size - pos < 8 << 20
-      step = [pos, 256 << 10].min
-      pos -= step
-      f.seek(pos)
-      lines = (f.read(step) + tail).split("\n")
-      tail  = pos.positive? ? lines.shift.to_s : ''
-      lines.reverse_each do |line|
-        next unless line.include?('"type":"assistant"') || line.include?('"compact_boundary"')
-
-        entry = JSON.parse(line) rescue next
-        next if entry['isSidechain']
-        return entry['advisorModel'] if entry['type'] == 'assistant'
-        return configured_advisor if entry['subtype'] == 'compact_boundary'
-      end
-    end
-  end
-  configured_advisor
-end
-
+# The advisor setting, as /advisor reports it. Not the transcript's advisorModel: assistant entries
+# carry one whether or not the advisor is on. A session keeps the advisor it started with until /clear
+# or /compact, so just after the setting changes this is ahead of the session.
 # settings.json holds an alias such as "fable"; resolve it to the newest id of that family on offer.
 def configured_advisor
   setting = (JSON.parse(File.read(SETTINGS_FILE))['advisorModel'] rescue nil) or return nil
@@ -293,7 +266,7 @@ if on?('model')
   parts << (unexpected_model?(model_id) ? "#{ALERT} ⚠️ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
 end
 if on?('advisor')
-  advisor_id = (session_advisor(transcript) rescue nil)
+  advisor_id = (configured_advisor rescue nil)
   advisor    = advisor_id ? model_name(advisor_id) : 'no advisor'
   if unexpected_advisor?(advisor_id)
     parts << "#{ALERT} 🎓 #{advisor} #{RESET}"

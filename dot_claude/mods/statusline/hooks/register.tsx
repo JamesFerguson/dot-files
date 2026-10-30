@@ -17,7 +17,8 @@ let reported = false
 let ticking: unknown
 let polling: unknown
 let options: PluginOptions = {}
-let credits: { used_minor: number, limit_minor: number, exponent: number, currency: string } | undefined
+let creditsFailed = false
+let credits: { used_minor: number, limit_minor: number, exponent: number, currency: string, fetched_at: number } | undefined
 
 const window = (limits: readonly SessionRateLimit[], kind: string) => {
   const limit = limits.find(one => one.kind === kind)
@@ -29,18 +30,34 @@ const window = (limits: readonly SessionRateLimit[], kind: string) => {
 }
 
 // Usage credits (the extra-usage spend cap) from the endpoint /usage reads, with the session's own login.
+// The endpoint is rate-limited, so the last answer is kept in the store: every session and every reload
+// shows it at once, and only one fetch per USAGE_MS goes out between them. A failed fetch keeps it.
 const fetchCredits = async ($: EngineInterface) => {
+  const [saved, now] = await Promise.all([$.store.get('credits') as Promise<typeof credits>, $.clock.now()])
+  if (saved) credits = saved
+  if (saved && now - saved.fetched_at < USAGE_MS) return void redraw($)
+
   const auth = (await $.session.authorize())?.handle
   const response = await $.http.fetch(USAGE_URL, { auth, headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
-  if (!response.ok) return
+  if (!response.ok) {
+    if (!creditsFailed) $.ui.log(`statusline: the usage endpoint answered ${response.status}; showing the last credits it gave`)
+    creditsFailed = true
+    return void redraw($)
+  }
   const spend = JSON.parse(response.text)?.spend
-  if (!spend?.enabled || !spend.used || !spend.limit) { credits = undefined; return }
+  if (!spend?.enabled || !spend.used || !spend.limit) {
+    credits = undefined
+    await $.store.delete('credits')
+    return void redraw($)
+  }
   credits = {
     used_minor: spend.used.amount_minor,
     limit_minor: spend.limit.amount_minor,
     exponent: spend.used.exponent,
     currency: spend.used.currency,
+    fetched_at: now,
   }
+  await $.store.set('credits', credits)
   void redraw($)
 }
 
