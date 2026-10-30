@@ -1,11 +1,11 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, SessionRateLimit } from 'claude-code'
+import type { EngineInterface, PluginOptions, Register, SessionRateLimit } from 'claude-code'
 
 import type { Run } from '../types'
 import { parseAnsi } from './ansi'
 
-// ~/.claude/statusline.rb draws the line, as it does for the status line command; this mod feeds it
-// the same JSON on a timer, so the countdowns keep moving while nobody types.
+// bin/statusline.rb draws the line from the JSON a status line command gets; this mod feeds it that
+// JSON on a timer, so the countdowns keep moving while nobody types.
 const TICK_MS = 20 * 1000
 // The account-wide figures /usage shows; they change slowly, so they are fetched less often.
 const USAGE_MS = 5 * 60 * 1000
@@ -16,6 +16,7 @@ let drawing = false
 let reported = false
 let ticking: unknown
 let polling: unknown
+let parts: PluginOptions = {}
 let credits: { used_minor: number, limit_minor: number, exponent: number, currency: string } | undefined
 
 const window = (limits: readonly SessionRateLimit[], kind: string) => {
@@ -69,17 +70,43 @@ const statusInput = async ($: EngineInterface) => {
     cost: usage.cost ? { total_cost_usd: usage.cost.usd } : undefined,
     version: version.version,
     usage_credits: credits,
+    parts,
   }
 }
 
 const failed = (reason: string): Run[] => [{ text: `statusline: ${reason}`, fg: 'red' }]
 
+// The mod gets no shell PATH, so no version manager is active: find its ruby shim, and run from bin/,
+// whose .tool-versions and .ruby-version pick the Ruby. Homebrew Ruby is the fallback.
+const rubyCandidates = async ($: EngineInterface) => {
+  const [home, mise, asdf, rbenv] = await Promise.all([
+    $.env.get('HOME'), $.env.get('MISE_DATA_DIR'), $.env.get('ASDF_DATA_DIR'), $.env.get('RBENV_ROOT'),
+  ])
+  return [
+    `${mise ?? `${home}/.local/share/mise`}/shims/ruby`,
+    `${asdf ?? `${home}/.asdf`}/shims/ruby`,
+    `${rbenv ?? `${home}/.rbenv`}/shims/ruby`,
+    '/opt/homebrew/opt/ruby/bin/ruby',
+    '/usr/local/opt/ruby/bin/ruby',
+  ]
+}
+
+let ruby: string | undefined
+
+const findRuby = async ($: EngineInterface) => {
+  for (const path of await rubyCandidates($)) if (await $.fs.exists(path)) return path
+  return undefined
+}
+
 const run = async ($: EngineInterface): Promise<Run[]> => {
-  const home = await $.env.get('HOME')
-  const { exitCode, stdout, stderr } = await $.process.run([`${home}/.local/share/mise/shims/ruby`, `${home}/.claude/statusline.rb`], {
+  ruby ??= await findRuby($)
+  if (!ruby) return failed('no Ruby found (looked for mise, asdf and rbenv shims, and Homebrew Ruby)')
+  const [home, path] = await Promise.all([$.env.get('HOME'), $.env.get('PATH')])
+  const { exitCode, stdout, stderr } = await $.process.run([ruby, `${$.plugin.root}/bin/statusline.rb`], {
     stdin: JSON.stringify(await statusInput($)),
-    // The mod gets no mise on its PATH, and a repo may pin an older Ruby; the global one is 4.0.
-    cwd: home,
+    cwd: `${$.plugin.root}/bin`,
+    // Some shims call their manager by name (asdf exec), so its usual homes go on the PATH.
+    env: { PATH: [`${home}/.asdf/bin`, `${home}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', path].filter(Boolean).join(':') },
     timeoutMs: 10_000,
   })
   return exitCode === 0 ? parseAnsi(stdout.trimEnd()) : failed(`statusline.rb exited ${exitCode}: ${stderr.trim().slice(0, 200)}`)
@@ -103,10 +130,12 @@ const redraw = async ($: EngineInterface) => {
   }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  parts = options
+
   on('session.start', async ($, e, next) => {
     const result = await next(e)
-    pollCredits($)
+    if (options.credits !== false) pollCredits($)
     void redraw($)
     return result
   })

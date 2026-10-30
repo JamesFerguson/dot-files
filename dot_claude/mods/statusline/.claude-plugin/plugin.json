@@ -1,6 +1,71 @@
 {
   "name": "statusline",
-  "version": "0.1.0",
-  "description": "James's status line drawn above the prompt and redrawn every 20 seconds, so the cache countdown and quota pace stay current while the session is idle.",
-  "types": "./types/index.d.ts"
+  "version": "0.2.0",
+  "description": "A status line above the prompt, redrawn every 20 seconds: repo and branch, context, cache countdown, 5-hour and weekly quota pace, usage credits, and alerts for a non-default model, an advisor or low effort.",
+  "author": {
+    "name": "James Ferguson"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "repo": {
+      "type": "boolean",
+      "title": "Repo and branch",
+      "description": "The git repo and branch of the session's directory.",
+      "default": true
+    },
+    "context": {
+      "type": "boolean",
+      "title": "Context",
+      "description": "🧠 How full the context window is, with its size in tokens.",
+      "default": true
+    },
+    "cache": {
+      "type": "boolean",
+      "title": "Cache countdown",
+      "description": "⏳ Time until the prompt cache goes cold, and 🧊 once it has.",
+      "default": true
+    },
+    "five_hour": {
+      "type": "boolean",
+      "title": "5-hour quota",
+      "description": "⏱️ The 5-hour window, coloured by pace against the time left, with its reset.",
+      "default": true
+    },
+    "seven_day": {
+      "type": "boolean",
+      "title": "Weekly quota",
+      "description": "📆 The weekly window, coloured by pace against the time left, with its reset.",
+      "default": true
+    },
+    "credits": {
+      "type": "boolean",
+      "title": "Usage credits",
+      "description": "💵 Usage credits spent against the monthly cap, as /usage shows them. Red while a quota is used up.",
+      "default": true
+    },
+    "model": {
+      "type": "boolean",
+      "title": "Model",
+      "description": "🤖 The session's model, in red when it isn't Claude Code's default.",
+      "default": true
+    },
+    "advisor": {
+      "type": "boolean",
+      "title": "Advisor alert",
+      "description": "🎓 Flags a session running with an advisor.",
+      "default": true
+    },
+    "effort": {
+      "type": "boolean",
+      "title": "Effort",
+      "description": "💪 The effort level, highlighted below high.",
+      "default": true
+    },
+    "version": {
+      "type": "boolean",
+      "title": "Claude Code version",
+      "description": "The running version, and the newer one a restart would pick up.",
+      "default": true
+    }
+  }
 }

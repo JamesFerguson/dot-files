@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Claude Code status line: RGB gradient, dynamic emoji, cost, code velocity
+# Claude Code status line, drawn above the prompt by the statusline mod. Reads the mod's JSON on stdin
+# and prints one line of ANSI-coloured text. `parts` in the JSON switches each part off with false.
 
 require 'json'
 require 'shellwords'
@@ -31,8 +32,10 @@ RESET   = "\033[0m"
 DIM     = rgb(60, 60, 60)
 GREY    = rgb(140, 140, 140)
 
-
 # ── Parse fields ──
+PARTS = data['parts'] || {}
+def on?(part) = PARTS[part] != false
+
 model   = data.dig('model', 'display_name')
 effort  = data.dig('effort', 'level')
 used    = data.dig('context_window', 'used_percentage')
@@ -46,7 +49,7 @@ resets_at_7d = data.dig('rate_limits', 'seven_day', 'resets_at')
 # ── Git info ──
 branch = ''
 repo   = ''
-unless cwd.empty?
+if on?('repo') && !cwd.empty?
   branch   = `git -C #{cwd.shellescape} --no-optional-locks symbolic-ref --short HEAD 2>/dev/null`.chomp
   toplevel = `git -C #{cwd.shellescape} --no-optional-locks rev-parse --show-toplevel 2>/dev/null`.chomp
   repo     = File.basename(toplevel) unless toplevel.empty?
@@ -142,15 +145,16 @@ end
 
 # ── Model alerts ──
 # The payload carries the model id but nothing marking it as Claude Code's default.
-# statusline-default-model.zsh records the default, read from a fresh session no setting can
+# default_model.rb records the default, read from a fresh session no setting can
 # override, plus the other models on offer. The model turns red when it isn't that default.
 DEFAULT_MODEL_CACHE = ENV['STATUSLINE_DEFAULT_MODEL_CACHE'] || File.expand_path('~/.claude/statusline-default-model.json')
 MODEL_TIERS = %w[haiku sonnet opus fable].freeze
 SETTINGS_FILE = ENV['STATUSLINE_SETTINGS'] || File.expand_path('~/.claude/settings.json')
 
-DefaultModel.refresh(record: DEFAULT_MODEL_CACHE, lock: "#{DEFAULT_MODEL_CACHE}.lock",
-                     probe: ['/bin/zsh', '-f', File.join(__dir__, 'statusline-default-model.zsh')].shelljoin,
-                     log: File.expand_path('~/.claude/statusline-default-model.log'))
+if on?('model')
+  DefaultModel.refresh(record: DEFAULT_MODEL_CACHE, lock: "#{DEFAULT_MODEL_CACHE}.lock",
+                       log: File.expand_path('~/.claude/statusline-default-model.log'))
+end
 
 def model_info
   @model_info ||= (JSON.parse(File.read(DEFAULT_MODEL_CACHE)) rescue nil) || {}
@@ -223,55 +227,68 @@ EFFORT_LEVELS = %w[low medium high xhigh max].freeze
 
 def low_effort?(effort) = (EFFORT_LEVELS.index(effort) || EFFORT_LEVELS.size) < EFFORT_LEVELS.index('high')
 
-ctx_part = context_bar(used, ctx_tokens)
-
-# The status line command gets a transcript path; the mod that draws this above the prompt passes
-# the session id instead.
+# The status line command gets a transcript path; the mod passes the session id instead.
 transcript = data['transcript_path'] ||
              (data['session_id'] && Dir.glob(File.expand_path("~/.claude/projects/*/#{data['session_id']}.jsonl")).first)
-cache = (CacheClock.read(transcript) rescue nil)
-ctx_part += " #{CacheClock.render(*cache)}" if cache
 
 # ── Assemble output ──
-branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
-repo_part   = repo.empty?   ? '' : "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
+parts = []
 
-out = "#{repo_part}#{repo_part.empty? ? '' : ' '}🧠 #{ctx_part}"
+if on?('repo') && !repo.empty?
+  branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
+  parts << "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
+end
+
+parts << "🧠 #{context_bar(used, ctx_tokens)}" if on?('context')
+if on?('cache') && (cache = (CacheClock.read(transcript) rescue nil))
+  parts << CacheClock.render(*cache)
+end
+
 QUOTA_BAR_WIDTH = 10
 [['⏱️', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
+  next unless on?(window)
+
   reset = relative_time(resets_at)
-  out += " #{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
+  parts << "#{icon} #{QuotaBar.render(pct, resets_at, window, width: QUOTA_BAR_WIDTH)}#{reset ? " #{DIM}#{reset}#{RESET}" : ''}"
 end
+
 # Usage credits: the extra-usage spend cap as /usage reports it, fetched by the mod. The spend resets
 # on the 1st. Grey until a quota runs out, when credits are what's being spent.
-if (credits = data['usage_credits'])
+if on?('credits') && (credits = data['usage_credits'])
   colour = used_5h >= 100 || used_7d >= 100 ? RED : GREY
-  out += " #{colour}💵 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
-         "#{Time.at(month_reset_epoch).strftime('%-d %b')}#{RESET}"
+  parts << "#{colour}💵 #{money(credits['used_minor'], credits)}/#{money(credits['limit_minor'], credits, cents: false)} " \
+           "#{Time.at(month_reset_epoch).strftime('%-d %b')}#{RESET}"
 end
-model_id   = data.dig('model', 'id')
-model    ||= model_id ? model_name(model_id) : 'Unknown'
-# Only hooks fired inside a turn carry the effort, so the mod has none until the first turn ends.
-effort   ||= (begin
-  settings = JSON.parse(File.read(SETTINGS_FILE))
-  settings.dig('modelSettings', bare_model_id(model_id), 'effortLevel') || settings['effortLevel']
-rescue StandardError
-  nil
-end) || 'Unknown'
-advisor_id = (session_advisor(data['transcript_path']) rescue nil)
-out += non_default_model?(model_id) ? " #{ALERT} ⚠️ #{model} #{RESET}" : " #{BLUE}🤖 #{model}#{RESET}"
+
+model_id = data.dig('model', 'id')
+model  ||= model_id ? model_name(model_id) : 'Unknown'
+if on?('model')
+  parts << (non_default_model?(model_id) ? "#{ALERT} ⚠️ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
+end
 # Sessions run with no advisor; one that has an advisor is flagged.
-out += " #{ALERT} 🎓 #{model_name(advisor_id)} #{RESET}" if advisor_id
-out += low_effort?(effort) ? " #{WARN} 💪 #{effort} #{RESET}" : " #{MAGENTA}💪 #{effort}#{RESET}"
+if on?('advisor') && (advisor_id = (session_advisor(transcript) rescue nil))
+  parts << "#{ALERT} 🎓 #{model_name(advisor_id)} #{RESET}"
+end
+
+if on?('effort')
+  # Only hooks fired inside a turn carry the effort, so the mod has none until the first turn ends.
+  effort ||= (begin
+    settings = JSON.parse(File.read(SETTINGS_FILE))
+    settings.dig('modelSettings', bare_model_id(model_id), 'effortLevel') || settings['effortLevel']
+  rescue StandardError
+    nil
+  end) || 'Unknown'
+  parts << (low_effort?(effort) ? "#{WARN} 💪 #{effort} #{RESET}" : "#{MAGENTA}💪 #{effort}#{RESET}")
+end
 
 # ── Claude Code version ──
 # The newest cask on disk is what a restart would run; the session keeps the version it started on.
 CASKROOM = ENV['STATUSLINE_CASKROOM'] || '/opt/homebrew/Caskroom/claude-code'
 running = data['version']
-latest  = (Dir.children(CASKROOM).filter_map { Gem::Version.new(_1) rescue nil }.max&.to_s rescue nil)
-if running
+if on?('version') && running
+  latest = (Dir.children(CASKROOM).filter_map { Gem::Version.new(_1) rescue nil }.max&.to_s rescue nil)
   behind = latest && Gem::Version.new(running) < Gem::Version.new(latest)
-  out += behind ? " #{RED}v#{running}#{RESET}#{DIM}→#{RESET}#{GREEN}#{latest}#{RESET}" : " #{DIM}v#{running}#{RESET}"
+  parts << (behind ? "#{RED}v#{running}#{RESET}#{DIM}→#{RESET}#{GREEN}#{latest}#{RESET}" : "#{DIM}v#{running}#{RESET}")
 end
 
-print out
+print parts.join(' ')

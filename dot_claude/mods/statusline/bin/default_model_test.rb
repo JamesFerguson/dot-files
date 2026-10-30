@@ -3,6 +3,7 @@
 
 require 'minitest/autorun'
 require 'tmpdir'
+require 'fileutils'
 require_relative 'default_model'
 
 class DefaultModelTest < Minitest::Test
@@ -21,6 +22,13 @@ class DefaultModelTest < Minitest::Test
   def probe_ran?
     20.times { File.exist?(@ran) ? break : sleep(0.05) }
     File.exist?(@ran)
+  end
+
+  def fake_claude(output)
+    path = File.join(@dir, 'claude')
+    File.write(path, "#!/bin/sh\ncat <<'OUT'\n#{output}\nOUT\n")
+    File.chmod(0o755, path)
+    path
   end
 
   def test_a_missing_record_starts_the_probe_in_the_background
@@ -55,5 +63,20 @@ class DefaultModelTest < Minitest::Test
     assert_equal :started, refresh
     assert_equal :locked, refresh(now: Time.now + 110)
     assert_equal :started, refresh(now: Time.now + 130)
+  end
+
+  def test_the_probe_records_the_model_a_fresh_session_opens_on
+    claude = fake_claude('{"type":"system","subtype":"init","model":"claude-opus-5-5","claude_code_version":"2.1.308"}')
+    capture_io { DefaultModel.probe(claude, @record) }
+    record = JSON.parse(File.read(@record))
+    assert_equal 'claude-opus-5-5', record['default_id']
+    assert_equal '2.1.308', record['version']
+  end
+
+  def test_a_probe_without_an_init_event_keeps_the_old_record
+    File.write(@record, '{"default_id":"claude-opus-5-5"}')
+    out, = capture_io { DefaultModel.probe(fake_claude('Not logged in'), @record) }
+    assert_includes out, 'no init event'
+    assert_equal 'claude-opus-5-5', JSON.parse(File.read(@record))['default_id']
   end
 end
