@@ -236,7 +236,7 @@ ctx_part += " #{CacheClock.render(*cache)}" if cache
 branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
 repo_part   = repo.empty?   ? '' : "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
 
-out = "🧠 #{repo_part}#{repo_part.empty? ? '' : ' '}#{ctx_part}"
+out = "#{repo_part}#{repo_part.empty? ? '' : ' '}🧠 #{ctx_part}"
 QUOTA_BAR_WIDTH = 10
 [['⏱️', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
   reset = relative_time(resets_at)

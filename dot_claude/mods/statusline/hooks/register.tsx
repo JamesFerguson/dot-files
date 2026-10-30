@@ -118,18 +118,23 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    // Other mods' bands, and the engine's own, go under the line rather than being replaced by it.
+    const below = await next(e)
     const runs = await read($, line)
-    if (e.props.hasSurvey || !runs) return next(e)
+    if (e.props.hasSurvey || !runs) return below
 
-    const { Text } = $.ui.resolve(e)
+    const { Box, Text } = $.ui.resolve(e)
     return (
-      <Text>
-        {runs.map(run => (
-          <Text color={run.fg} backgroundColor={run.bg} bold={run.bold}>
-            {run.text}
-          </Text>
-        ))}
-      </Text>
+      <Box flexDirection="column">
+        <Text>
+          {runs.map(run => (
+            <Text color={run.fg} backgroundColor={run.bg} bold={run.bold}>
+              {run.text}
+            </Text>
+          ))}
+        </Text>
+        {below}
+      </Box>
     )
   })
 }
