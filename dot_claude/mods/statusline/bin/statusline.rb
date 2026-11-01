@@ -60,15 +60,24 @@ end
 # ── Context bar ──
 BAR_WIDTH = 10
 
+# Colour stops along the context bar: green, yellow, red by 60%, purple by 80%, near black at 100%.
+BAR_STOPS = [
+  [0,   [0, 200, 80]],
+  [30,  [220, 200, 0]],
+  [60,  [220, 40, 20]],
+  [80,  [150, 50, 200]],
+  [100, [30, 15, 40]]
+].freeze
+
+# The RGB colour at a bar position (0–100), blended between the stops either side of it.
+def bar_rgb_at(pos)
+  (lo_pos, lo), (hi_pos, hi) = BAR_STOPS.each_cons(2).find { |(_, _), (top, _)| pos <= top } || BAR_STOPS.last(2)
+  t = (pos - lo_pos).fdiv(hi_pos - lo_pos).clamp(0, 1)
+  lo.zip(hi).map { |from, to| blend(from, to, t) }
+end
+
 def bar_color_at(pos)
-  # Maps bar position (0–100) to an RGB color along a green -> yellow -> red gradient
-  if pos <= 50
-    t = pos / 50.0
-    rgb(blend(0, 220, t), 200, blend(80, 0, t))
-  else
-    t = (pos - 50) / 50.0
-    rgb(220, blend(200, 40, t), blend(0, 20, t))
-  end
+  rgb(*bar_rgb_at(pos))
 end
 
 def blend(from, to, pct)
@@ -84,18 +93,15 @@ def ctx_icon(pct)
   end
 end
 
+# The percentage takes the bar's colour where the fill ends.
 def pct_ansi(pct)
-  case pct
-  when 90.. then RED
-  when 70.. then YELLOW
-  else GREEN
-  end
+  bar_color_at(pct.clamp(0, 100))
 end
 
 def build_bar(used_int)
   filled = (used_int * BAR_WIDTH + 50) / 100
   (0...BAR_WIDTH).map do |i|
-    pos = i * 100 / (BAR_WIDTH - 1)
+    pos = (i + 1) * 100 / BAR_WIDTH # the fill level this cell stands for
     i < filled ? "#{bar_color_at(pos)}█" : "#{DIM}░"
   end.join + RESET
 end

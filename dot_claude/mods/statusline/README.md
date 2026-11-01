@@ -9,7 +9,7 @@ A status line drawn above the prompt and redrawn every 20 seconds, so the countd
 | Part | Shows |
 |---|---|
 | `[repo branch]` | The git repo and branch of the session's directory, or just the folder's name outside a repo. |
-| 🧠 | How full the context window is, and its size in tokens. The 🧠 turns into 🔥 at 70% and 🚨 at 90%. |
+| 🧠 | How full the context window is, and its size in tokens. The fill runs green to yellow, is red by 60%, purple by 80% and nearly black at 100%, and the percentage takes the colour where the fill ends. The 🧠 turns into 🔥 at 70% and 🚨 at 90%. |
 | ⏳ / 🧊 | Minutes until the prompt cache goes cold, orange under 10. 🧊 once it's cold: the next reply rewrites the whole context at the cache-write price. |
 | ⏱️ / 📆 | The 5-hour and weekly quotas, with time to reset, paced against a target (80% by default). The fill is green while usage is on or under the target pace, red once it's past a steady pace to 100%, and yellow to orange in between. In the last fifth of the window the target climbs to 100%, since quota left at the reset is wasted. The green dots after the fill are the headroom left at the target pace. |
 | 💵 | Usage credits spent against the monthly cap, and the date it resets, as `/usage` shows them. Grey normally, red while a 5-hour or weekly quota is used up, since that's when credits are being spent. |
