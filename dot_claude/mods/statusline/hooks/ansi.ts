@@ -16,6 +16,8 @@ const apply = (style: Style, params: number[]): Style => {
     else if (p >= 30 && p <= 37) next.fg = BASIC[p - 30]
     else if (p >= 90 && p <= 97) next.fg = BASIC[p - 90] + 'Bright'
     else if (p >= 40 && p <= 47) next.bg = BASIC[p - 40]
+    else if (p === 39) delete next.fg
+    else if (p === 49) delete next.bg
     else if ((p === 38 || p === 48) && params[i + 1] === 2) {
       const colour = hex(params[i + 2] ?? 0, params[i + 3] ?? 0, params[i + 4] ?? 0)
       if (p === 38) next.fg = colour

@@ -98,12 +98,18 @@ def pct_ansi(pct)
   bar_color_at(pct.clamp(0, 100))
 end
 
+# Each filled cell is a left half-block with the background as its right half, so the 10 cells
+# carry 20 colour steps. Each half takes the colour of the fill level it stands for.
 def build_bar(used_int)
   filled = (used_int * BAR_WIDTH + 50) / 100
-  (0...BAR_WIDTH).map do |i|
-    pos = (i + 1) * 100 / BAR_WIDTH # the fill level this cell stands for
-    i < filled ? "#{bar_color_at(pos)}█" : "#{DIM}░"
-  end.join + RESET
+  step   = 100 / BAR_WIDTH
+  cells  = (0...BAR_WIDTH).map do |i|
+    next "#{DIM}░" if i >= filled
+
+    left, right = bar_rgb_at(i * step + step / 2), bar_rgb_at((i + 1) * step)
+    "\033[38;2;#{left.join(";")};48;2;#{right.join(";")}m▌\033[49m"
+  end
+  cells.join + RESET
 end
 
 def relative_time(resets_at)

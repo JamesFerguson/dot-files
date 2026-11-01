@@ -25,3 +25,10 @@ test('the alert badges keep their background', () => {
 test('adjacent runs in the same style merge', () => {
   expect(parseAnsi('\x1b[32ma\x1b[32mb')).toEqual([{ text: 'ab', fg: 'green' }])
 })
+
+test('49 ends the background and keeps the foreground', () => {
+  expect(parseAnsi('\x1b[38;2;0;200;80;48;2;220;40;20m▌\x1b[49m\x1b[38;2;60;60;60m░')).toEqual([
+    { text: '▌', fg: '#00c850', bg: '#dc2814' },
+    { text: '░', fg: '#3c3c3c' },
+  ])
+})
