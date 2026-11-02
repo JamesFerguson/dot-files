@@ -183,8 +183,9 @@ function mig
   fi
 }
 
-# db:migrate re-dumps schema.rb from the whole dev database, so tables another project or an old
-# branch put there land in the dump, and a commit or the test db load picks them up.
+# db:migrate re-dumps schema.rb from the whole dev database, so anything the dev database has and
+# HEAD doesn't lands in the dump: another project's tables, or ones prod dropped by a hand-run SQL
+# script that never ran locally. A commit or the test db load then picks them up.
 function warn_schema_drift
 {
   [ "$(git hash-object db/schema.rb 2>/dev/null)" = "$1" ] && return 0
