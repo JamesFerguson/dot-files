@@ -96,6 +96,7 @@ cask 'copilot-cli' # GitHub Copilot CLI tool to use Copilot in terminal
 cask 'divvy'
 cask 'font-fira-code'
 cask 'gitup-app' # GUI git client
+cask 'herdr-app' # desktop app for the herdr agent multiplexer
 cask 'hiddenbar' # hide menu bar icons to reduce clutter
 cask 'iterm2'
 cask 'karabiner-elements'
