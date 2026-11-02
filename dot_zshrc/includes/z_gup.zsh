@@ -172,10 +172,32 @@ function mig
   if [ -f "Gemfile" ] && [ -f "db/schema.rb" ] && { [ -f "bin/rails" ] || [ -f "config/application.rb" ]; }
   then
     echo "Running any new migrations..."
+    local schema_before
+    schema_before=$(git hash-object db/schema.rb 2>/dev/null)
     run_bundler_cmd rake db:migrate
+    warn_schema_drift "$schema_before"
     echo "Syncing test db from schema..."
     RAILS_ENV=test RACK_ENV=test run_bundler_cmd rake db:schema:load
   else
     echo "Gemfile or db/schema.rb not found, nothing to migrate."
   fi
+}
+
+# db:migrate re-dumps schema.rb from the whole dev database, so tables another project or an old
+# branch put there land in the dump, and a commit or the test db load picks them up.
+function warn_schema_drift
+{
+  [ "$(git hash-object db/schema.rb 2>/dev/null)" = "$1" ] && return 0
+  git diff --quiet HEAD -- db/schema.rb 2>/dev/null && return 0
+
+  echo ""
+  echo "WARNING: db:migrate changed db/schema.rb, and it now differs from HEAD."
+  local added removed
+  added=$(git diff -U0 HEAD -- db/schema.rb | sed -nE 's/^\+  create_(table|enum) "([^"]+)".*/\2/p' | sort)
+  removed=$(git diff -U0 HEAD -- db/schema.rb | sed -nE 's/^-  create_(table|enum) "([^"]+)".*/\2/p' | sort)
+  [ -n "$added" ] && echo "  Added: $(echo $added | tr '\n' ' ')"
+  [ -n "$removed" ] && echo "  Removed: $(echo $removed | tr '\n' ' ')"
+  echo "  Expected if this branch has a new migration. Otherwise the dev database has tables HEAD"
+  echo "  doesn't, so don't commit them. Discard with: git checkout HEAD -- db/schema.rb"
+  echo ""
 }
