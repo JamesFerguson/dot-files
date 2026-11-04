@@ -180,6 +180,55 @@ class FutureClaudeTest < Minitest::Test
     assert_equal 'timeout', job(id)['outcome']
   end
 
+  def test_add_needs_exactly_one_of_notify_prompt_and_command
+    refute fc('add', '--at', '+1h', '--prompt', 'a', '--command', 'true')[2].success?
+    refute fc('add', '--at', '+1h', '--notify', 'a', '--command', 'true')[2].success?
+    assert_empty queue
+  end
+
+  def test_a_command_job_runs_in_its_cwd_without_claude_and_logs_its_output
+    work = File.join(@dir, 'work')
+    FileUtils.mkdir_p(work)
+    id = fc!('add', '--at', '-1m', '--command', 'pwd; echo rendered', '--cwd', work).strip
+    fc!('run')
+
+    assert_equal 'done', job(id)['status']
+    assert_equal 'command', job(id)['kind']
+    assert_equal 0, job(id)['exit']
+    log = File.read(job(id)['log'])
+    assert_includes log, File.realpath(work)
+    assert_includes log, 'rendered'
+    refute File.exist?(File.join(@dir, 'claude_args'))
+    assert_empty calls
+  end
+
+  def test_a_failing_command_job_is_marked_failed_and_notifies
+    id = fc!('add', '--at', '-1m', '--command', 'echo no key >&2; exit 4', '--title', 'Purchase stats').strip
+    fc!('run')
+
+    assert_equal 'failed', job(id)['status']
+    assert_equal 4, job(id)['exit']
+    assert_match(/osascript .*failed.*Claude: Purchase stats/, calls)
+  end
+
+  def test_a_command_job_past_its_timeout_is_killed_and_marked_failed
+    id = fc!('add', '--at', '-1m', '--command', 'sleep 30', '--timeout', '1').strip
+    started = Time.now
+    fc!('run')
+
+    assert_operator Time.now - started, :<, 15
+    assert_equal 'timeout', job(id)['outcome']
+  end
+
+  def test_a_repeating_command_job_that_succeeds_stays_quiet_and_reschedules
+    id = fc!('add', '--at', '-1m', '--every', '1d', '--command', 'true').strip
+    fc!('run')
+
+    assert_equal 'pending', job(id)['status']
+    assert_equal 'exited_0', job(id)['last_outcome']
+    assert_empty calls
+  end
+
   def test_a_repeating_job_is_listed_with_its_interval
     fc!('add', '--at', '+1h', '--every', '1d', '--notify', 'Daily')
     assert_includes fc!('list'), 'every 1d'

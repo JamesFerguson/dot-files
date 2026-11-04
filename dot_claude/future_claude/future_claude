@@ -3,8 +3,9 @@
 # A launchd agent (com.jamesf.future-claude) runs `future_claude run` every minute, so jobs fire
 # whether or not the session that queued them is still open. Missed ticks (Mac asleep) run on wake.
 #
-# Two kinds of job:
-#   notify  speaks a line and posts a macOS notification. No Claude involved.
+# Three kinds of job:
+#   notify   speaks a line and posts a macOS notification. No Claude involved.
+#   command  runs a shell command in --cwd. No Claude involved; a failure posts a notification.
 #   prompt  runs a headless `claude -p`. Queued from a session, it first tries to hand the task back
 #           to that session over SendMessage (or to --origin), so it's done with that session's
 #           context; if the session isn't running it does the task itself. Any outcome other than a
@@ -33,7 +34,8 @@ OUTCOMES = { 'HANDED_BACK' => 'handed_back', 'DONE_MYSELF' => 'ran_headless', 'F
 def usage
   <<~USAGE
     Usage:
-      future_claude add --at TIME (--notify TEXT [--say TEXT] | --prompt TEXT [--origin SESSION | --headless])
+      future_claude add --at TIME (--notify TEXT [--say TEXT] | --command SHELL |
+                                   --prompt TEXT [--origin SESSION | --headless])
                         [--every INTERVAL [--weekdays] [--until TIME]] [--title TITLE] [--cwd DIR]
                         [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
                         [--key KEY] [--allowed-tools TOOLS]
@@ -154,6 +156,7 @@ def add(argv)
     o.on('--notify TEXT') { |v| opts['notify'] = v }
     o.on('--say TEXT') { |v| opts['say'] = v }
     o.on('--prompt TEXT') { |v| opts['prompt'] = v }
+    o.on('--command SHELL') { |v| opts['command'] = v }
     o.on('--origin SESSION') { |v| opts['origin'] = v }
     o.on('--headless') { opts['headless'] = true }
     o.on('--every INTERVAL') { |v| opts['every'] = parse_every(v) }
@@ -170,7 +173,8 @@ def add(argv)
   end.parse!(argv)
 
   die 'add needs --at' unless opts['at']
-  die 'add needs exactly one of --notify and --prompt' unless [opts['notify'], opts['prompt']].compact.size == 1
+  kinds = %w[notify prompt command].select { |k| opts[k] }
+  die 'add needs exactly one of --notify, --prompt and --command' unless kinds.size == 1
   die '--weekdays and --until need --every' if (opts['weekdays'] || opts['until']) && !opts['every']
   opts['at'] = skip_weekend(opts['at']) if opts['weekdays']
 
@@ -182,7 +186,7 @@ def add(argv)
 
   job = opts.merge(
     'id' => SecureRandom.hex(3),
-    'kind' => opts['notify'] ? 'notify' : 'prompt',
+    'kind' => kinds.first,
     'status' => 'pending',
     'created_at' => Time.now.to_i
   )
@@ -203,12 +207,16 @@ def add(argv)
 end
 
 def summary(job)
-  text = job['notify'] || job['prompt']
+  text = job_text(job)
   text = "#{text[0, 70]}…" if text.length > 71
   extra = job['origin'] ? " → #{job['origin']}" : ''
   extra = " (every #{job['every']}#{' weekdays' if job['weekdays']})#{extra}" if job['every']
   outcome = job['outcome'] ? " (#{job['outcome']})" : ''
   format('%-6s  %-21s  %-7s  %-8s%s  %s%s', job['id'], local(job['at']), job['kind'], job['status'], outcome, text, extra)
+end
+
+def job_text(job)
+  job['notify'] || job['prompt'] || job['command']
 end
 
 def list(argv)
@@ -270,29 +278,16 @@ def find_origin(origin)
 end
 
 def run_prompt(job)
-  FileUtils.mkdir_p(LOGS)
-  log = File.join(LOGS, "#{job['id']}.log")
+  log = job_log(job)
   args = [CLAUDE, '-p', prompt_text(job), '--permission-mode', job['permission_mode']]
   tools = []
   tools += %w[ListAgents SendMessage] if job['origin']
   tools += job['allowed_tools'].split(',') if job['allowed_tools']
   args += ['--allowedTools', tools.uniq.join(',')] unless tools.empty?
   args += ['--model', job['model']] if job['model']
-  cwd = File.directory?(job['cwd'].to_s) ? job['cwd'] : Dir.home
 
-  pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
-  deadline = Time.now + (job['timeout'] || DEFAULT_TIMEOUT)
-  status = nil
-  until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
-    if Time.now > deadline
-      Process.kill('TERM', -pid) rescue nil
-      sleep 2
-      Process.kill('KILL', -pid) rescue nil
-      Process.waitpid(pid) rescue nil
-      return { 'log' => log, 'outcome' => 'timeout', 'failed' => true }
-    end
-    sleep 0.5
-  end
+  status = spawn_logged(args, job_cwd(job), job, log)
+  return { 'log' => log, 'outcome' => 'timeout', 'failed' => true } unless status
 
   last = File.readlines(log).map(&:strip).reject(&:empty?).last.to_s
   outcome = OUTCOMES.find { |marker, _| last.start_with?(marker) }&.last || 'no_marker'
@@ -300,13 +295,48 @@ def run_prompt(job)
   { 'log' => log, 'exit' => status.exitstatus, 'outcome' => outcome, 'failed' => failed }
 end
 
+def job_cwd(job)
+  File.directory?(job['cwd'].to_s) ? job['cwd'] : Dir.home
+end
+
+def job_log(job)
+  FileUtils.mkdir_p(LOGS)
+  File.join(LOGS, "#{job['id']}.log")
+end
+
+# Runs args in their own process group with output to log. Returns the exit status, or nil after
+# killing the group at the job's timeout.
+def spawn_logged(args, cwd, job, log)
+  pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
+  deadline = Time.now + (job['timeout'] || DEFAULT_TIMEOUT)
+  until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
+    if Time.now > deadline
+      Process.kill('TERM', -pid) rescue nil
+      sleep 2
+      Process.kill('KILL', -pid) rescue nil
+      Process.waitpid(pid) rescue nil
+      return nil
+    end
+    sleep 0.5
+  end
+  status
+end
+
+def run_command(job)
+  log = job_log(job)
+  status = spawn_logged(['/bin/zsh', '-c', job['command']], job_cwd(job), job, log)
+  return { 'log' => log, 'outcome' => 'timeout', 'failed' => true } unless status
+
+  { 'log' => log, 'exit' => status.exitstatus, 'outcome' => "exited_#{status.exitstatus}", 'failed' => !status.success? }
+end
+
 def report(job, result)
   return if job['kind'] == 'notify' || result['outcome'] == 'handed_back'
   # A headless job succeeding is the plan, and a repeating job's origin is often long gone: no news.
-  return if !result['failed'] && (job['every'] || !job['origin'])
+  return if !result['failed'] && (job['every'] || !job['origin'] || job['kind'] == 'command')
 
   what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
-  notify("Job #{job['id']} #{what}: #{job['prompt'][0, 80]} — future_claude show #{job['id']}",
+  notify("Job #{job['id']} #{what}: #{job_text(job)[0, 80]} — future_claude show #{job['id']}",
          "Claude: #{job['title'] || 'scheduled task'}")
 end
 
@@ -324,7 +354,7 @@ def run_due
   end
 
   due.each do |job|
-    result = job['kind'] == 'notify' ? run_notify(job) : run_prompt(job)
+    result = { 'notify' => method(:run_notify), 'command' => method(:run_command) }.fetch(job['kind'], method(:run_prompt)).call(job)
     status = result['failed'] ? 'failed' : 'done'
     update_job(job['id']) do |j|
       j.update(result.reject { |k, _| k == 'failed' })

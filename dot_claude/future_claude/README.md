@@ -14,6 +14,9 @@ future_claude add --at '2026-10-27 09:47' --title 'Enrolment due' --notify 'Enro
 # Work for later. Queued from a Claude session's Bash call, it's handed back to that session.
 future_claude add --at +2h --prompt 'Check whether the deploy finished and tell James'
 
+# A script, no Claude: runs under zsh in --cwd, output to the job's log.
+future_claude add --at '2026-11-06 09:15' --every 1d --weekdays --command 'bin/report' --cwd ~/reports
+
 future_claude list            # pending and running jobs (--all for finished ones)
 future_claude show <id>       # the job, plus the Claude run's log for prompt jobs
 future_claude rm <id>
@@ -59,6 +62,13 @@ job that succeeds stays quiet, so a headless job whose result James needs has to
 (its prompt ends with an `osascript` notification). Other flags: `--permission-mode` (default `auto`), `--model`, `--timeout` seconds (default
 900), `--by` (who queued it, shown in the prompt), and `--allowed-tools` to pre-approve tools for the
 run (`'ListAgents,SendMessage,Bash(some-cli *)'`).
+
+### Command jobs
+
+`--command` runs a shell command with `zsh -c` in `--cwd`, under the runner's bare launchd env (the
+plist's PATH and `~/.future_claude.env`), so the command sets up anything else it needs. A nonzero exit
+or a timeout (`--timeout`, default 900s) marks the job failed and notifies; a success stays quiet. Use it
+for work a script can do on its own. The script can still start Claude for the part that needs judgement.
 
 ### One job per key
 
