@@ -81,6 +81,8 @@ fi
 mkdir -p ~/bin && ln -fs $DOT_FILES_DIR/dot_claude/future_claude/future_claude ~/bin/future_claude
 # rules-changes: register of instruction edits, sent to every session as a twice-daily digest via future_claude
 ln -fs $DOT_FILES_DIR/dot_claude/rules_changes/rules-changes ~/bin/rules-changes
+# claude-bg: hands a script's last step (publishing an Artifact, an investigation) to a background Claude session
+ln -fs $DOT_FILES_DIR/dot_claude/claude_bg/claude-bg ~/bin/claude-bg
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.future-claude.plist $HOME/Library/LaunchAgents/com.jamesf.future-claude.plist
 
 # VS Code user settings — path has spaces + capitals and lives outside ~/.config,

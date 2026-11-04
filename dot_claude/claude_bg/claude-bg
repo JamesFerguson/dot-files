@@ -1,0 +1,138 @@
+#!/usr/bin/env ruby
+# claude-bg: hand a scripted job's last step to a background Claude session (`claude --bg`).
+#
+# Headless `claude -p` runs don't get the Artifact tool, and a background session does, so a script
+# that renders an HTML report publishes it through one:
+#
+#   claude-bg publish --file report.html --state DIR [--title T] [--description D] [--icon WORD]
+#
+# DIR keeps the artifact's URL (artifact_url) between runs, so every run updates the same artifact.
+# The session reads the live artifact, publishes the page over it, writes the URL and is then
+# stopped and removed. Prints the URL. A run that hasn't finished by --timeout leaves its session
+# running so it can be attached, and exits 2.
+#
+#   claude-bg start --name NAME [--model M] PROMPT
+#
+# starts a session that stays up after it finishes, so someone can `claude attach NAME` and carry
+# on the conversation. Prints the session id.
+#
+# Both take --cwd (default: the current directory), which has to be a trusted workspace: `claude
+# --bg` refuses the home directory.
+require 'json'
+require 'optparse'
+require 'fileutils'
+require 'open3'
+
+CLAUDE = ENV.fetch('CLAUDE_BG_CLAUDE', '/opt/homebrew/bin/claude')
+POLL_SECONDS = 3
+
+def die(msg, code = 1)
+  warn "claude-bg: #{msg}"
+  exit code
+end
+
+# The Artifact tool wraps a page in its own doctype, head and body, so it takes the page's
+# content only: strip a full document down to its title, styles and body.
+def fragment(html)
+  html.sub(/\A\s*<!doctype[^>]*>/i, '')
+      .gsub(%r{</?(html|head|body)\b[^>]*>}i, '')
+      .gsub(/<meta\s+charset=[^>]*>\s*/i, '')
+      .gsub(/<meta\s+name="viewport"[^>]*>\s*/i, '')
+      .strip + "\n"
+end
+
+def start_session(opts, prompt)
+  args = [CLAUDE, '--bg', '--name', opts[:name], '--permission-mode', 'auto']
+  args += ['--model', opts[:model]] if opts[:model]
+  args += ['--allowedTools', opts[:allowed_tools]] if opts[:allowed_tools]
+  # --allowedTools takes several values, so without the -- it would swallow the prompt too.
+  out, status = Open3.capture2e(*args, '--', prompt, chdir: opts[:cwd])
+  id = out[/claude stop ([0-9a-f]+)/, 1]
+  die("claude --bg didn't start a session: #{out.strip.lines.last(3).join}") unless status.success? && id
+  id
+end
+
+def remove_session(id)
+  system(CLAUDE, 'stop', id, out: File::NULL, err: File::NULL)
+  system(CLAUDE, 'rm', id, out: File::NULL, err: File::NULL)
+end
+
+def publish_prompt(page, url, done, opts)
+  target =
+    if url
+      "It replaces the existing artifact #{url}. Call Artifact with action \"read\" and that url " \
+        "first, then publish with file_path #{page} and url #{url}. Pass no icon."
+    else
+      "It's a new artifact. Publish it with file_path #{page}, icon #{opts[:icon].inspect}" \
+        "#{" and description #{opts[:description].inspect}" if opts[:description]}."
+    end
+  <<~PROMPT
+    A script rendered #{page} and needs it published as an Artifact. The page is finished: read it
+    once, don't edit it, and don't run a quickstart or load skills for it. #{target}
+
+    When the publish succeeds, run exactly: printf '%s' '<the artifact URL>' > #{done}
+    If it fails, run: printf 'FAILED: %s' '<the reason in one line>' > #{done}
+    Then stop. Don't open the artifact or do anything else.
+  PROMPT
+end
+
+def publish(argv)
+  opts = { cwd: Dir.pwd, model: 'haiku', timeout: 300, icon: 'chart' }
+  OptionParser.new do |o|
+    o.on('--file PATH') { |v| opts[:file] = File.expand_path(v) }
+    o.on('--state DIR') { |v| opts[:state] = File.expand_path(v) }
+    o.on('--title TITLE') { |v| opts[:title] = v }
+    o.on('--description TEXT') { |v| opts[:description] = v }
+    o.on('--icon WORD') { |v| opts[:icon] = v }
+    o.on('--model MODEL') { |v| opts[:model] = v }
+    o.on('--cwd DIR') { |v| opts[:cwd] = File.expand_path(v) }
+    o.on('--timeout SECONDS', Integer) { |v| opts[:timeout] = v }
+  end.parse!(argv)
+  die 'publish needs --file and --state' unless opts[:file] && opts[:state]
+  die "no such file #{opts[:file]}" unless File.file?(opts[:file])
+
+  FileUtils.mkdir_p(opts[:state])
+  page = File.join(opts[:state], File.basename(opts[:file]))
+  File.write(page, fragment(File.read(opts[:file])))
+  url_file = File.join(opts[:state], 'artifact_url')
+  url = File.exist?(url_file) ? File.read(url_file).strip : nil
+  url = nil if url&.empty?
+  done = File.join(opts[:state], 'publish.done')
+  FileUtils.rm_f(done)
+
+  opts[:name] = "publish #{opts[:title] || File.basename(page, '.html')}"
+  opts[:allowed_tools] = "Artifact,Read(#{page}),Bash(printf *)"
+  id = start_session(opts, publish_prompt(page, url, done, opts))
+
+  deadline = Time.now + opts[:timeout]
+  sleep POLL_SECONDS until File.size?(done) || Time.now > deadline
+  unless File.size?(done)
+    die("publish session #{id} hasn't finished after #{opts[:timeout]}s; `claude attach #{id}` to see why", 2)
+  end
+
+  result = File.read(done).strip
+  remove_session(id)
+  die("publish failed: #{result.sub(/\AFAILED:\s*/, '')}") unless result.start_with?('https://')
+
+  File.write(url_file, result)
+  puts result
+end
+
+def start(argv)
+  opts = { cwd: Dir.pwd }
+  OptionParser.new do |o|
+    o.on('--name NAME') { |v| opts[:name] = v }
+    o.on('--model MODEL') { |v| opts[:model] = v }
+    o.on('--cwd DIR') { |v| opts[:cwd] = File.expand_path(v) }
+    o.on('--allowed-tools TOOLS') { |v| opts[:allowed_tools] = v }
+  end.parse!(argv)
+  die 'start needs --name and a prompt' unless opts[:name] && argv.first
+  puts start_session(opts, argv.first)
+end
+
+case ARGV.shift
+when 'publish' then publish(ARGV)
+when 'start' then start(ARGV)
+else die("usage: claude-bg publish --file PAGE --state DIR [--title T] [--description D] [--icon WORD]\n" \
+         "       claude-bg start --name NAME [--model M] PROMPT", 64)
+end
