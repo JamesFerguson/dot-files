@@ -65,7 +65,7 @@ ln -fs $DOT_FILES_DIR/dot_tmux_dot_conf/tmux.conf ~/.tmux.conf
 ln -fs $DOT_FILES_DIR/dot_tool_versions/tool-versions ~/.tool-versions
 ln -fs $DOT_FILES_DIR/dot_vimrc/vimrc ~/.vimrc
 ln -fs $DOT_FILES_DIR/dot_yarnrc/yarnrc ~/.yarnrc
-ln -fs $DOT_FILES_DIR/dot_zpreztorc/zpreztorc $XDG_CONFIG_HOME/.zprezto/.zpreztorc
+mkdir -p $XDG_CONFIG_HOME/.zprezto && ln -fs $DOT_FILES_DIR/dot_zpreztorc/zpreztorc $XDG_CONFIG_HOME/.zprezto/.zpreztorc
 
 ln -Ffs $DOT_FILES_DIR/dot_vim ~/.vim
 ln -fs $DOT_FILES_DIR/sleepwatcher/dot_sleep/sleep ~/.sleep

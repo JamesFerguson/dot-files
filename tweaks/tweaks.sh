@@ -10,9 +10,7 @@ defaults write com.apple.finder AppleShowAllFiles -boolean true
 # sudo defaults write com.apple.MultitouchSupport ForceAutoOrientation YES
 
 echo 'Using sudo to raise maxfiles limits to large values'
-sudo echo "" >> /etc/sysctl.conf
-sudo echo "kern.maxfiles=65536" >> /etc/sysctl.conf
-sudo echo "kern.maxfilesperproc=32768" >> /etc/sysctl.conf
+printf "\nkern.maxfiles=65536\nkern.maxfilesperproc=32768\n" | sudo tee -a /etc/sysctl.conf
 
 # Make system File Save dialog expanded by default
 echo 'Make system File Save dialog expanded by default'
@@ -22,10 +20,7 @@ defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true # e
 # Allow touchid to be used for sudo in terminal
 echo 'Allow touchid to be used for sudo in terminal'
 if [ ! -f /etc/pam.d/sudo_local ]; then
-  sudo touch /etc/pam.d/sudo_local
-  sudo echo "# sudo_local: local config file which survives system update and is included for sudo" >> /etc/pam.d/sudo_local
-  sudo echo "# uncomment following line to enable touchid for sudo" >> /etc/pam.d/sudo_local
-  sudo echo "auth       sufficient     pam_tid.so" >> /etc/pam.d/sudo_local
+  printf "# sudo_local: local config file which survives system update and is included for sudo\n# uncomment following line to enable touchid for sudo\nauth       sufficient     pam_tid.so\n" | sudo tee /etc/pam.d/sudo_local
 fi
 
 
