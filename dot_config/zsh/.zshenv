@@ -70,8 +70,8 @@ if [[ "$DEVICE_TYPE" == "work" ]]; then
 else
   CODE_DIR="$HOME/codez"
   DOT_FILES_DIR="$CODE_DIR/dot-files"
-  # Private personal overlay (dot-files-private/personal/).
-  PRIVATE_DOT_FILES_DIR="$CODE_DIR/dot-files-private"
+  # Private overlay (work-dot-files, same repo as work, personal/ subdir used here).
+  WORK_DOT_FILES_DIR="$CODE_DIR/work-dot-files"
 fi
 
 # Go-lang setup

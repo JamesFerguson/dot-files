@@ -126,26 +126,19 @@ if (( ON_HOME_LAPTOP )); then
   done
 fi
 
-# Work overlay: if the private work-dot-files repo is cloned, run its installer.
-# It sets up the work-specific Homebrew formulae, the OpenSearch LaunchAgent, config
-# symlinks, and the Claude Code MCP servers. Nothing work-specific happens without it.
+# Private overlay: if the private repo (work-dot-files, later dot-files-private) is cloned,
+# run its installer. It routes internally by DEVICE_TYPE — work/ for work machines,
+# personal/ for home machines. Nothing machine-specific happens without it.
 if (( ON_WORK_LAPTOP )); then
   WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
+elif (( ON_HOME_LAPTOP )); then
+  WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/codez/work-dot-files}"
+fi
+if [[ -n "$WORK_DOT_FILES_DIR" ]]; then
   if [[ -x "$WORK_DOT_FILES_DIR/install.sh" ]]; then
     "$WORK_DOT_FILES_DIR/install.sh"
   else
-    echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping work overlay."
+    echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping private overlay."
     echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
-  fi
-fi
-
-# Personal overlay: if dot-files-private is cloned, run its installer.
-if (( ON_HOME_LAPTOP )); then
-  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/codez/dot-files-private}"
-  if [[ -x "$PRIVATE_DOT_FILES_DIR/install.sh" ]]; then
-    "$PRIVATE_DOT_FILES_DIR/install.sh"
-  else
-    echo "dot-files-private not found at $PRIVATE_DOT_FILES_DIR — skipping personal overlay."
-    echo "  (clone git@github.com:JamesFerguson/dot-files-private.git there to enable it.)"
   fi
 fi
