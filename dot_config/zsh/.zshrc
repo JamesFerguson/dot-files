@@ -26,8 +26,8 @@ do
 done
 
 # Private work overlay — loaded after public includes so it can override.
-if [[ -n "$WORK_DOT_FILES_DIR" && -d "$WORK_DOT_FILES_DIR/work/zshrc/includes" ]]; then
-  for include in "$WORK_DOT_FILES_DIR/work/zshrc/includes"/*.zsh(N)
+if [[ -n "$PRIVATE_DOT_FILES_DIR" && -d "$PRIVATE_DOT_FILES_DIR/work/zshrc/includes" ]]; then
+  for include in "$PRIVATE_DOT_FILES_DIR/work/zshrc/includes"/*.zsh(N)
   do
           echo "  Sourcing (work) ${include:t}..."
           source "$include"

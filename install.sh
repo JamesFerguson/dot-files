@@ -130,15 +130,15 @@ fi
 # run its installer. It routes internally by DEVICE_TYPE — work/ for work machines,
 # personal/ for home machines. Nothing machine-specific happens without it.
 if (( ON_WORK_LAPTOP )); then
-  WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
+  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
 elif (( ON_HOME_LAPTOP )); then
-  WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/codez/work-dot-files}"
+  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/codez/dot-files-private}"
 fi
-if [[ -n "$WORK_DOT_FILES_DIR" ]]; then
-  if [[ -x "$WORK_DOT_FILES_DIR/install.sh" ]]; then
-    "$WORK_DOT_FILES_DIR/install.sh"
+if [[ -n "$PRIVATE_DOT_FILES_DIR" ]]; then
+  if [[ -x "$PRIVATE_DOT_FILES_DIR/install.sh" ]]; then
+    "$PRIVATE_DOT_FILES_DIR/install.sh"
   else
-    echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping private overlay."
+    echo "dot-files-private not found at $PRIVATE_DOT_FILES_DIR — skipping private overlay."
     echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
   fi
 fi
