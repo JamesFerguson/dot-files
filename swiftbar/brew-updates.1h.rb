@@ -4,11 +4,11 @@
 # rubocop:disable Layout/LineLength
 
 # <xbar.title>Brew Updates</xbar.title>
-# <xbar.version>v2.6.3</xbar.version>
+# <xbar.version>v2.7.3</xbar.version>
 # <xbar.author>Jim Myhrberg</xbar.author>
 # <xbar.author.github>jimeh</xbar.author.github>
 # <xbar.desc>List and manage outdated Homebrew formulas and casks</xbar.desc>
-# <xbar.image>https://i.imgur.com/HbSHhaa.png</xbar.image>
+# <xbar.image>https://raw.githubusercontent.com/jimeh/dotfiles/70e616332e9cc196d365e5375156b27ce8c9451e/xbar/img/brew-updates.png</xbar.image>
 # <xbar.dependencies>ruby</xbar.dependencies>
 # <xbar.abouturl>https://github.com/jimeh/dotfiles/tree/main/xbar</xbar.abouturl>
 #
@@ -21,7 +21,6 @@
 
 # rubocop:enable Layout/LineLength
 
-# rubocop:disable Lint/ShadowingOuterLocalVariable
 # rubocop:disable Metrics/AbcSize
 # rubocop:disable Metrics/BlockLength
 # rubocop:disable Metrics/ClassLength
@@ -30,15 +29,60 @@
 # rubocop:disable Metrics/PerceivedComplexity
 # rubocop:disable Style/IfUnlessModifier
 
-require 'open3'
+require 'fileutils'
 require 'json'
+require 'open3'
 require 'set'
 
+# Xbar is a tiny helper library for creating Xbar and SwiftBar plugins in Ruby.
 module Xbar
   class CommandError < StandardError; end
   class RPCError < StandardError; end
 
+  module Helpers
+    def plugin_data_path
+      @plugin_data_path ||= swiftbar_data_path || File.dirname(__FILE__)
+    end
+
+    def plugin_file_path
+      @plugin_file_path ||= swiftbar_plugin_path || __FILE__
+    end
+
+    def plugin_filename
+      @plugin_filename ||= File.basename(plugin_file_path)
+    end
+
+    def plugin_name
+      @plugin_name ||= begin
+        parts = plugin_filename.split('.')
+        if parts.size < 3
+          raise "Invalid plugin name: #{plugin_filename}"
+        end
+
+        parts[0..-3].join('.')
+      end
+    end
+
+    def swiftbar?
+      ENV['SWIFTBAR'] == '1'
+    end
+
+    def swiftbar_cache_path
+      @swiftbar_cache_path ||= ENV['SWIFTBAR_PLUGIN_CACHE_PATH'] if swiftbar?
+    end
+
+    def swiftbar_data_path
+      @swiftbar_data_path ||= ENV['SWIFTBAR_PLUGIN_DATA_PATH'] if swiftbar?
+    end
+
+    def swiftbar_plugin_path
+      @swiftbar_plugin_path ||= ENV['SWIFTBAR_PLUGIN_PATH'] if swiftbar?
+    end
+  end
+
   module Service
+    include Helpers
+
     private
 
     def config
@@ -49,8 +93,11 @@ module Xbar
       @printer ||= ::Xbar::Printer.new
     end
 
-    def cmd(*args)
-      out, err, s = Open3.capture3(*args)
+    def cmd(*args, dir: nil)
+      opts = {}
+      opts[:chdir] = File.expand_path(dir) if dir
+
+      out, err, s = Open3.capture3(*args, opts)
       if s.exitstatus != 0
         msg = "Command failed: #{args.join(' ')}"
         msg += ": #{err}" unless err.empty?
@@ -79,7 +126,16 @@ module Xbar
     end
   end
 
+  # Config is a simple wrapper around a JSON file that contains the plugin's
+  # configuration. It is compatible with Xbar's behavior of loading environment
+  # variables from it. We don't rely on that however and directly read the file
+  # ourselves.
+  #
+  # In SwiftBar, we use `SWIFTBAR_PLUGIN_DATA_PATH` to determine where to store
+  # the configuration in a `config.json` file.
   class Config < Hash
+    include Helpers
+
     def initialize
       super
 
@@ -95,15 +151,25 @@ module Xbar
     end
 
     def filename
-      @filename ||= "#{__FILE__}.vars.json"
+      @filename ||= File.join(
+        plugin_data_path,
+        swiftbar? ? 'config.json' : "#{plugin_filename}.vars.json"
+      )
+    end
+
+    def dirname
+      @dirname ||= File.dirname(filename)
     end
 
     def save
+      FileUtils.mkdir_p(dirname)
       File.write(filename, JSON.pretty_generate(self))
     end
   end
 
   class Printer
+    include Helpers
+
     attr_reader :nested_level
 
     SUB_STR = '--'
@@ -115,9 +181,22 @@ module Xbar
     end
 
     def item(label = nil, **props)
-      print_item(label, **props) if !label.nil? && !label.empty?
+      return if label.nil? || label.empty?
 
-      yield(sub_printer) if block_given?
+      props = normalize_props(props.dup)
+      alt = props.delete(:alt)
+      nested_items = props.delete(:nested) || :both
+
+      yield_main = block_given? && [:main, :both].include?(nested_items)
+      yield_alt = block_given? && [:alt, :both].include?(nested_items)
+
+      print_item(label, **props)
+      yield(sub_printer) if yield_main
+
+      return if alt.nil? || alt.strip.empty?
+
+      print_item(alt, **props.merge(alternate: true))
+      yield(sub_printer) if yield_alt
     end
 
     def separator
@@ -128,31 +207,35 @@ module Xbar
     private
 
     def print_item(text, **props)
-      props = props.dup
-      alt = props.delete(:alt)
-
       output = [text]
       unless props.empty?
-        props = normalize_props(props)
         output << PARAM_SEP
         output += props.map { |k, v| "#{k}=\"#{v}\"" }
       end
 
       $stdout.print(SUB_STR * nested_level, output.join(' '))
       $stdout.puts
-
-      return if alt.nil? || alt.empty?
-
-      print_item(alt, **props.merge(alternate: true))
     end
 
     def plugin_refresh_uri
-      @plugin_refresh_uri ||= 'xbar://app.xbarapp.com/refreshPlugin' \
-                              "?path=#{File.basename(__FILE__)}"
+      return @plugin_refresh_uri if @plugin_refresh_uri
+
+      @plugin_refresh_uri = if swiftbar?
+                              "swiftbar://refreshplugin?name=#{plugin_name}"
+                            else
+                              'xbar://app.xbarapp.com/refreshPlugin' \
+                                                    "?path=#{plugin_filename}"
+                            end
     end
 
     def normalize_props(props = {})
       props = props.dup
+
+      # Explicitly set terminal to false for SwiftBar, as it seems to default
+      # to true when not specified. At least with SwiftBar 2.0.1.
+      if swiftbar? && !props.key?(:terminal)
+        props[:terminal] = false
+      end
 
       if props[:rpc] && props[:shell].nil?
         props[:shell] = [__FILE__] + props[:rpc]
@@ -167,8 +250,12 @@ module Xbar
         end
       end
 
-      # Refresh Xbar after shell command has run in terminal
-      if props[:terminal] && props[:refresh] && props[:shell]
+      # Always refresh SwiftBar via refresh plugin URI so as to temporarily
+      # disable the menu bar icon while refresh is running.
+      #
+      # For Xbar this does not work when terminal is false, so we only trigger
+      # refresh via the plugin refresh URI when terminal is true.
+      if props[:refresh] && props[:shell] && (swiftbar? || props[:terminal])
         props[:refresh] = false
         i = 1
         i += 1 while props.key?("param#{i}".to_sym)
@@ -187,6 +274,11 @@ module Xbar
   end
 end
 
+#
+# ------------------------------------------------------------------------------
+#
+
+# Brew module contains classes for managing Homebrew formulas and casks.
 module Brew
   class Common
     include Xbar::Service
@@ -281,13 +373,7 @@ module Brew
       brew_check(printer)
       brew_update
 
-      if !cooldown_ok? && (formulas + casks).any?
-        menu = "#{prefix}⚠️" # cooldown check failed: status unknown, don't imply "nothing pending"
-      else
-        ready_count = (formulas + casks).count { |p| ready?(p.name) && !upgrade_all_exclude?(p.name) }
-        menu = ready_count.positive? ? "#{prefix}↑#{ready_count}" : prefix
-      end
-      printer.item(menu, dropdown: false)
+      printer.item("#{prefix}↑#{formulas.size + casks.size}", dropdown: false)
       printer.sep
       printer.item('Brew Updates️') do |printer|
         print_settings(printer)
@@ -297,14 +383,29 @@ module Brew
         printer.item('⏳ Refresh', alt: '⏳ Refresh (⌘R)', refresh: true)
 
         printer.sep
-        all_formulas = formulas.reject { |f| upgrade_all_exclude?(f.name) || !ready?(f.name) }
-        # 'excluded' = manually-excluded packages only; cooling ones are dropped from the
-        # Upgrade-All list but still shown (with a ⏳ marker) in the main lists below.
-        excluded = (formulas + casks).select { |p| upgrade_all_exclude?(p.name) }
+        all_formulas = formulas.reject { |f| upgrade_all_exclude?(f.name) }
+        all_casks = casks.reject { |c| upgrade_all_exclude?(c.name) }
+        excluded = (formulas - all_formulas) + (casks - all_casks)
 
-        # Bulk upgrades are formulae only. A one-click "upgrade all casks" is the exact action
-        # that wedged the UI (stacked App-Management modals), so upgrade casks one at a time
-        # from the list below, watched, in iTerm. Formulae are safe unattended.
+        if all_formulas.size.positive? && all_casks.size.positive?
+          cmds = []
+          if all_formulas.size.positive?
+            cmds += [brew_path, 'upgrade', '--formula'] +
+                    all_formulas.map(&:name)
+          end
+
+          if all_casks.size.positive?
+            cmds << '&&' if cmds.size.positive?
+            cmds += [brew_path, 'upgrade', '--cask'] +
+                    all_casks.map(&:name)
+          end
+
+          printer.item(
+            "⬆️ Upgrade All (#{all_formulas.size + all_casks.size})",
+            terminal: true, refresh: true,
+            shell: (cmds + post_commands).flatten
+          )
+        end
         if all_formulas.size.positive?
           names = all_formulas.map(&:name)
           printer.item(
@@ -312,6 +413,16 @@ module Brew
             terminal: true, refresh: true,
             shell: [
               brew_path, 'upgrade', '--formula'
+            ] + names + post_commands
+          )
+        end
+        if all_casks.size.positive?
+          names = all_casks.map(&:name)
+          printer.item(
+            "⬆️ Upgrade All Casks (#{all_casks.size})",
+            terminal: true, refresh: true,
+            shell: [
+              brew_path, 'upgrade', '--cask'
             ] + names + post_commands
           )
         end
@@ -397,45 +508,6 @@ module Brew
       %w[true yes 1 on y t].include?(value.to_s.downcase)
     end
 
-    # Cooldown status per outdated package, from the shared brew-ready.zsh (same logic the
-    # nightly run uses). Returns name -> { status: 'READY'|'COOLING', days: Integer }. If the
-    # script is missing or fails, the map is empty, so every package reads as ready -- a broken
-    # cooldown check must never hide a pending update.
-    def cooldown
-      @cooldown ||= begin
-        script = File.join(Dir.home, 'code/personal/dot-files/nightly-skill-mise/brew-ready.zsh')
-        map = {}
-        begin
-          out, _err, st = Open3.capture3({ 'BREW_READY_TSV' => '1' }, script)
-          if st.success?
-            out.each_line do |line|
-              name, _latest, status, days = line.chomp.split("\t")
-              map[name] = { status: status, days: days.to_i } if name
-            end
-          end
-        rescue StandardError
-          # leave map empty -> everything reads as ready
-        end
-        map
-      end
-    end
-
-    def cooldown_ok?
-      !cooldown.empty?
-    end
-
-    def status_of(name)
-      cooldown.dig(name, :status) # 'READY' / 'COOLING' / nil (not in the map = unknown)
-    end
-
-    def ready?(name)
-      status_of(name) == 'READY'
-    end
-
-    def cooling_days(name)
-      cooldown.dig(name, :days)
-    end
-
     def brew_update
       cmd(brew_path, 'update')
     rescue Xbar::CommandError
@@ -444,20 +516,10 @@ module Brew
     end
 
     def status_label
-      return 'cooldown check unavailable' if !cooldown_ok? && (formulas + casks).any?
-
-      all = formulas + casks
-      ready_formulas = formulas.count { |f| ready?(f.name) && !upgrade_all_exclude?(f.name) }
-      ready_casks = casks.count { |c| ready?(c.name) && !upgrade_all_exclude?(c.name) }
-      cooling = all.count { |p| status_of(p.name) == 'COOLING' }
-      unknown = all.count { |p| status_of(p.name).nil? }
-
       label = []
-      label << "#{ready_formulas} formulas" if ready_formulas.positive?
-      label << "#{ready_casks} casks" if ready_casks.positive?
+      label << "#{formulas.size} formulas" if formulas.size.positive?
+      label << "#{casks.size} casks" if casks.size.positive?
       label << "#{pinned.size} pinned" if pinned.size.positive?
-      label << "#{cooling} cooling" if cooling.positive?
-      label << "#{unknown} unknown" if unknown.positive?
 
       label = ['no updates available'] if label.empty?
       label.join(', ')
@@ -505,10 +567,6 @@ module Brew
       formulas.each do |formula|
         name = formula.name
         name += ' ⤫' if upgrade_all_exclude?(name)
-        case status_of(formula.name)
-        when 'COOLING' then name += " ⏳#{cooling_days(formula.name)}d"
-        when nil then name += ' ?'
-        end
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
@@ -525,7 +583,7 @@ module Brew
           printer.sep
           printer.item(
             '📌 Pin',
-            alt: "Pin (to #{formula.current_version})",
+            alt: "📌 Pin (to #{formula.current_version})",
             terminal: false, refresh: true,
             shell: [brew_path, 'pin', formula.name]
           )
@@ -564,10 +622,6 @@ module Brew
       casks.each do |cask|
         name = cask.name
         name += ' ⤫' if upgrade_all_exclude?(name)
-        case status_of(cask.name)
-        when 'COOLING' then name += " ⏳#{cooling_days(cask.name)}d"
-        when nil then name += ' ?'
-        end
         printer.item(name) do |printer|
           printer.item(
             '⬆️ Upgrade',
@@ -712,4 +766,3 @@ end
 # rubocop:enable Metrics/ClassLength
 # rubocop:enable Metrics/BlockLength
 # rubocop:enable Metrics/AbcSize
-# rubocop:enable Lint/ShadowingOuterLocalVariable

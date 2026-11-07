@@ -1,0 +1,105 @@
+#!/bin/bash
+# Records a scheduled job's outcome for the SwiftBar jobs plugin (dot-files/swiftbar/jobs.5m.sh).
+#
+#   job-status <job> ok   [message] [--max-age 3d2h] [--log PATH]
+#   job-status <job> fail [message] [--log PATH]
+#   job-status <job> skip [message]     # ran but had nothing to do; doesn't clear a failure
+#   job-status <job> dismiss            # hide the current failure/staleness until it next changes
+#   job-status <job> forget             # drop the job from the plugin
+#
+# --max-age flags the job as stale once that long passes without an ok (d/h/m/s units).
+# --title sets the name shown in the plugin (default: the job name).
+# --at EPOCH records when the event actually happened, e.g. a backup found by a later check.
+# Notifies only when a job newly enters the fail state; the plugin notifies on staleness.
+# State: ~/Library/Application Support/job-status/<job>/, one file per field.
+
+STATE_ROOT="$HOME/Library/Application Support/job-status"
+
+usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+[ $# -ge 2 ] || usage
+JOB=$1; ACTION=$2; shift 2
+[[ $JOB =~ ^[A-Za-z0-9._-]+$ ]] || { echo "job-status: bad job name '$JOB'" >&2; exit 2; }
+DIR="$STATE_ROOT/$JOB"
+
+# 3d2h / 90m / 45s / plain seconds → seconds
+to_seconds() {
+    local s=$1 total=0 n u
+    [[ $s =~ ^[0-9]+$ ]] && { echo "$s"; return; }
+    while [[ $s =~ ^([0-9]+)([dhms])(.*)$ ]]; do
+        n=${BASH_REMATCH[1]}; u=${BASH_REMATCH[2]}; s=${BASH_REMATCH[3]}
+        case $u in d) n=$(( n * 86400 ));; h) n=$(( n * 3600 ));; m) n=$(( n * 60 ));; esac
+        total=$(( total + n ))
+    done
+    [ -z "$s" ] && (( total > 0 )) || { echo "job-status: bad duration" >&2; exit 2; }
+    echo "$total"
+}
+
+MESSAGE=""; MAX_AGE=""; LOG_PATH=""; TITLE=""; AT=""
+while [ $# -gt 0 ]; do
+    case $1 in
+        --max-age) MAX_AGE=$(to_seconds "$2") || exit 2; shift 2 ;;
+        --log)     LOG_PATH=$2; shift 2 ;;
+        --title)   TITLE=$2; shift 2 ;;
+        --at)      [[ $2 =~ ^[0-9]+$ ]] || { echo "job-status: --at needs epoch seconds" >&2; exit 2; }
+                   AT=$2; shift 2 ;;
+        *)         MESSAGE="${MESSAGE:+$MESSAGE }$1"; shift ;;
+    esac
+done
+MESSAGE=${MESSAGE%%$'\n'*}
+
+get() { cat "$DIR/$1" 2>/dev/null; }
+# Atomic write, so the plugin never reads a half-written file
+put() { printf '%s\n' "$2" > "$DIR/.$1.tmp" && mv -f "$DIR/.$1.tmp" "$DIR/$1"; }
+
+refresh_plugin() {
+    pgrep -xq SwiftBar && open -g "swiftbar://refreshplugin?name=jobs"
+}
+
+notify() {
+    osascript -e 'on run argv' -e 'display notification (item 2 of argv) with title (item 1 of argv) sound name "Basso"' -e 'end run' \
+        "$(get title || echo "$JOB")" "$1" &>/dev/null
+}
+
+case $ACTION in
+    forget)
+        [ -d "$DIR" ] && mv "$DIR" "$STATE_ROOT/.forgotten-$JOB-$(date +%s)"
+        refresh_plugin; exit 0 ;;
+    dismiss)
+        [ -d "$DIR" ] || exit 0
+        put dismissed "$(date +%s)"; refresh_plugin; exit 0 ;;
+    ok|fail|skip) ;;
+    *) usage ;;
+esac
+
+mkdir -p "$DIR"
+NOW=$(date +%s)
+[ -f "$DIR/created" ] || put created "$NOW"
+put last_run "$NOW"
+[ -n "$MAX_AGE" ] && put max_age "$MAX_AGE"
+[ -n "$LOG_PATH" ] && put log "$LOG_PATH"
+[ -n "$TITLE" ] && put title "$TITLE"
+AT=${AT:-$NOW}
+
+if [ "$ACTION" = skip ]; then
+    put last_skip "$AT"; put skip_message "$MESSAGE"
+    exit 0
+fi
+
+PREV=$(get status)
+PREV_OK=$(get last_ok); PREV_OK=${PREV_OK:-$(get created)}
+AGE_LIMIT=$(get max_age)
+WAS_STALE=0; IS_STALE=0
+[ -n "$AGE_LIMIT" ] && (( NOW - PREV_OK > AGE_LIMIT )) && WAS_STALE=1
+put message "$MESSAGE"
+if [ "$ACTION" = ok ]; then
+    put last_ok "$AT"
+    [ -n "$AGE_LIMIT" ] && (( NOW - AT > AGE_LIMIT )) && IS_STALE=1
+    (( WAS_STALE != IS_STALE )) && refresh_plugin
+fi
+if [ "$PREV" != "$ACTION" ]; then
+    put status "$ACTION"; put since "$AT"
+    [ "$ACTION" = fail ] && notify "Failed${MESSAGE:+: $MESSAGE}"
+    refresh_plugin
+fi
+exit 0

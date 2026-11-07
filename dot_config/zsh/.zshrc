@@ -13,12 +13,8 @@ compinit
 # Kept for bash-style completion files; mise uses native zsh completions (via `mise activate` / `mise completion zsh`)
 bashcompinit
 
-# Add Prezto's zshrc; sources .zprezto/init.zsh
-if [[ -z "$ZPREZTODIR" ]]; then
-  echo "Error: ZPREZTODIR is not set"
-else
-  source "$ZPREZTODIR/runcoms/zshrc"
-fi
+# Add Prezto's zshrc (silent no-op if Prezto isn't installed yet)
+[[ -f "$ZPREZTODIR/runcoms/zshrc" ]] && source "$ZPREZTODIR/runcoms/zshrc"
 
 export INCLUDES_DIR=$DOT_FILES_DIR/dot_zshrc/includes
 # Only *.zsh fragments. Helper scripts that live here but aren't shell
@@ -29,12 +25,20 @@ do
         source "$include"
 done
 
-# Fat Zebra-specific includes from the private work-dot-files repo, if it's present.
-# Loaded after the public includes so they can override (e.g. the `bk` alias).
+# Private work overlay — loaded after public includes so it can override.
 if [[ -n "$WORK_DOT_FILES_DIR" && -d "$WORK_DOT_FILES_DIR/zshrc/includes" ]]; then
   for include in "$WORK_DOT_FILES_DIR/zshrc/includes"/*.zsh(N)
   do
-          echo "  Sourcing (fz) ${include:t}..."
+          echo "  Sourcing (work) ${include:t}..."
+          source "$include"
+  done
+fi
+
+# Private personal overlay — same pattern, for home/arcadia config.
+if [[ -n "$PRIVATE_DOT_FILES_DIR" && -d "$PRIVATE_DOT_FILES_DIR/personal/zshrc/includes" ]]; then
+  for include in "$PRIVATE_DOT_FILES_DIR/personal/zshrc/includes"/*.zsh(N)
+  do
+          echo "  Sourcing (personal) ${include:t}..."
           source "$include"
   done
 fi

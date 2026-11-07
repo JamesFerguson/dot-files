@@ -1,0 +1,53 @@
+#!/bin/bash
+# Mounts Arcadia's external share over the LAN as /Volumes/external-lan.
+# macOS creates and removes the mount point itself, so while unmounted the path
+# doesn't exist and nothing can be written under it on the local disk.
+
+ARCADIA_LAN="192.168.178.108"   # Arcadia eth0 (.111 is its wifi interface)
+SHARE="external-lan"
+MOUNT_DST="/Volumes/$SHARE"
+KEYCHAIN_SERVER="arcadia.tailf51c0d.ts.net"
+KEYCHAIN_ACCOUNT="jim"
+JOB_STATUS="$HOME/bin/job-status"
+JOB_LOG="$HOME/Library/Logs/mount-external.log"
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
+
+# job-status shows failures in the SwiftBar jobs plugin, notifying only when the job first starts failing
+warn() {
+    log "WARN: $1"
+    "$JOB_STATUS" mount-external fail "$1" --log "$JOB_LOG"
+}
+
+if mount | grep -q " on $MOUNT_DST "; then
+    "$JOB_STATUS" mount-external ok "$MOUNT_DST mounted"
+    exit 0
+fi
+
+# Only mount on the home LAN. Tailscale authenticates Arcadia and reports the path it
+# used, so "via 192.168.178.x" proves we're on the same LAN (a bare 192.168.178.x
+# address could exist on any Fritzbox network). Don't use arcadia.local: its mDNS
+# name can be lost to conflicts (it became Arcadia-2.local on 2026-10-29).
+TAILSCALE=/Applications/Tailscale.app/Contents/MacOS/Tailscale
+"$TAILSCALE" ping -c 5 --timeout=2s arcadia 2>/dev/null | grep -qE "via 192\.168\.178\.(108|111):" || exit 0
+nc -z -G2 "$ARCADIA_LAN" 445 &>/dev/null || exit 0
+
+PASSWORD=$(security find-internet-password -s "$KEYCHAIN_SERVER" -a "$KEYCHAIN_ACCOUNT" -w 2>/dev/null)
+if [ -z "$PASSWORD" ]; then
+    warn "Could not retrieve Arcadia password from Keychain"
+    exit 1
+fi
+
+# Password passed via environment so it doesn't appear in the process list.
+MOUNT_PW="$PASSWORD" osascript \
+    -e "mount volume \"smb://$ARCADIA_LAN/$SHARE\" as user name \"$KEYCHAIN_ACCOUNT\" with password (system attribute \"MOUNT_PW\")" \
+    >/dev/null 2>&1
+
+if mount | grep -q " on $MOUNT_DST "; then
+    log "Mounted $MOUNT_DST"
+    "$JOB_STATUS" mount-external ok "$MOUNT_DST mounted" --log "$JOB_LOG"
+elif mount | grep -q "/$SHARE on /Volumes/$SHARE-"; then
+    warn "external-lan mounted at an unexpected path (name clash) — check /Volumes"
+else
+    warn "Arcadia is reachable but the external-lan mount failed"
+fi

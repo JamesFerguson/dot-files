@@ -1,3 +1,1 @@
-if brew command command-not-found-init > /dev/null 2>&1; then
-  eval "$(brew command-not-found-init)";
-fi
+. "$HOMEBREW_REPOSITORY/Library/Homebrew/command-not-found/handler.sh"

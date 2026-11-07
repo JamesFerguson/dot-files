@@ -1,14 +1,25 @@
 #!/bin/zsh
 
-# Dot files dir
-#   - if on the work laptop
+# Dot files dir + machine type detection
 if [[ "$(hostname)" == *"fz-"* ]]; then
+  DEVICE_TYPE=work
   ON_WORK_LAPTOP=1
   DOT_FILES_DIR="$HOME/code/personal/dot-files"
+elif [[ -f "$HOME/.config/zsh/device-type.zsh" ]]; then
+  source "$HOME/.config/zsh/device-type.zsh"
+  DOT_FILES_DIR="$HOME/codez/dot-files"
 else
-  ON_WORK_LAPTOP=0
+  # First run on a new personal machine — ask once and write the file.
+  echo "Is this a work or personal machine? [work/home]"
+  read -r answer
+  DEVICE_TYPE="${answer:-home}"
+  mkdir -p "$HOME/.config/zsh"
+  echo "DEVICE_TYPE=$DEVICE_TYPE" > "$HOME/.config/zsh/device-type.zsh"
+  echo "Wrote DEVICE_TYPE=$DEVICE_TYPE to ~/.config/zsh/device-type.zsh"
   DOT_FILES_DIR="$HOME/codez/dot-files"
 fi
+[[ "$DEVICE_TYPE" == "work"  ]] && ON_WORK_LAPTOP=1 || ON_WORK_LAPTOP=0
+[[ "$DEVICE_TYPE" == "home"  ]] && ON_HOME_LAPTOP=1 || ON_HOME_LAPTOP=0
 
 # symlink all dot_config subdirs into $XDG_CONFIG_HOME / .config
 #   there are dirs in .config that aren't in dot_config and can't be (too big etc)
@@ -101,13 +112,40 @@ ln -fs "$DOT_FILES_DIR/vscode/settings.json" "$VSCODE_SETTINGS"
 # tweaks
 ./tweaks/tweaks.sh
 
+# Personal LaunchAgents (home mac only — polaris-specific services)
+if (( ON_HOME_LAPTOP )); then
+  for plist in \
+    me.fergusons.backup-claude-sessions.plist \
+    me.fergusons.device-backups.plist \
+    me.fergusons.mobilesync-guard.plist \
+    me.fergusons.mount-external.plist \
+    me.fergusons.relay-sync.plist \
+    me.fergusons.relay-sync-on-mount.plist; do
+    src="$DOT_FILES_DIR/launch_agents/$plist"
+    [[ -f "$src" ]] && ln -fs "$src" "$HOME/Library/LaunchAgents/$plist"
+  done
+fi
+
 # Work overlay: if the private work-dot-files repo is cloned, run its installer.
 # It sets up the work-specific Homebrew formulae, the OpenSearch LaunchAgent, config
 # symlinks, and the Claude Code MCP servers. Nothing work-specific happens without it.
-WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
-if [[ -x "$WORK_DOT_FILES_DIR/install-fz.sh" ]]; then
-  "$WORK_DOT_FILES_DIR/install-fz.sh"
-else
-  echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping work overlay."
-  echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
+if (( ON_WORK_LAPTOP )); then
+  WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
+  if [[ -x "$WORK_DOT_FILES_DIR/install-fz.sh" ]]; then
+    "$WORK_DOT_FILES_DIR/install-fz.sh"
+  else
+    echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping work overlay."
+    echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
+  fi
+fi
+
+# Personal overlay: if dot-files-private is cloned, run its installer.
+if (( ON_HOME_LAPTOP )); then
+  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/codez/dot-files-private}"
+  if [[ -x "$PRIVATE_DOT_FILES_DIR/install.sh" ]]; then
+    "$PRIVATE_DOT_FILES_DIR/install.sh"
+  else
+    echo "dot-files-private not found at $PRIVATE_DOT_FILES_DIR — skipping personal overlay."
+    echo "  (clone git@github.com:JamesFerguson/dot-files-private.git there to enable it.)"
+  fi
 fi

@@ -38,20 +38,40 @@ CLAUDE_ENV_FILE="$HOME/.claude-env"
 # installs don't auto-update, so this opts the CLI into doing it in the background.
 CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE=1
 
-# Dot files dir
-#   - if on the work laptop
+# OS detection
+case "$(uname -s)" in
+  Darwin) DEVICE_OS=mac ;;
+  Linux)  DEVICE_OS=linux ;;
+  *)      DEVICE_OS=unknown ;;
+esac
+
+# Machine type — written once by install.sh prompt. Avoids proliferating
+# ON_* booleans; test with [[ "$DEVICE_TYPE" == "work" ]] etc.
+# Falls back to hostname-based detection so the work laptop keeps working
+# before install.sh is re-run.
 if [[ "$HOST" == *"fz-"* ]]; then
-  ON_WORK_LAPTOP=1
+  DEVICE_TYPE=work
+elif [[ -f "$HOME/.config/zsh/device-type.zsh" ]]; then
+  source "$HOME/.config/zsh/device-type.zsh"  # sets DEVICE_TYPE=home|work|...
+fi
+
+# Convenience shorthands (keep for backward compat with existing guards)
+[[ "$DEVICE_TYPE" == "work" ]] && ON_WORK_LAPTOP=1 || ON_WORK_LAPTOP=0
+[[ "$DEVICE_TYPE" == "home" ]] && ON_HOME_LAPTOP=1 || ON_HOME_LAPTOP=0
+
+# Dot files and code directories
+if [[ "$DEVICE_TYPE" == "work" ]]; then
   CODE_DIR="$HOME/code"
   DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
-  # Work-specific config lives in the private work-dot-files repo, layered on top
-  # when present. All of it is guarded, so a machine without that repo is unaffected.
+  # Private work overlay (work-dot-files, or future dot-files-private/work/).
+  # Guarded — missing repo is a no-op.
   WORK_DOT_FILES_DIR="$CODE_DIR/personal/work-dot-files"
   [[ -f "$WORK_DOT_FILES_DIR/zsh/fz.zshenv" ]] && source "$WORK_DOT_FILES_DIR/zsh/fz.zshenv"
 else
-  ON_WORK_LAPTOP=0
   CODE_DIR="$HOME/codez"
   DOT_FILES_DIR="$CODE_DIR/dot-files"
+  # Private personal overlay (dot-files-private/personal/).
+  PRIVATE_DOT_FILES_DIR="$CODE_DIR/dot-files-private"
 fi
 
 # Go-lang setup
@@ -158,9 +178,5 @@ HOMEBREW_NO_ANALYTICS=1
 
 unsetopt ALL_EXPORT
 
-# Source Prezto's zshenv
-if [[ -z "$ZPREZTODIR" ]]; then
-  echo "Error: ZPREZTODIR is not set"
-else
-  source "$ZPREZTODIR/runcoms/zshenv"
-fi
+# Source Prezto's zshenv (silent no-op if Prezto isn't installed yet)
+[[ -f "$ZPREZTODIR/runcoms/zshenv" ]] && source "$ZPREZTODIR/runcoms/zshenv"

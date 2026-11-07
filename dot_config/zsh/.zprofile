@@ -6,10 +6,6 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 #  * de-dupes paths (path, fpath etc)
 #  * adds some basic paths to path
 #  * set default less options
-if [[ -z "$ZPREZTODIR" ]]; then
-  echo "Error: ZPREZTODIR is not set"
-else
-  source "$ZPREZTODIR/runcoms/zprofile"
-fi
+[[ -f "$ZPREZTODIR/runcoms/zprofile" ]] && source "$ZPREZTODIR/runcoms/zprofile"
 # Created by `pipx` on 2024-10-28 11:41:21
 export PATH="$PATH:/Users/james.ferguson/.local/bin"

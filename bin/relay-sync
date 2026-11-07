@@ -1,0 +1,97 @@
+#!/bin/bash
+# Syncs jim@arcadia:/data/external/ → /Volumes/RelayDrive/arcadia/ via Tailscale SSH.
+# Reports to the SwiftBar jobs plugin via job-status: a failure shows (and notifies) at once,
+# and 3 missed nights (e.g. RelayDrive not mounted) show as stale.
+# Healthchecks.io mirrors this off-machine: /fail alerts at once; a missed success ping alerts after its 50h grace.
+# Runs nightly at 02:00 (me.fergusons.relay-sync), and with --catch-up whenever a volume mounts.
+
+SOURCE="jim@arcadia:/data/external/"
+DEST="/Volumes/RelayDrive/arcadia/"
+LOG="/Users/james.ferguson/Library/Logs/relay-sync.log"
+STATE_DIR="/Users/james.ferguson/Library/Application Support/relay-sync"
+# Healthchecks.io ping URL lives outside this (public) repo; pings are skipped if it's missing
+HC_URL=$(cat "$STATE_DIR/healthchecks_url" 2>/dev/null)
+JOB_STATUS="$HOME/bin/job-status"
+STALE_AFTER=3d2h  # a ~02:30 success + 3d2h = 04:30 on the 3rd night, after that night's run would have finished
+PIDFILE="$STATE_DIR/relay-sync.pid"
+LOG_MAX_BYTES=$(( 100 * 1024 * 1024 ))  # --info=progress2 writes ~30MB per run
+LOG_KEEP=10
+CATCH_UP_AFTER=$(( 24 * 3600 ))
+
+mkdir -p "$STATE_DIR"
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
+
+# hc [/start|/fail|/log] [body] — ping Healthchecks.io; no-op without a URL
+hc() {
+    [ -n "$HC_URL" ] || return 0
+    curl -fsS --retry 3 --max-time 5 ${2:+--data-raw "$2"} "${HC_URL}$1" &>/dev/null
+}
+
+# Rotate relay-sync.log → .1.gz … .$LOG_KEEP.gz once it passes $LOG_MAX_BYTES
+rotate_log() {
+    local i
+    [ -f "$LOG" ] && (( $(stat -f %z "$LOG") > LOG_MAX_BYTES )) || return 0
+    rm -f "$LOG.$LOG_KEEP.gz"
+    for (( i = LOG_KEEP - 1; i >= 1; i-- )); do
+        [ -f "$LOG.$i.gz" ] && mv -f "$LOG.$i.gz" "$LOG.$(( i + 1 )).gz"
+    done
+    mv -f "$LOG" "$LOG.1" && gzip -f "$LOG.1"
+}
+
+# --catch-up: launchd runs this on every volume mount (me.fergusons.relay-sync-on-mount).
+# Sync only if RelayDrive is mounted and the last success is over 24h old; otherwise exit quietly.
+if [ "$1" = --catch-up ]; then
+    mount | grep -q " on /Volumes/RelayDrive " || exit 0
+    last_ok=$(cat "$HOME/Library/Application Support/job-status/relay-sync/last_ok" 2>/dev/null)
+    (( $(date +%s) - ${last_ok:-0} > CATCH_UP_AFTER )) || exit 0
+    log "CATCH-UP: RelayDrive mounted and no successful sync in over 24h"
+fi
+
+# Prevent concurrent runs
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    log "SKIP: Another instance already running (PID $(cat "$PIDFILE"))"
+    exit 0
+fi
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE"' EXIT
+
+rotate_log
+
+# Check RelayDrive is mounted
+if ! mount | grep -q " on /Volumes/RelayDrive "; then
+    log "SKIP: RelayDrive not mounted"
+    # /log records the skip in Healthchecks without changing the check's status
+    hc /log "skipped: RelayDrive not mounted"
+    "$JOB_STATUS" relay-sync skip "RelayDrive not mounted" --max-age "$STALE_AFTER"
+    exit 0
+fi
+
+mkdir -p "$DEST"
+
+echo "" >> "$LOG"
+log "START: rsync $SOURCE → $DEST"
+hc /start
+
+# -H keeps hardlinks as hardlinks. It doesn't version anything: it stops the hardlink snapshot
+# folders (minecraft-backups/snapshots, claude-sessions-backup) from expanding into a full copy
+# per snapshot on the relay drive (minecraft alone: 1.7G linked vs 23G expanded).
+caffeinate -i \
+/opt/homebrew/bin/rsync -aH --delete --partial --stats --timeout=600 -h --info=progress2 \
+    -e "ssh -o BatchMode=yes -o ConnectTimeout=10" \
+    --exclude 'lost+found' \
+    "$SOURCE" "$DEST" \
+    >> "$LOG" 2>&1
+
+RC=$?
+if [ $RC -eq 0 ] || [ $RC -eq 24 ]; then
+    # code 24 = files vanished mid-transfer (benign: rotating logs, Immich backups, etc.)
+    log "DONE: rsync completed successfully"
+    hc
+    transferred=$(tail -c 20000 "$LOG" | tr '\r' '\n' | grep -a 'Total transferred file size' | tail -1 | sed 's/.*: //')
+    "$JOB_STATUS" relay-sync ok "Synced${transferred:+ $transferred}" --max-age "$STALE_AFTER" --log "$LOG"
+else
+    log "FAIL: rsync exited with code $RC"
+    hc /fail "rsync exited with code $RC"
+    "$JOB_STATUS" relay-sync fail "rsync exited with code $RC" --log "$LOG"
+fi

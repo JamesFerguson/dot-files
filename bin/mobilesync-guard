@@ -1,0 +1,64 @@
+#!/bin/bash
+# Guards ~/Library/Application Support/MobileSync/Backup as a uchg (immutable) symlink to Arcadia,
+# so Finder backups go to the NAS and fail, rather than landing locally, while the share is unmounted.
+# Run periodically via launchd. Reports to the SwiftBar jobs plugin via job-status.
+#
+# Checking needs no special access (lstat works in the privacy-protected MobileSync folder).
+# Repairing does: without Full Disk Access a needed repair is reported as a failure to fix by hand.
+# A real directory Finder left behind is moved aside, never deleted (it may hold a real backup).
+
+BACKUP="$HOME/Library/Application Support/MobileSync/Backup"
+SYMLINK_DEST="/Volumes/external-lan/iPhone_Backups"
+JOB_STATUS="$HOME/bin/job-status"
+JOB_LOG="$HOME/Library/Logs/mobilesync-guard.log"
+NO_ACCESS="(no Full Disk Access to repair it — fix by hand)"
+
+notify() {
+    osascript -e "display notification \"$1\" with title \"mobilesync-guard\" sound name \"Basso\"" 2>/dev/null
+}
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
+
+# fail <message> — log, report to job-status and stop
+fail() {
+    log "FAIL: $1"
+    "$JOB_STATUS" mobilesync-guard fail "$1" --log "$JOB_LOG"
+    exit 1
+}
+
+ok() { "$JOB_STATUS" mobilesync-guard ok "$1" --max-age 1d --log "$JOB_LOG"; }
+
+reinstate() {
+    ln -sfh "$SYMLINK_DEST" "$BACKUP" && chflags -h uchg "$BACKUP" || fail "Couldn't create the Backup symlink $NO_ACCESS"
+}
+
+# Case 1: real directory exists — Finder replaced the symlink
+if [ -d "$BACKUP" ] && [ ! -L "$BACKUP" ]; then
+    # Skip if a backup is actively in progress (files modified in last 60 seconds)
+    if find "$BACKUP" -maxdepth 2 -newer "$BACKUP" -type f 2>/dev/null | grep -q .; then
+        log "SKIP: backup appears in progress (recently modified files)"
+        "$JOB_STATUS" mobilesync-guard skip "backup in progress"
+        exit 0
+    fi
+    displaced="$BACKUP.displaced-$(date +%Y%m%d-%H%M%S)"
+    mv "$BACKUP" "$displaced" 2>/dev/null || fail "Backup is a real directory, not the symlink $NO_ACCESS"
+    reinstate
+    log "Moved real directory to $displaced and reinstated symlink"
+    notify "MobileSync symlink reinstated; real directory moved to $(basename "$displaced")"
+    ok "Symlink reinstated; real directory moved to $(basename "$displaced")"
+    exit 0
+fi
+
+# Case 2: symlink exists — check its target and that uchg is still set
+if [ -L "$BACKUP" ]; then
+    [ "$(readlink "$BACKUP")" = "$SYMLINK_DEST" ] || fail "Backup symlink points to $(readlink "$BACKUP"), not $SYMLINK_DEST"
+    if ! ls -lOd "$BACKUP" 2>/dev/null | grep -q "uchg"; then
+        chflags -h uchg "$BACKUP" 2>/dev/null || fail "Backup symlink has lost its uchg flag $NO_ACCESS"
+    fi
+    ok "Backup symlink in place"
+    exit 0
+fi
+
+# Case 3: nothing exists — first run or manually cleared
+reinstate
+ok "Backup symlink created"

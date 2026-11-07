@@ -1,0 +1,53 @@
+#!/bin/bash
+# Reports each iPhone/iPad's last successful Finder backup on Arcadia to the SwiftBar jobs plugin,
+# one entry per device, stale after 6 days without a backup. Run hourly by launchd
+# (me.fergusons.device-backups). Reads the backups over SSH, so it works away from home too.
+#
+# Devices are discovered at run time (names and UDIDs stay out of this public repo). A device is
+# picked up once it has backed up within the last 90 days; after that it stays listed until
+# "Forget this job" in the plugin, so a device that stops backing up goes stale, not silent.
+
+REMOTE="jim@arcadia"
+BACKUPS="/data/external/shared/iPhone_Backups"
+JOB_STATUS="$HOME/bin/job-status"
+STATE_ROOT="$HOME/Library/Application Support/job-status"
+MAX_AGE=6d
+DISCOVER_WITHIN=$(( 90 * 86400 ))
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
+
+# One tab-separated line per backup: udid, name, product, iOS version, last success,
+# last attempt and its state (epoch seconds, UTC-correct). "error" lines for unreadable ones.
+# Info.plist can be mid-write during a backup, hence the per-device try.
+read -r -d '' REMOTE_PY <<'EOF'
+import calendar, glob, os, plistlib, sys
+def epoch(dt): return calendar.timegm(dt.timetuple()) if dt else 0
+for d in sorted(glob.glob(os.path.join(sys.argv[1], "*/"))):
+    udid = os.path.basename(d.rstrip("/"))
+    try:
+        info = plistlib.load(open(d + "Info.plist", "rb"))
+        status = plistlib.load(open(d + "Status.plist", "rb"))
+        print("\t".join(str(x) for x in (udid, info.get("Device Name", udid), info.get("Product Type", "?"),
+              info.get("Product Version", "?"), epoch(info.get("Last Backup Date")),
+              epoch(status.get("Date")), status.get("SnapshotState", "?"))))
+    except Exception as e:
+        print("error\t%s\t%s" % (udid, e))
+EOF
+
+if ! out=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "$REMOTE" python3 - "$BACKUPS" <<< "$REMOTE_PY" 2>&1); then
+    log "SKIP: couldn't read backups on $REMOTE: ${out##*$'\n'}"
+    exit 0
+fi
+
+now=$(date +%s)
+while IFS=$'\t' read -r udid name product version last attempt state; do
+    if [ "$udid" = error ]; then log "WARN: unreadable backup $name: $product"; continue; fi
+    job="device-backup-$udid"
+    # New devices only if they've backed up recently; known ones always
+    [ -d "$STATE_ROOT/$job" ] || (( now - last < DISCOVER_WITHIN )) || continue
+    msg="$product, iOS $version"
+    if (( attempt > last + 60 )) && [ "$state" != finished ]; then
+        msg+="; a later attempt ($(date -r "$attempt" '+%a %-d %b %H:%M')) didn't finish ($state)"
+    fi
+    "$JOB_STATUS" "$job" ok "$msg" --at "$last" --max-age "$MAX_AGE" --title "$name backup"
+done <<< "$out"
