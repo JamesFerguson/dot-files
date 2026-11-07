@@ -27,4 +27,15 @@ set :output, "#{ENV['DOT_FILES_DIR']}/schedule/log/cron.log"
   #command 'cd ~ && killall "Vitamin-R 2"'
 #end
 
+# Claude Code session transcript backup -> Arcadia, 5pm on the work (FatZebra)
+# laptop. The personal Mac runs it from launchd instead (launch_agents/
+# me.fergusons.backup-claude-sessions.plist), which catches up after sleep.
+# Script lives in dot-files/bin, linked to ~/bin by install.sh. Skips cleanly
+# (no error) if Arcadia is unreachable.
+if `hostname`.strip.include?('fz-')
+  every 1.day, at: '5:00pm' do
+    command "#{ENV['HOME']}/bin/backup-claude-sessions"
+  end
+end
+
 # Installation/Update (without clobbering crontab): `whenever -i`
