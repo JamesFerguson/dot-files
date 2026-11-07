@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Incremental (hardlink-snapshot) backup of Claude Code session transcripts to
+# Arcadia over Tailscale SSH: /data/external/claude-sessions-backup/<host>/<date>.
+# relay-sync mirrors /data/external to the relay drive nightly (with -H, so the
+# hardlinks survive), so this one write lands on both. Run at 01:30 by launchd
+# (me.fergusons.backup-claude-sessions), ahead of relay-sync at 02:00. Skips
+# cleanly if Arcadia is unreachable.
+#
+# Unchanged files across snapshots are hardlinked (near-zero extra space);
+# only new/changed files cost real space per day. Old snapshots are never
+# auto-pruned -- add a prune step yourself if you want a retention cap.
+
+set -euo pipefail
+
+SRC="$HOME/.claude/projects"
+REMOTE="jim@arcadia"
+DEST_ROOT="${CLAUDE_SESSIONS_BACKUP_DEST:-/data/external/claude-sessions-backup}/$(hostname -s)"
+DATE="$(date +%Y-%m-%d)"
+SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=10"
+RSYNC=/opt/homebrew/bin/rsync; [ -x "$RSYNC" ] || RSYNC=rsync
+
+ts() { date '+%Y-%m-%d %H:%M:%S'; }
+remote() { ssh $SSH_OPTS "$REMOTE" "$@"; }
+
+# Report to the SwiftBar jobs plugin (dot-files/swiftbar); launchd sends output to JOB_LOG
+JOB_STATUS="$HOME/bin/job-status"
+JOB_LOG="$HOME/Library/Logs/backup-claude-sessions.log"
+trap '"$JOB_STATUS" backup-claude-sessions fail "exited with code $? at line $LINENO" --log "$JOB_LOG"' ERR
+
+if ! remote true 2>/dev/null; then
+  echo "$(ts) SKIP: $REMOTE unreachable"
+  "$JOB_STATUS" backup-claude-sessions skip "Arcadia unreachable" --max-age 3d2h
+  exit 0
+fi
+
+if remote test -e "$DEST_ROOT/$DATE"; then
+  echo "$(ts) SKIP: today's snapshot already exists ($DEST_ROOT/$DATE)"
+  exit 0
+fi
+
+# Write to <date>.partial and rename on success, so latest only ever points at a
+# complete snapshot. latest is relative so it still resolves in the relay mirror.
+remote mkdir -p "$DEST_ROOT"
+LINK_DEST=()
+remote test -d "$DEST_ROOT/latest" && LINK_DEST=(--link-dest=../latest)
+"$RSYNC" -a ${LINK_DEST[@]+"${LINK_DEST[@]}"} -e "ssh $SSH_OPTS" "$SRC/" "$REMOTE:$DEST_ROOT/$DATE.partial/"
+remote "mv '$DEST_ROOT/$DATE.partial' '$DEST_ROOT/$DATE' && ln -sfn '$DATE' '$DEST_ROOT/latest'"
+
+echo "$(ts) OK: snapshot written to $REMOTE:$DEST_ROOT/$DATE"
+"$JOB_STATUS" backup-claude-sessions ok "Snapshot $DATE written to Arcadia" --max-age 3d2h --log "$JOB_LOG"
