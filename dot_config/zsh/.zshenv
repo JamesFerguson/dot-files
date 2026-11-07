@@ -64,9 +64,9 @@ if [[ "$DEVICE_TYPE" == "work" ]]; then
   CODE_DIR="$HOME/code"
   DOT_FILES_DIR="$CODE_DIR/personal/dot-files"
   # Private work overlay (work-dot-files, or future dot-files-private/work/).
-  # Guarded — missing repo is a no-op.
+  # Guarded — missing repo or missing work/ subdir is a no-op.
   WORK_DOT_FILES_DIR="$CODE_DIR/personal/work-dot-files"
-  [[ -f "$WORK_DOT_FILES_DIR/zsh/fz.zshenv" ]] && source "$WORK_DOT_FILES_DIR/zsh/fz.zshenv"
+  [[ -f "$WORK_DOT_FILES_DIR/work/zsh/work.zshenv" ]] && source "$WORK_DOT_FILES_DIR/work/zsh/work.zshenv"
 else
   CODE_DIR="$HOME/codez"
   DOT_FILES_DIR="$CODE_DIR/dot-files"

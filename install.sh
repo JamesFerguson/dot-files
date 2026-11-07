@@ -131,8 +131,8 @@ fi
 # symlinks, and the Claude Code MCP servers. Nothing work-specific happens without it.
 if (( ON_WORK_LAPTOP )); then
   WORK_DOT_FILES_DIR="${WORK_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
-  if [[ -x "$WORK_DOT_FILES_DIR/install-fz.sh" ]]; then
-    "$WORK_DOT_FILES_DIR/install-fz.sh"
+  if [[ -x "$WORK_DOT_FILES_DIR/install.sh" ]]; then
+    "$WORK_DOT_FILES_DIR/install.sh"
   else
     echo "work-dot-files not found at $WORK_DOT_FILES_DIR — skipping work overlay."
     echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
