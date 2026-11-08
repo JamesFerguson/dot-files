@@ -14,7 +14,10 @@ set -euo pipefail
 
 SRC="$HOME/.claude/projects"
 REMOTE="jim@arcadia"
-DEST_ROOT="${CLAUDE_SESSIONS_BACKUP_DEST:-/data/external/claude-sessions-backup}/$(hostname -s)"
+# LocalHostName is the name set in System Settings; hostname -s can briefly report a
+# DHCP/default name (e.g. "MacBookPro") right after wake, which would split the snapshot chain
+HOST="$(scutil --get LocalHostName 2>/dev/null || hostname -s)"
+DEST_ROOT="${CLAUDE_SESSIONS_BACKUP_DEST:-/data/external/claude-sessions-backup}/$HOST"
 DATE="$(date +%Y-%m-%d)"
 SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=10"
 RSYNC=/opt/homebrew/bin/rsync; [ -x "$RSYNC" ] || RSYNC=rsync
