@@ -61,7 +61,9 @@ def publish_prompt(page, url, done, opts)
   target =
     if url
       "It replaces the existing artifact #{url}. Call Artifact with action \"read\" and that url " \
-        "first, then publish with file_path #{page} and url #{url}. Pass no icon."
+        "first. A big page comes back saved to a file instead, and the read only counts once " \
+        "you've Read every line of that file, in chunks with offset and limit. Then publish with " \
+        "file_path #{page} and url #{url}. Pass no icon."
     else
       "It's a new artifact. Publish it with file_path #{page}, icon #{opts[:icon].inspect}" \
         "#{" and description #{opts[:description].inspect}" if opts[:description]}."
@@ -101,7 +103,8 @@ def publish(argv)
   FileUtils.rm_f(done)
 
   opts[:name] = "publish #{opts[:title] || File.basename(page, '.html')}"
-  opts[:allowed_tools] = "Artifact,Read(#{page}),Bash(printf *)"
+  # Artifact read saves a big live page under the session's tool-results dir.
+  opts[:allowed_tools] = "Artifact,Read(#{page}),Read(~/.claude/projects/**/tool-results/**),Bash(printf *)"
   id = start_session(opts, publish_prompt(page, url, done, opts))
 
   deadline = Time.now + opts[:timeout]
