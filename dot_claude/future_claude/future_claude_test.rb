@@ -304,6 +304,41 @@ class FutureClaudeTest < Minitest::Test
     refute_includes [0, 6], Time.at(job(id)['at']).wday
   end
 
+  def test_hours_moves_a_start_before_the_window_to_its_opening
+    id = fc!('add', '--at', '2031-03-04 02:30', '--every', '4h', '--hours', '06-18', '--notify', 'x').strip
+    assert_equal Time.local(2031, 3, 4, 6, 0).to_i, job(id)['at']
+  end
+
+  def test_hours_moves_a_start_after_the_window_to_the_next_mornings_opening
+    id = fc!('add', '--at', '2031-03-04 19:00', '--every', '4h', '--hours', '06-18', '--notify', 'x').strip
+    assert_equal Time.local(2031, 3, 5, 6, 0).to_i, job(id)['at']
+  end
+
+  def test_hours_reschedules_a_slot_that_lands_outside_the_window_to_the_next_opening
+    id = fc!('add', '--at', '-1m', '--every', '4h', '--hours', '00-24', '--notify', 'x').strip
+    rewrite_job(id, 'hours' => '03-04')
+    fc!('run')
+
+    slot = Time.at(job(id)['at'])
+    assert_equal [3, 0], [slot.hour, slot.min]
+  end
+
+  def test_hours_and_weekdays_move_a_friday_evening_slot_to_monday_morning
+    id = fc!('add', '--at', '2031-03-07 20:00', '--every', '4h', '--hours', '06-18', '--weekdays', '--notify', 'x').strip
+    assert_equal Time.local(2031, 3, 10, 6, 0).to_i, job(id)['at']
+  end
+
+  def test_add_refuses_bad_hours
+    _, err, status = fc('add', '--at', '+1h', '--every', '4h', '--hours', '18-06', '--notify', 'x')
+    refute status.success?
+    assert_match(/--hours/, err)
+  end
+
+  def test_a_repeating_job_is_listed_with_its_hours
+    fc!('add', '--at', '+1h', '--every', '4h', '--hours', '06-18', '--notify', 'x')
+    assert_includes fc!('list'), '(every 4h 06-18)'
+  end
+
   def test_a_repeating_job_ends_once_its_next_slot_is_past_until
     id = fc!('add', '--at', '-1m', '--every', '1h', '--until', '+30m', '--notify', 'Last').strip
     fc!('run')

@@ -41,7 +41,7 @@ def usage
     Usage:
       future_claude add --at TIME (--notify TEXT [--say TEXT] | --command SHELL |
                                    --prompt TEXT [--origin SESSION | --headless])
-                        [--every INTERVAL [--weekdays] [--until TIME]] [--title TITLE] [--cwd DIR]
+                        [--every INTERVAL [--weekdays] [--hours HH-HH] [--until TIME]] [--title TITLE] [--cwd DIR]
                         [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
                         [--key KEY] [--allowed-tools TOOLS]
       future_claude list [--all]
@@ -52,6 +52,7 @@ def usage
     TIME is local: '2026-10-27 09:47', an ISO 8601 time, or relative: +90s, +30m, +2h, +1d (also -1m).
     INTERVAL is 90s, 30m, 2h, 1d or 1w. Days and weeks keep the wall-clock time across daylight saving.
     --weekdays moves any Saturday or Sunday slot on to Monday.
+    --hours 06-18 moves any slot outside 06:00 to 18:00 on to the next 06:00.
     --key makes add idempotent: if a pending job has the same key, add prints its id and adds nothing.
     --allowed-tools pre-approves tools for a prompt job's claude run (comma-separated, as claude takes them).
     A prompt job queued from a session hands back to it by default. SESSION picks another one: a name
@@ -111,10 +112,32 @@ def skip_weekend(epoch)
   epoch
 end
 
+def parse_hours(text)
+  m = text.match(/\A(\d\d)-(\d\d)\z/)
+  die "can't parse --hours #{text.inspect}; use 06-18 (from 06:00 up to 18:00)" unless m && m[1].to_i < m[2].to_i && m[2].to_i <= 24
+  text
+end
+
+# Moves a slot outside the HH-HH window on to the window's next opening, on the hour.
+def within_hours(epoch, hours)
+  open, close = hours.split('-').map(&:to_i)
+  t = Time.at(epoch)
+  return epoch if t.hour >= open && t.hour < close
+
+  days = t.hour < open ? 0 : 1
+  d = Date.new(t.year, t.month, t.day) + days
+  Time.local(d.year, d.month, d.day, open).to_i
+end
+
+def adjust_slot(job, slot)
+  slot = within_hours(slot, job['hours']) if job['hours']
+  job['weekdays'] ? skip_weekend(slot) : slot
+end
+
 def next_slot(job, now)
   slot = job['at']
   slot = step(slot, job['every']) while slot <= now
-  job['weekdays'] ? skip_weekend(slot) : slot
+  adjust_slot(job, slot)
 end
 
 # Puts a repeating job back in the queue at its next slot, or ends it once that's past --until.
@@ -166,6 +189,7 @@ def add(argv)
     o.on('--headless') { opts['headless'] = true }
     o.on('--every INTERVAL') { |v| opts['every'] = parse_every(v) }
     o.on('--weekdays') { opts['weekdays'] = true }
+    o.on('--hours HH-HH') { |v| opts['hours'] = parse_hours(v) }
     o.on('--until TIME') { |v| opts['until'] = parse_time(v) }
     o.on('--key KEY') { |v| opts['key'] = v }
     o.on('--allowed-tools TOOLS') { |v| opts['allowed_tools'] = v }
@@ -180,8 +204,8 @@ def add(argv)
   die 'add needs --at' unless opts['at']
   kinds = %w[notify prompt command].select { |k| opts[k] }
   die 'add needs exactly one of --notify, --prompt and --command' unless kinds.size == 1
-  die '--weekdays and --until need --every' if (opts['weekdays'] || opts['until']) && !opts['every']
-  opts['at'] = skip_weekend(opts['at']) if opts['weekdays']
+  die '--weekdays, --hours and --until need --every' if (opts['weekdays'] || opts['hours'] || opts['until']) && !opts['every']
+  opts['at'] = adjust_slot(opts, opts['at'])
 
   # A session can't see its own name in ListAgents, but its Bash calls carry its messaging socket, so a
   # prompt job queued from a session hands back to that session unless told otherwise.
@@ -215,7 +239,7 @@ def summary(job)
   text = job_text(job)
   text = "#{text[0, 70]}…" if text.length > 71
   extra = job['origin'] ? " → #{job['origin']}" : ''
-  extra = " (every #{job['every']}#{' weekdays' if job['weekdays']})#{extra}" if job['every']
+  extra = " (every #{job['every']}#{' weekdays' if job['weekdays']}#{" #{job['hours']}" if job['hours']})#{extra}" if job['every']
   outcome = job['outcome'] ? " (#{job['outcome']})" : ''
   format('%-6s  %-21s  %-7s  %-8s%s  %s%s', job['id'], local(job['at']), job['kind'], job['status'], outcome, text, extra)
 end
