@@ -20,26 +20,12 @@ set_default com.apple.finder AppleShowAllFiles -boolean true 1
 # echo 'Using sudo to turn on auto-detection of trackpad orientation'
 # sudo defaults write com.apple.MultitouchSupport ForceAutoOrientation YES
 
-# raise_sysctl KEY MIN: make sure the limit is at least MIN after a reboot, and never lower it.
-# Recent macOS sizes these defaults by RAM, often well above MIN, and a line in /etc/sysctl.conf
-# would cap them. Older runs of this script appended a copy each time; keep only the last.
-raise_sysctl() {
-  if [ -f /etc/sysctl.conf ] && [ "$(grep -c "^$1=" /etc/sysctl.conf)" -gt 1 ]; then
-    last=$(grep "^$1=" /etc/sysctl.conf | tail -1)
-    sudo sed -i '' "/^$1=/d" /etc/sysctl.conf
-    echo "$last" | sudo tee -a /etc/sysctl.conf >/dev/null
-    echo "  removed duplicate $1 lines from /etc/sysctl.conf"
-  fi
-  if [ "$(sysctl -n "$1")" -lt "$2" ] && ! grep -q "^$1=" /etc/sysctl.conf 2>/dev/null; then
-    echo "$1=$2" | sudo tee -a /etc/sysctl.conf >/dev/null
-    sudo sysctl -w "$1=$2" >/dev/null
-    echo "  raised $1 to $2"
-  fi
-}
-
-echo 'Raising maxfiles limits where they are low (sudo if so)'
-raise_sysctl kern.maxfiles 65536
-raise_sysctl kern.maxfilesperproc 32768
+# Older versions of this script appended maxfiles lines to /etc/sysctl.conf. macOS now sizes those
+# limits by RAM, well above the old values, so the lines only cap them; .zshenv's ulimit covers shells.
+if grep -qE '^kern\.maxfiles(perproc)?=(65536|32768)$' /etc/sysctl.conf 2>/dev/null; then
+  echo 'Removing the old maxfiles caps from /etc/sysctl.conf (sudo)'
+  sudo sed -i '' -E '/^kern\.maxfiles(perproc)?=(65536|32768)$/d' /etc/sysctl.conf
+fi
 
 # Make system File Save dialog expanded by default
 echo 'Make system File Save dialog expanded by default'
