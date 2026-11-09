@@ -71,7 +71,8 @@ ln -Ffs $DOT_FILES_DIR/dot_vim ~/.vim
 ln -fs $DOT_FILES_DIR/sleepwatcher/dot_sleep/sleep ~/.sleep
 ln -fs $DOT_FILES_DIR/sleepwatcher/dot_wakeup/wakeup ~/.wakeup
 
-sudo ln -fs $DOT_FILES_DIR/etc_hosts/hosts /etc/hosts
+# A generic /etc/hosts, unless one is linked already: the private overlay links its own per context.
+[[ -L /etc/hosts ]] || sudo ln -fs $DOT_FILES_DIR/etc_hosts/hosts /etc/hosts
 sudo ln -fs $DOT_FILES_DIR/etc_zshenv/zshenv /etc/zshenv
 sudo ln -fs $DOT_FILES_DIR/git_repack_all/git-repack-all /usr/local/bin/git-repack-all
 chmod +x $DOT_FILES_DIR/usr_local_bin/wrapped_code
@@ -110,7 +111,7 @@ ln -fs "$DOT_FILES_DIR/vscode/settings.json" "$VSCODE_SETTINGS"
 #ln -fs $DOT_FILES_DIR/dot_powrc/powrc ~/codez/tv-shows/.powrc
 
 # tweaks
-./tweaks/tweaks.sh
+$DOT_FILES_DIR/tweaks/tweaks.sh
 
 # Personal LaunchAgents (home mac only — polaris-specific services)
 if (( ON_HOME_LAPTOP )); then
@@ -126,11 +127,11 @@ if (( ON_HOME_LAPTOP )); then
   done
 fi
 
-# Private overlay: if the private repo (work-dot-files, later dot-files-private) is cloned,
+# Private overlay: if the private repo (dot-files-private) is cloned,
 # run its installer. It routes internally by DEVICE_TYPE — work/ for work machines,
 # personal/ for home machines. Nothing machine-specific happens without it.
 if (( ON_WORK_LAPTOP )); then
-  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/code/personal/work-dot-files}"
+  PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/code/personal/dot-files-private}"
 elif (( ON_HOME_LAPTOP )); then
   PRIVATE_DOT_FILES_DIR="${PRIVATE_DOT_FILES_DIR:-$HOME/codez/dot-files-private}"
 fi
@@ -139,6 +140,6 @@ if [[ -n "$PRIVATE_DOT_FILES_DIR" ]]; then
     "$PRIVATE_DOT_FILES_DIR/install.sh"
   else
     echo "dot-files-private not found at $PRIVATE_DOT_FILES_DIR — skipping private overlay."
-    echo "  (clone git@github.com:JamesFerguson/work-dot-files.git there to enable it.)"
+    echo "  (clone git@github.com:JamesFerguson/dot-files-private.git there to enable it.)"
   fi
 fi

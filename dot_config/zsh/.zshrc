@@ -25,23 +25,21 @@ do
         source "$include"
 done
 
-# Private work overlay — loaded after public includes so it can override.
-if [[ -n "$PRIVATE_DOT_FILES_DIR" && -d "$PRIVATE_DOT_FILES_DIR/work/zshrc/includes" ]]; then
-  for include in "$PRIVATE_DOT_FILES_DIR/work/zshrc/includes"/*.zsh(N)
+# Private overlay — loaded after public includes so it can override. Both contexts live in the one
+# repo, so DEVICE_TYPE picks which: work/ on a work machine, personal/ on a home one, neither if unset.
+case "$DEVICE_TYPE" in
+  work) PRIVATE_CONTEXT=work ;;
+  home) PRIVATE_CONTEXT=personal ;;
+  *)    PRIVATE_CONTEXT= ;;
+esac
+if [[ -n "$PRIVATE_DOT_FILES_DIR" && -n "$PRIVATE_CONTEXT" ]]; then
+  for include in "$PRIVATE_DOT_FILES_DIR/$PRIVATE_CONTEXT/zshrc/includes"/*.zsh(N)
   do
-          echo "  Sourcing (work) ${include:t}..."
+          echo "  Sourcing ($PRIVATE_CONTEXT) ${include:t}..."
           source "$include"
   done
 fi
-
-# Private personal overlay — same pattern, for home/arcadia config.
-if [[ -n "$PRIVATE_DOT_FILES_DIR" && -d "$PRIVATE_DOT_FILES_DIR/personal/zshrc/includes" ]]; then
-  for include in "$PRIVATE_DOT_FILES_DIR/personal/zshrc/includes"/*.zsh(N)
-  do
-          echo "  Sourcing (personal) ${include:t}..."
-          source "$include"
-  done
-fi
+unset PRIVATE_CONTEXT
 
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/james.ferguson/.rd/bin:$PATH"
