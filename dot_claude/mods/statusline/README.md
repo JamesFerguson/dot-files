@@ -48,13 +48,13 @@ Set these on the install screen, or later in `/config`, where they're listed und
 
 ## Auto-compact
 
-When a session is open, no turn is running, its context is over the threshold and its prompt cache has 90 seconds or less left, the mod runs `/compact`. The compaction reads the context at the cache-read price, so the next prompt starts from a small context instead of rewriting the whole big one at the cache-write price. A toast says it's compacting, and a transcript line says how it went. It tries once per reply: a compaction that fails or is turned down waits for the next reply. With a 5-minute cache, that means compacting after three and a half minutes idle.
+When a session is open, no turn is running, its context is over the threshold and its prompt cache is about to go cold, the mod runs `/compact`: 30 seconds before for a 5-minute cache, 90 for a 1-hour one. Only the compaction's first request needs the cache, so it just has to start in time. A timer fires it on the second. The compaction reads the context at the cache-read price, so the next prompt starts from a small context instead of rewriting the whole big one at the cache-write price. A toast says it's compacting, and a transcript line says how it went. It tries once per request: a compaction that fails or is turned down waits for the next one.
 
 ## Where the numbers come from
 
 - **Context, quotas, model, version:** Claude Code's own session figures (`$.session.usage()` and friends). Claude Code has the context only once a reply has come back in the running process, so until then it's the last reply's input tokens from the transcript, back to the last compaction.
 - **Usage credits:** `GET https://api.anthropic.com/api/oauth/usage`, the endpoint `/usage` reads, with your session's login. Fetched every 5 minutes. It's an account call, not a model call, so it uses no tokens. The reset date is the 1st of next month in local time, worked out the same way `/usage` does.
-- **Cache countdown:** the end of the session's transcript. Each reply restarts the cache's clock, and the TTL is whichever the last cache write used (5 minutes or 1 hour).
+- **Cache countdown:** the end of the session's transcript. Each request restarts the cache's clock when it's sent, up to 40 seconds before its reply is written in full, so the clock runs from the entry the request was sent after. The TTL is whichever the last cache write used (5 minutes or 1 hour).
 - **Default model:** `bin/default_model.rb` opens a fresh `claude -p` session with no settings and records the model it starts on. Its prompt is `/cost`, which Claude Code answers itself, so it uses no tokens. A draw starts it in the background when the record (`~/.claude/statusline-default-model.json`) is over 10 minutes old, and a lock file keeps it to one at a time.
 - **Advisor:** the `advisorModel` setting in `~/.claude/settings.json`, which is what `/advisor` reports. A session keeps the advisor it started with until `/clear` or `/compact`, so for a while after you change it the badge is ahead of the session. The transcript's `advisorModel` field doesn't help: replies carry it whether or not the advisor is on.
 

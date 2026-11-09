@@ -117,7 +117,7 @@
     "auto_compact_tokens": {
       "type": "number",
       "title": "Auto-compact above (tokens)",
-      "description": "Compact an idle session in the last 90 seconds before its prompt cache goes cold, when its context is over this many tokens. 0 turns it off.",
+      "description": "Compact an idle session just before its prompt cache goes cold (30 seconds for a 5-minute cache, 90 for a 1-hour one), when its context is over this many tokens. 0 turns it off.",
       "default": 200000
     }
   }

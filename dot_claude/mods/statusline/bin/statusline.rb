@@ -318,7 +318,7 @@ end
 
 line = parts.join(' ')
 if data['format'] == 'json'
-  print JSON.generate(line:, cache: cache && { last_reply_at: cache.last_at.to_i, expires_at: cache.expires_at.to_i, tokens: ctx_tokens })
+  print JSON.generate(line:, cache: cache && { sent_at: cache.last_at.to_i, ttl: cache.ttl, expires_at: cache.expires_at.to_i, tokens: ctx_tokens })
 else
   print line
 end

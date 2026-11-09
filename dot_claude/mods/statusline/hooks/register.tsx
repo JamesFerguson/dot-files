@@ -3,7 +3,7 @@ import type { EngineInterface, PluginOptions, Register, SessionRateLimit } from 
 
 import type { Run } from '../types'
 import { parseAnsi } from './ansi'
-import { type Cache, compactLimit, shouldCompact } from './compact'
+import { type Cache, compactAtMs, compactLimit, shouldCompact, wantsCompact } from './compact'
 
 // bin/statusline.rb draws the line from the JSON a status line command gets; this mod feeds it that
 // JSON on a timer, so the countdowns keep moving while nobody types.
@@ -17,6 +17,7 @@ let drawing = false
 let reported = false
 let turnRunning = false
 let compactedFor: number | undefined
+let armed: { sentAt: number, timer: ReturnType<EngineInterface['clock']['after']> } | undefined
 let ticking: unknown
 let polling: unknown
 let options: PluginOptions = {}
@@ -137,12 +138,29 @@ const run = async ($: EngineInterface): Promise<Drawn> => {
   return { runs: parseAnsi(line.trimEnd()), cache: cache ?? undefined }
 }
 
-// A compaction that fails or is vetoed isn't tried again until the next reply.
-const maybeCompact = async ($: EngineInterface, cache: Cache | undefined) => {
-  const nowMs = await $.clock.now()
-  if (!cache || !shouldCompact(cache, { nowMs, limit: compactLimit(options.auto_compact_tokens), turnRunning, compactedFor })) return
+// Compacts once the cache is close enough to going cold, or arms a timer for then: the 20-second tick
+// alone could land too late in a 30-second lead. The timer redraws, so it acts on a fresh reading.
+const scheduleCompact = async ($: EngineInterface, cache: Cache | undefined) => {
+  const limit = compactLimit(options.auto_compact_tokens)
+  if (!wantsCompact(cache, { limit, compactedFor })) return disarm()
 
-  compactedFor = cache.last_reply_at
+  const nowMs = await $.clock.now()
+  if (shouldCompact(cache, { nowMs, limit, turnRunning, compactedFor })) return compact($, cache)
+  if (armed?.sentAt === cache.sent_at) return
+
+  disarm()
+  const waitMs = compactAtMs(cache) - nowMs
+  if (waitMs > 0) armed = { sentAt: cache.sent_at, timer: $.clock.after(waitMs, () => { armed = undefined; void redraw($) }) }
+}
+
+const disarm = () => {
+  armed?.timer.cancel()
+  armed = undefined
+}
+
+// A compaction that fails or is vetoed isn't tried again until the next request.
+const compact = async ($: EngineInterface, cache: Cache) => {
+  compactedFor = cache.sent_at
   const size = `${Math.round((cache.tokens ?? 0) / 1000)}k`
   $.ui.toast(`statusline: compacting ${size} of context before the cache goes cold`)
   const result = await $.session.compact().catch((error: unknown) => ({ skip: String(error).slice(0, 200) }))
@@ -167,7 +185,7 @@ const redraw = async ($: EngineInterface) => {
       $.ui.log(first.text)
     }
     await update($, line, () => runs)
-    void maybeCompact($, cache).catch(() => undefined)
+    void scheduleCompact($, cache).catch(() => undefined)
   } finally {
     drawing = false
   }

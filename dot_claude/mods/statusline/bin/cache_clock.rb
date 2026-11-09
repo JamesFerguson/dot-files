@@ -12,35 +12,51 @@ require 'time'
 module CacheClock
   SOON = 600 # warn once the cache has ten minutes or less left
 
-  # last_at: the last main-thread reply; ttl: seconds the cache lives after it; tokens: the context
+  # last_at: when the last main-thread request went out; ttl: seconds the cache lives after it; tokens: the context
   # that reply was answered over (uncached, cache-written and cache-read input together).
   Reading = Data.define(:last_at, :ttl, :tokens) do
     def expires_at = last_at + ttl
   end
 
+  # What's written just before a request goes out: the prompt or the tool results, and their attachments.
+  REQUEST_TYPES = %w[user attachment].freeze
+
   module_function
 
   # The Reading for the newest main-thread reply, or nil. Reads backwards from the end, and stops at a
   # compaction: the replies before it were over a context that's gone.
+  #
+  # The cache's clock restarts when the request goes out, which can be 40 seconds before the reply's
+  # last line is written, so it runs from the entry the request was sent after.
   def read(transcript_path)
     return nil unless transcript_path && File.file?(transcript_path)
 
-    last_at = tokens = nil
+    reply = sent_at = ttl = nil
     each_line_backwards(transcript_path) do |line|
       return nil if line.include?('"compact_boundary"') && compaction?(line)
-      next unless line.include?('"usage"')
+      next unless line.include?('"usage"') || (reply && !sent_at)
 
       entry = JSON.parse(line) rescue next
-      next if entry['type'] != 'assistant' || entry['isSidechain']
+      next if entry['isSidechain'] || !(at = (Time.parse(entry['timestamp']) rescue nil))
 
-      usage = entry.dig('message', 'usage') or next
-      last_at ||= Time.parse(entry['timestamp']) rescue next
-      tokens  ||= usage.values_at('input_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens').sum(&:to_i)
-      cc = usage['cache_creation'] || {}
-      return Reading.new(last_at, 3600, tokens) if cc['ephemeral_1h_input_tokens'].to_i.positive?
-      return Reading.new(last_at, 300, tokens) if cc['ephemeral_5m_input_tokens'].to_i.positive?
+      usage = entry['type'] == 'assistant' && entry.dig('message', 'usage')
+      if usage && !reply
+        reply = { id: entry.dig('message', 'id'), tokens: usage.values_at('input_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens').sum(&:to_i) }
+      elsif reply && !sent_at && (REQUEST_TYPES.include?(entry['type']) || (usage && entry.dig('message', 'id') != reply[:id]))
+        sent_at = at
+      end
+      ttl ||= usage && ttl_of(usage)
+      return Reading.new(sent_at, ttl, reply[:tokens]) if sent_at && ttl
     end
     nil
+  end
+
+  # The TTL a reply's cache write used, or nil when it wrote nothing.
+  def ttl_of(usage)
+    cc = usage['cache_creation'] || {}
+    return 3600 if cc['ephemeral_1h_input_tokens'].to_i.positive?
+
+    300 if cc['ephemeral_5m_input_tokens'].to_i.positive?
   end
 
   def compaction?(line)
