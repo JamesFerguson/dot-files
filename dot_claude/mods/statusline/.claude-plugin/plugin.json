@@ -1,7 +1,7 @@
 {
   "name": "statusline",
-  "version": "0.2.0",
-  "description": "A status line above the prompt, redrawn every 20 seconds: repo and branch, context, cache countdown, 5-hour and weekly quota pace, usage credits, and alerts for a non-default model, an advisor or low effort.",
+  "version": "0.3.0",
+  "description": "A status line above the prompt, redrawn every 20 seconds: repo and branch, context, cache countdown, 5-hour and weekly quota pace, usage credits, and alerts for a non-default model, an advisor or low effort. Compacts an idle session before its cache goes cold over a big context.",
   "author": {
     "name": "James Ferguson"
   },
@@ -71,21 +71,41 @@
       "type": "string",
       "title": "Expected model",
       "description": "Warn when the session's model isn't this: Claude Code's default, a family, or any to never warn.",
-      "options": ["default", "fable", "opus", "sonnet", "haiku", "any"],
+      "options": [
+        "default",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "any"
+      ],
       "default": "default"
     },
     "expected_advisor": {
       "type": "string",
       "title": "Expected advisor",
       "description": "Warn when the session's advisor isn't this: none, a family, or any to never warn.",
-      "options": ["none", "fable", "opus", "sonnet", "haiku", "any"],
+      "options": [
+        "none",
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku",
+        "any"
+      ],
       "default": "none"
     },
     "min_effort": {
       "type": "string",
       "title": "Lowest expected effort",
       "description": "Warn when the effort level is below this.",
-      "options": ["low", "medium", "high", "xhigh", "max"],
+      "options": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
       "default": "high"
     },
     "quota_target": {
@@ -93,6 +113,12 @@
       "title": "Quota target (%)",
       "description": "The share of each 5-hour and weekly window to aim to use by its reset. The bars pace against it, climbing to 100% in the last fifth of the window.",
       "default": 80
+    },
+    "auto_compact_tokens": {
+      "type": "number",
+      "title": "Auto-compact above (tokens)",
+      "description": "Compact an idle session in the last 90 seconds before its prompt cache goes cold, when its context is over this many tokens. 0 turns it off.",
+      "default": 200000
     }
   }
 }

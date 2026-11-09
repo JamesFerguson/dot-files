@@ -3,7 +3,8 @@
 require 'json'
 require 'time'
 
-# How long until the session's prompt cache goes cold, for the status line.
+# How long until the session's prompt cache goes cold, and how big the context was at the last reply,
+# for the status line.
 #
 # Every API call restarts the cache's clock, and the TTL is whichever the last cache write used
 # (5 minutes, or 1 hour; a session in usage overage drops to 5). Once it runs out, the next reply
@@ -11,14 +12,22 @@ require 'time'
 module CacheClock
   SOON = 600 # warn once the cache has ten minutes or less left
 
+  # last_at: the last main-thread reply; ttl: seconds the cache lives after it; tokens: the context
+  # that reply was answered over (uncached, cache-written and cache-read input together).
+  Reading = Data.define(:last_at, :ttl, :tokens) do
+    def expires_at = last_at + ttl
+  end
+
   module_function
 
-  # [time of the last main-thread reply, TTL in seconds], or nil. Reads backwards from the end.
+  # The Reading for the newest main-thread reply, or nil. Reads backwards from the end, and stops at a
+  # compaction: the replies before it were over a context that's gone.
   def read(transcript_path)
     return nil unless transcript_path && File.file?(transcript_path)
 
-    last_at = nil
+    last_at = tokens = nil
     each_line_backwards(transcript_path) do |line|
+      return nil if line.include?('"compact_boundary"') && compaction?(line)
       next unless line.include?('"usage"')
 
       entry = JSON.parse(line) rescue next
@@ -26,11 +35,17 @@ module CacheClock
 
       usage = entry.dig('message', 'usage') or next
       last_at ||= Time.parse(entry['timestamp']) rescue next
+      tokens  ||= usage.values_at('input_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens').sum(&:to_i)
       cc = usage['cache_creation'] || {}
-      return [last_at, 3600] if cc['ephemeral_1h_input_tokens'].to_i.positive?
-      return [last_at, 300] if cc['ephemeral_5m_input_tokens'].to_i.positive?
+      return Reading.new(last_at, 3600, tokens) if cc['ephemeral_1h_input_tokens'].to_i.positive?
+      return Reading.new(last_at, 300, tokens) if cc['ephemeral_5m_input_tokens'].to_i.positive?
     end
     nil
+  end
+
+  def compaction?(line)
+    entry = JSON.parse(line) rescue (return false)
+    entry['type'] == 'system' && entry['subtype'] == 'compact_boundary'
   end
 
   def each_line_backwards(path, limit: 8 << 20)
@@ -48,8 +63,8 @@ module CacheClock
     end
   end
 
-  def render(last_at, ttl, now: Time.now)
-    left = (last_at + ttl - now).to_i
+  def render(reading, now: Time.now)
+    left = (reading.expires_at - now).to_i
     return "\033[38;2;90;140;200m🧊 cold\033[0m" unless left.positive?
 
     colour = left > SOON ? '0;200;80' : '255;140;0'

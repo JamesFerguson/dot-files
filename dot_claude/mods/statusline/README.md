@@ -9,7 +9,7 @@ A status line drawn above the prompt and redrawn every 20 seconds, so the countd
 | Part | Shows |
 |---|---|
 | `[repo branch]` | The git repo and branch of the session's directory, or just the folder's name outside a repo. |
-| 🧠 | How full the context window is, and its size in tokens. The fill runs green to yellow, is red by 60%, purple by 80% and nearly black at 100%, and the percentage takes the colour where the fill ends. The 🧠 turns into 🔥 at 70% and 🚨 at 90%. |
+| 🧠 | How full the context window is, and its size in tokens. The fill runs green to yellow, is red by 60%, purple by 80% and nearly black at 100%, and the percentage takes the colour where the fill ends. The 🧠 turns into 🔥 at 70% and 🚨 at 90%. After a restart or a resume, until the first reply, it shows the size at the last reply in the transcript, so a cold session still says how big it is. |
 | ⏳ / 🧊 | Minutes until the prompt cache goes cold, orange under 10. 🧊 once it's cold: the next reply rewrites the whole context at the cache-write price. |
 | ⏱️ / 📆 | The 5-hour and weekly quotas, with time to reset, paced against a target (80% by default). The fill is green while usage is on or under the target pace, red once it's past a steady pace to 100%, and yellow to orange in between. In the last fifth of the window the target climbs to 100%, since quota left at the reset is wasted. The green dots after the fill are the headroom left at the target pace. |
 | 💵 | Usage credits spent against the monthly cap, and the date it resets, as `/usage` shows them. Grey normally, red while a 5-hour or weekly quota is used up, since that's when credits are being spent. |
@@ -44,10 +44,15 @@ Set these on the install screen, or later in `/config`, where they're listed und
 - **Expected advisor:** `none`, a family, or `any` to never warn.
 - **Lowest expected effort:** `low` to `max`.
 - **Quota target:** the percentage of each window to aim for by its reset.
+- **Auto-compact above:** compact an idle session whose context is over this many tokens (200k by default; 0 turns it off). See below.
+
+## Auto-compact
+
+When a session is open, no turn is running, its context is over the threshold and its prompt cache has 90 seconds or less left, the mod runs `/compact`. The compaction reads the context at the cache-read price, so the next prompt starts from a small context instead of rewriting the whole big one at the cache-write price. A toast says it's compacting, and a transcript line says how it went. It tries once per reply: a compaction that fails or is turned down waits for the next reply. With a 5-minute cache, that means compacting after three and a half minutes idle.
 
 ## Where the numbers come from
 
-- **Context, quotas, model, version:** Claude Code's own session figures (`$.session.usage()` and friends).
+- **Context, quotas, model, version:** Claude Code's own session figures (`$.session.usage()` and friends). Claude Code has the context only once a reply has come back in the running process, so until then it's the last reply's input tokens from the transcript, back to the last compaction.
 - **Usage credits:** `GET https://api.anthropic.com/api/oauth/usage`, the endpoint `/usage` reads, with your session's login. Fetched every 5 minutes. It's an account call, not a model call, so it uses no tokens. The reset date is the 1st of next month in local time, worked out the same way `/usage` does.
 - **Cache countdown:** the end of the session's transcript. Each reply restarts the cache's clock, and the TTL is whichever the last cache write used (5 minutes or 1 hour).
 - **Default model:** `bin/default_model.rb` opens a fresh `claude -p` session with no settings and records the model it starts on. Its prompt is `/cost`, which Claude Code answers itself, so it uses no tokens. A draw starts it in the background when the record (`~/.claude/statusline-default-model.json`) is over 10 minutes old, and a lock file keeps it to one at a time.

@@ -3,6 +3,7 @@ import type { EngineInterface, PluginOptions, Register, SessionRateLimit } from 
 
 import type { Run } from '../types'
 import { parseAnsi } from './ansi'
+import { type Cache, compactLimit, shouldCompact } from './compact'
 
 // bin/statusline.rb draws the line from the JSON a status line command gets; this mod feeds it that
 // JSON on a timer, so the countdowns keep moving while nobody types.
@@ -14,6 +15,8 @@ const line = atom({ plugin: 'statusline', key: 'line' } as const, null as Run[] 
 
 let drawing = false
 let reported = false
+let turnRunning = false
+let compactedFor: number | undefined
 let ticking: unknown
 let polling: unknown
 let options: PluginOptions = {}
@@ -88,6 +91,7 @@ const statusInput = async ($: EngineInterface) => {
     version: version.version,
     usage_credits: credits,
     options,
+    format: 'json',
   }
 }
 
@@ -115,9 +119,11 @@ const findRuby = async ($: EngineInterface) => {
   return undefined
 }
 
-const run = async ($: EngineInterface): Promise<Run[]> => {
+type Drawn = { runs: Run[], cache?: Cache }
+
+const run = async ($: EngineInterface): Promise<Drawn> => {
   ruby ??= await findRuby($)
-  if (!ruby) return failed('no Ruby found (looked for mise, asdf and rbenv shims, and Homebrew Ruby)')
+  if (!ruby) return { runs: failed('no Ruby found (looked for mise, asdf and rbenv shims, and Homebrew Ruby)') }
   const [home, path] = await Promise.all([$.env.get('HOME'), $.env.get('PATH')])
   const { exitCode, stdout, stderr } = await $.process.run([ruby, `${$.plugin.root}/bin/statusline.rb`], {
     stdin: JSON.stringify(await statusInput($)),
@@ -126,7 +132,26 @@ const run = async ($: EngineInterface): Promise<Run[]> => {
     env: { PATH: [`${home}/.asdf/bin`, `${home}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', path].filter(Boolean).join(':') },
     timeoutMs: 10_000,
   })
-  return exitCode === 0 ? parseAnsi(stdout.trimEnd()) : failed(`statusline.rb exited ${exitCode}: ${stderr.trim().slice(0, 200)}`)
+  if (exitCode !== 0) return { runs: failed(`statusline.rb exited ${exitCode}: ${stderr.trim().slice(0, 200)}`) }
+  const { line, cache } = JSON.parse(stdout) as { line: string, cache: Cache | null }
+  return { runs: parseAnsi(line.trimEnd()), cache: cache ?? undefined }
+}
+
+// A compaction that fails or is vetoed isn't tried again until the next reply.
+const maybeCompact = async ($: EngineInterface, cache: Cache | undefined) => {
+  const nowMs = await $.clock.now()
+  if (!cache || !shouldCompact(cache, { nowMs, limit: compactLimit(options.auto_compact_tokens), turnRunning, compactedFor })) return
+
+  compactedFor = cache.last_reply_at
+  const size = `${Math.round((cache.tokens ?? 0) / 1000)}k`
+  $.ui.toast(`statusline: compacting ${size} of context before the cache goes cold`)
+  const result = await $.session.compact().catch((error: unknown) => ({ skip: String(error).slice(0, 200) }))
+  if ('skip' in result && result.skip) {
+    $.ui.log(`statusline: didn't compact ${size} of context before the cache went cold: ${result.skip}`)
+  } else {
+    const after = 'tokensAfter' in result && result.tokensAfter ? ` to ${Math.round(result.tokensAfter / 1000)}k` : ''
+    $.ui.log(`statusline: compacted ${size} of context${after} before the cache went cold`)
+  }
 }
 
 // A failure shows in the band, and once in the transcript, rather than leaving the band empty.
@@ -135,13 +160,14 @@ const redraw = async ($: EngineInterface) => {
   drawing = true
   ticking ??= $.clock.every(TICK_MS, () => void redraw($))
   try {
-    const runs = await run($).catch((error: unknown) => failed(String(error).slice(0, 200)))
+    const { runs, cache } = await run($).catch((error: unknown): Drawn => ({ runs: failed(String(error).slice(0, 200)) }))
     const first = runs[0]
     if (first?.text.startsWith('statusline: ') && !reported) {
       reported = true
       $.ui.log(first.text)
     }
     await update($, line, () => runs)
+    void maybeCompact($, cache).catch(() => undefined)
   } finally {
     drawing = false
   }
@@ -155,6 +181,17 @@ export const register: Register = (on, given) => {
     if (options.credits !== false) pollCredits($)
     void redraw($)
     return result
+  })
+
+  // The main loop's turns alone: a compaction can't start while one runs.
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) turnRunning = true
+    return next(e)
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    if (e.agentId === undefined) turnRunning = false
+    return next(e)
   })
 
   on('session.measure', async ($, e, next) => {

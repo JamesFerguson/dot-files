@@ -2,7 +2,8 @@
 # frozen_string_literal: true
 
 # Claude Code status line, drawn above the prompt by the statusline mod. Reads the mod's JSON on stdin
-# and prints one line of ANSI-coloured text. `options` in the JSON holds the mod's settings: each part
+# and prints one line of ANSI-coloured text, or with `"format": "json"` that line and the cache
+# reading the mod's auto-compact needs. `options` in the JSON holds the mod's settings: each part
 # switched off with false, the quota target, and what the model, advisor and effort warnings expect.
 
 require 'json'
@@ -242,6 +243,15 @@ end
 transcript = data['transcript_path'] ||
              (data['session_id'] && Dir.glob(File.expand_path("~/.claude/projects/*/#{data['session_id']}.jsonl")).first)
 
+# Claude Code knows the context only once a reply has come back in this process, so after a restart
+# or a resume the transcript's last reply stands in for it.
+cache = (CacheClock.read(transcript) rescue nil)
+window = data.dig('context_window', 'context_window_size')
+if ctx_tokens.nil? && cache
+  ctx_tokens = cache.tokens
+  used = ctx_tokens * 100.0 / window if window.to_i.positive?
+end
+
 # ── Assemble output ──
 parts = []
 
@@ -251,9 +261,7 @@ if on?('repo') && !repo.empty?
 end
 
 parts << "#{ctx_icon(used)} #{context_bar(used, ctx_tokens)}" if on?('context')
-if on?('cache') && (cache = (CacheClock.read(transcript) rescue nil))
-  parts << CacheClock.render(*cache)
-end
+parts << CacheClock.render(cache) if on?('cache') && cache
 
 QUOTA_BAR_WIDTH = 10
 QUOTA_TARGET = (OPTIONS['quota_target'] || QuotaBar::TARGET).to_f.clamp(1.0, 100.0)
@@ -308,4 +316,9 @@ if on?('version') && running
   parts << (behind ? "#{RED}v#{running}#{RESET}#{DIM}→#{RESET}#{GREEN}#{latest}#{RESET}" : "#{DIM}v#{running}#{RESET}")
 end
 
-print parts.join(' ')
+line = parts.join(' ')
+if data['format'] == 'json'
+  print JSON.generate(line:, cache: cache && { last_reply_at: cache.last_at.to_i, expires_at: cache.expires_at.to_i, tokens: ctx_tokens })
+else
+  print line
+end
