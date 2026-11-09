@@ -313,6 +313,7 @@ end
 # killing the group at the job's timeout.
 def spawn_logged(args, cwd, job, log)
   pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
+  keep_awake_while(pid)
   deadline = awake_seconds + (job['timeout'] || DEFAULT_TIMEOUT)
   until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
     if awake_seconds > deadline
@@ -325,6 +326,13 @@ def spawn_logged(args, cwd, job, log)
     sleep 0.5
   end
   status
+end
+
+# Holds off idle sleep until pid exits. Closing the lid still sleeps the Mac.
+def keep_awake_while(pid)
+  Process.detach(Process.spawn('/usr/bin/caffeinate', '-i', '-w', pid.to_s, out: File::NULL, err: File::NULL))
+rescue SystemCallError
+  nil
 end
 
 # Stops while the Mac sleeps, unlike Time.now.
