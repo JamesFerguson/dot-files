@@ -15,6 +15,11 @@
 # from the scheduled time, so a daily 09:00 job stays at 09:00 and a Mac asleep through several slots
 # fires once on wake.
 #
+# A sleeping Mac wakes for half a minute every few minutes (a dark wake: network up, display off) and
+# launchd runs its due ticks then. Jobs wait for a full wake instead: a job started in a dark wake is
+# frozen when the Mac drops back to sleep, and only some of it gets done. A job's timeout counts time
+# awake, so a run that does span a sleep isn't killed for it.
+#
 # Kept compatible with macOS's /usr/bin/ruby 2.6, so a wrong runtime under launchd still works.
 require 'json'
 require 'time'
@@ -308,9 +313,9 @@ end
 # killing the group at the job's timeout.
 def spawn_logged(args, cwd, job, log)
   pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
-  deadline = Time.now + (job['timeout'] || DEFAULT_TIMEOUT)
+  deadline = awake_seconds + (job['timeout'] || DEFAULT_TIMEOUT)
   until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
-    if Time.now > deadline
+    if awake_seconds > deadline
       Process.kill('TERM', -pid) rescue nil
       sleep 2
       Process.kill('KILL', -pid) rescue nil
@@ -320,6 +325,19 @@ def spawn_logged(args, cwd, job, log)
     sleep 0.5
   end
   status
+end
+
+# Stops while the Mac sleeps, unlike Time.now.
+def awake_seconds
+  Process.clock_gettime(Process::CLOCK_UPTIME_RAW)
+end
+
+# A dark wake has no graphics. When pmset can't say, assume the Mac is awake.
+def dark_wake?
+  out = `pmset -g systemstate 2>/dev/null`
+  out.include?('Capabilities') && !out.include?('Graphics')
+rescue SystemCallError
+  false
 end
 
 def run_command(job)
@@ -341,6 +359,8 @@ def report(job, result)
 end
 
 def run_due
+  return if dark_wake?
+
   now = Time.now.to_i
   due = with_queue do |jobs|
     jobs.each do |j|

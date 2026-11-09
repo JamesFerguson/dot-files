@@ -107,8 +107,10 @@ def publish(argv)
   opts[:allowed_tools] = "Artifact,Read(#{page}),Read(~/.claude/projects/**/tool-results/**),Bash(printf *)"
   id = start_session(opts, publish_prompt(page, url, done, opts))
 
-  deadline = Time.now + opts[:timeout]
-  sleep POLL_SECONDS until File.size?(done) || Time.now > deadline
+  # Counts time awake, so a Mac that sleeps mid-publish doesn't spend the timeout asleep.
+  awake = -> { Process.clock_gettime(Process::CLOCK_UPTIME_RAW) }
+  deadline = awake.call + opts[:timeout]
+  sleep POLL_SECONDS until File.size?(done) || awake.call > deadline
   unless File.size?(done)
     die("publish session #{id} hasn't finished after #{opts[:timeout]}s; `claude attach #{id}` to see why", 2)
   end

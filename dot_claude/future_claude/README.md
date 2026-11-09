@@ -36,6 +36,9 @@ future_claude add --at '2026-10-27 13:00' --every 1d --weekdays --headless --pro
   daylight saving change.
 - After each run the job goes back to `pending` at its next slot, counted on from the scheduled time.
   A Mac asleep through several slots fires once on wake, not once per missed slot.
+- Jobs wait for a full wake. A sleeping Mac wakes for about 30s every few minutes (a dark wake), and a
+  job started then is frozen part-way when it drops back to sleep. `--timeout` counts time awake, so
+  a run that spans a sleep isn't killed for it.
 - `--weekdays` moves a Saturday or Sunday slot on to Monday. `--until TIME` ends the series.
   `future_claude rm <id>` stops it.
 - A failed run still reschedules, and notifies. A repeating prompt job that runs headless because its

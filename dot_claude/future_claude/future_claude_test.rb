@@ -16,6 +16,7 @@ class FutureClaudeTest < Minitest::Test
     FileUtils.ln_s(@recorder, File.join(@dir, 'say'))
     FileUtils.ln_s(@recorder, File.join(@dir, 'osascript'))
     fake_claude('echo "did the thing"; echo HANDED_BACK')
+    fake_pmset('CPU Graphics Audio Network')
   end
 
   def teardown
@@ -70,6 +71,27 @@ class FutureClaudeTest < Minitest::Test
     refute_includes calls, 'Later'
     assert_equal 'done', job(due)['status']
     assert_equal 'pending', job(later)['status']
+  end
+
+  def test_a_due_job_waits_out_a_dark_wake
+    fake_pmset('CPU Network')
+    id = fc!('add', '--at', '-1m', '--command', 'echo ran').strip
+    fc!('run')
+
+    assert_equal 'pending', job(id)['status']
+
+    fake_pmset('CPU Graphics Audio Network')
+    fc!('run')
+
+    assert_equal 'done', job(id)['status']
+  end
+
+  def test_a_due_job_runs_when_pmset_cannot_say
+    fake_pmset(nil)
+    id = fc!('add', '--at', '-1m', '--command', 'echo ran').strip
+    fc!('run')
+
+    assert_equal 'done', job(id)['status']
   end
 
   def test_run_does_not_fire_a_job_twice
@@ -343,6 +365,12 @@ class FutureClaudeTest < Minitest::Test
 
   def fake_claude(body)
     write_exe('claude', "#!/bin/sh\nprintf '%s' \"$*\" > #{File.join(@dir, 'claude_args')}\n#{body}\n")
+  end
+
+  # The capabilities line `pmset -g systemstate` prints; nil makes pmset fail.
+  def fake_pmset(capabilities)
+    body = capabilities ? "echo 'Current System Capabilities are: #{capabilities} '" : 'exit 1'
+    write_exe('pmset', "#!/bin/sh\n#{body}\n")
   end
 
   def write_exe(name, body)
