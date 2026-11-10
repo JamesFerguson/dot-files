@@ -121,7 +121,8 @@ if (( ON_HOME_LAPTOP )); then
     me.fergusons.mobilesync-guard.plist \
     me.fergusons.mount-external.plist \
     me.fergusons.relay-sync.plist \
-    me.fergusons.relay-sync-on-mount.plist; do
+    me.fergusons.relay-sync-on-mount.plist \
+    me.fergusons.screensaver-reaper.plist; do
     src="$DOT_FILES_DIR/launch_agents/$plist"
     [[ -f "$src" ]] && ln -fs "$src" "$HOME/Library/LaunchAgents/$plist"
   done

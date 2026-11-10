@@ -1,0 +1,22 @@
+#!/bin/bash
+# Kills legacyScreenSaver when no screensaver is showing. Since Sonoma, third-party .saver modules
+# (XScreenSaver here) run inside legacyScreenSaver, which often keeps running after the screensaver
+# ends, burning CPU and 1GB+ of RAM in the background (Apple FB19201567). macOS starts a fresh one
+# the next time the screensaver kicks in. Run every minute by launchd (me.fergusons.screensaver-reaper).
+
+LOG="$HOME/Library/Logs/screensaver-reaper.log"
+LOG_MAX_BYTES=$(( 1024 * 1024 ))
+
+pgrep -xq ScreenSaverEngine && exit 0   # screensaver showing: leave it alone
+pgrep -xq "System Settings" && exit 0   # the Screen Saver pane's previews run in it too
+
+pids=$(pgrep -x legacyScreenSaver; pgrep -x legacyScreenSaver-x86_64)
+[ -n "$pids" ] || exit 0
+
+[ -f "$LOG" ] && (( $(stat -f %z "$LOG") > LOG_MAX_BYTES )) && mv -f "$LOG" "$LOG.1"
+for pid in $pids; do
+    read -r etime cpu rss comm < <(ps -o etime=,%cpu=,rss=,comm= -p "$pid")
+    [ -n "$etime" ] || continue
+    kill "$pid" 2>/dev/null &&
+        echo "$(date '+%Y-%m-%d %H:%M:%S') killed ${comm##*/} $pid (up $etime, ${cpu}% CPU, $(( rss / 1024 ))MB)" >> "$LOG"
+done
