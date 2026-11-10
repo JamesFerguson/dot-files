@@ -2,7 +2,7 @@
 # Kills legacyScreenSaver when no screensaver is showing. Since Sonoma, third-party .saver modules
 # (XScreenSaver here) run inside legacyScreenSaver, which often keeps running after the screensaver
 # ends, burning CPU and 1GB+ of RAM in the background (Apple FB19201567). macOS starts a fresh one
-# the next time the screensaver kicks in. Run every minute by launchd (me.fergusons.screensaver-reaper).
+# the next time the screensaver kicks in. Run every 5 minutes by launchd (me.fergusons.screensaver-reaper).
 
 LOG="$HOME/Library/Logs/screensaver-reaper.log"
 LOG_MAX_BYTES=$(( 1024 * 1024 ))
@@ -14,9 +14,14 @@ pids=$(pgrep -x legacyScreenSaver; pgrep -x legacyScreenSaver-x86_64)
 [ -n "$pids" ] || exit 0
 
 [ -f "$LOG" ] && (( $(stat -f %z "$LOG") > LOG_MAX_BYTES )) && mv -f "$LOG" "$LOG.1"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
 for pid in $pids; do
     read -r etime cpu rss comm < <(ps -o etime=,%cpu=,rss=,comm= -p "$pid")
     [ -n "$etime" ] || continue
-    kill "$pid" 2>/dev/null &&
-        echo "$(date '+%Y-%m-%d %H:%M:%S') killed ${comm##*/} $pid (up $etime, ${cpu}% CPU, $(( rss / 1024 ))MB)" >> "$LOG"
+    what="${comm##*/} $pid (up $etime, ${cpu}% CPU, $(( rss / 1024 ))MB)"
+    if ! err=$(kill "$pid" 2>&1); then log "FAILED to kill $what: $err"; continue; fi
+    # SIGTERM can be ignored; give it 5s, then SIGKILL
+    for _ in 1 2 3 4 5; do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+    if kill -0 "$pid" 2>/dev/null; then kill -9 "$pid" 2>/dev/null; what+=" with SIGKILL"; fi
+    log "killed $what"
 done
