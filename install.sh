@@ -47,6 +47,14 @@ done
 # General Claude subagents, one file link each so the work overlay can add its own beside them.
 mkdir -p ~/.claude/agents
 for agent in $DOT_FILES_DIR/dot_claude/agents/*.md(.N); do ln -sf $agent ~/.claude/agents/${agent:t}; done
+# Claude Code plugin marketplace: register the local mods dir so `claude plugin install` can find it,
+# then install the statusline mod. Both commands are idempotent; the marketplace check avoids a
+# spurious re-add each run (the install is a no-op if already installed, but the add is noisy).
+if command -v claude &>/dev/null; then
+  claude plugin marketplace list 2>/dev/null | grep -qF "$DOT_FILES_DIR/dot_claude/mods" \
+    || claude plugin marketplace add "$DOT_FILES_DIR/dot_claude/mods"
+  claude plugin install statusline@james-mods 2>/dev/null || true
+fi
 # ln -fs $DOT_FILES_DIR/dot_config/ ~/.config # handled above
 #ln -fs $DOT_FILES_DIR/dot_ctags/ctags ~/.ctags
 ln -fs $DOT_FILES_DIR/dot_default-gems/default-gems ~/.default-gems
