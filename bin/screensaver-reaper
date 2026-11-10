@@ -20,8 +20,8 @@ for pid in $pids; do
     [ -n "$etime" ] || continue
     what="${comm##*/} $pid (up $etime, ${cpu}% CPU, $(( rss / 1024 ))MB)"
     if ! err=$(kill "$pid" 2>&1); then log "FAILED to kill $what: $err"; continue; fi
-    # SIGTERM can be ignored; give it 5s, then SIGKILL
-    for _ in 1 2 3 4 5; do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+    # SIGTERM can be ignored; give it 10s, then SIGKILL
+    for _ in {1..10}; do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
     if kill -0 "$pid" 2>/dev/null; then kill -9 "$pid" 2>/dev/null; what+=" with SIGKILL"; fi
     log "killed $what"
 done
