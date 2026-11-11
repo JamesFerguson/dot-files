@@ -98,11 +98,15 @@ if (( ON_WORK_LAPTOP )); then
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.keep-awake-at-home.plist $HOME/Library/LaunchAgents/com.jamesf.keep-awake-at-home.plist
 fi
 # future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
-mkdir -p ~/bin && ln -fs $DOT_FILES_DIR/dot_claude/future_claude/future_claude ~/bin/future_claude
 # rules-changes: register of instruction edits, sent to every session as a twice-daily digest via future_claude
-ln -fs $DOT_FILES_DIR/dot_claude/rules_changes/rules-changes ~/bin/rules-changes
 # claude-bg: hands a script's last step (publishing an Artifact, an investigation) to a background Claude session
-ln -fs $DOT_FILES_DIR/dot_claude/claude_bg/claude-bg ~/bin/claude-bg
+# Where ~/bin is a link to the repo's bin/ (polaris), the repo's own relative links in bin/ already cover these.
+if [[ ! -L ~/bin ]]; then
+  mkdir -p ~/bin
+  ln -fs $DOT_FILES_DIR/dot_claude/future_claude/future_claude ~/bin/future_claude
+  ln -fs $DOT_FILES_DIR/dot_claude/rules_changes/rules-changes ~/bin/rules-changes
+  ln -fs $DOT_FILES_DIR/dot_claude/claude_bg/claude-bg ~/bin/claude-bg
+fi
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.future-claude.plist $HOME/Library/LaunchAgents/com.jamesf.future-claude.plist
 
 # VS Code user settings — path has spaces + capitals and lives outside ~/.config,
