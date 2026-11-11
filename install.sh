@@ -93,8 +93,9 @@ ln -fs $DOT_FILES_DIR/sleepwatcher/homebrew.mxcl.sleepwatcher.plist $HOME/Librar
 ln -fs $DOT_FILES_DIR/plists/set-gui-path.plist $HOME/Library/LaunchAgents/set-gui-path.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-reminder.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-reminder.plist
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.nightly-run.plist $HOME/Library/LaunchAgents/com.jamesf.nightly-run.plist
-ln -fs $DOT_FILES_DIR/plists/com.jamesf.wfh-heartbeat.plist $HOME/Library/LaunchAgents/com.jamesf.wfh-heartbeat.plist
 if (( ON_WORK_LAPTOP )); then
+  # Work-from-home hours log (sleepwatcher/wfh_summary.py); its path is the work checkout's
+  ln -fs $DOT_FILES_DIR/plists/com.jamesf.wfh-heartbeat.plist $HOME/Library/LaunchAgents/com.jamesf.wfh-heartbeat.plist
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.keep-awake-at-home.plist $HOME/Library/LaunchAgents/com.jamesf.keep-awake-at-home.plist
 fi
 # future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
