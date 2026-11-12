@@ -14,8 +14,8 @@ test('truecolour and basic colours become runs, and reset ends them', () => {
 })
 
 test('the alert badges keep their background', () => {
-  expect(parseAnsi('\x1b[1;97;41m ⚠️ Opus \x1b[0m')).toEqual([
-    { text: ' ⚠️ Opus ', fg: 'whiteBright', bg: 'red', bold: true },
+  expect(parseAnsi('\x1b[1;97;41m ❗ Opus \x1b[0m')).toEqual([
+    { text: ' ❗ Opus ', fg: 'whiteBright', bg: 'red', bold: true },
   ])
   expect(parseAnsi('\x1b[1;30;48;2;255;140;0m low \x1b[0m')).toEqual([
     { text: ' low ', fg: 'black', bg: '#ff8c00', bold: true },

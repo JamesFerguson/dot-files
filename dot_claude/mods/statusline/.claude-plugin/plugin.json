@@ -28,7 +28,7 @@
     "five_hour": {
       "type": "boolean",
       "title": "5-hour quota",
-      "description": "⏱️ The 5-hour window, coloured by pace against the time left, with its reset.",
+      "description": "⏰ The 5-hour window, coloured by pace against the time left, with its reset.",
       "default": true
     },
     "seven_day": {

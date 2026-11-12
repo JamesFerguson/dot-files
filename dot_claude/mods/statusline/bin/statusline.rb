@@ -265,7 +265,7 @@ parts << CacheClock.render(cache) if on?('cache') && cache
 
 QUOTA_BAR_WIDTH = 10
 QUOTA_TARGET = (OPTIONS['quota_target'] || QuotaBar::TARGET).to_f.clamp(1.0, 100.0)
-[['⏱️', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
+[['⏰', used_5h, resets_at_5h, 'five_hour'], ['📆', used_7d, resets_at_7d, 'seven_day']].each do |icon, pct, resets_at, window|
   next unless on?(window)
 
   reset = relative_time(resets_at)
@@ -283,7 +283,7 @@ end
 model_id = data.dig('model', 'id')
 model  ||= model_id ? model_name(model_id) : 'Unknown'
 if on?('model')
-  parts << (unexpected_model?(model_id) ? "#{ALERT} ⚠️ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
+  parts << (unexpected_model?(model_id) ? "#{ALERT} ❗ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
 end
 if on?('advisor')
   advisor_id = (configured_advisor rescue nil)
