@@ -283,7 +283,7 @@ end
 model_id = data.dig('model', 'id')
 model  ||= model_id ? model_name(model_id) : 'Unknown'
 if on?('model')
-  parts << (unexpected_model?(model_id) ? "#{ALERT} ❗ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
+  parts << (unexpected_model?(model_id) ? "#{ALERT} ❕ #{model} #{RESET}" : "#{BLUE}🤖 #{model}#{RESET}")
 end
 if on?('advisor')
   advisor_id = (configured_advisor rescue nil)

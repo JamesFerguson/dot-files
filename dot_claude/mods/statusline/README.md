@@ -13,7 +13,7 @@ A status line drawn above the prompt and redrawn every 20 seconds, so the countd
 | ⏳ / 🧊 | Minutes until the prompt cache goes cold, orange under 10. 🧊 once it's cold: the next reply rewrites the whole context at the cache-write price. |
 | ⏰ / 📆 | The 5-hour and weekly quotas, with time to reset, paced against a target (80% by default). The fill is green while usage is on or under the target pace, red once it's past a steady pace to 100%, and yellow to orange in between. In the last fifth of the window the target climbs to 100%, since quota left at the reset is wasted. The green dots after the fill are the headroom left at the target pace. |
 | 💵 | Usage credits spent against the monthly cap, and the date it resets, as `/usage` shows them. Grey normally, red while a 5-hour or weekly quota is used up, since that's when credits are being spent. |
-| 🤖 | The model. It turns into a red ❗ badge when it isn't the one you expect, by default Claude Code's current default. |
+| 🤖 | The model. It turns into a red ❕ badge when it isn't the one you expect, by default Claude Code's current default. |
 | 🎓 | The advisor, on a red badge when it isn't the one you expect. By default you expect none, so any advisor is flagged. Expecting one and having none shows a red `🎓 no advisor`. |
 | 💪 | The effort level, on an orange badge below the lowest you expect, by default `high`. |
 | `v2.1.308` | The running Claude Code version. When Homebrew has installed a newer one, the running version turns red with the new one after it in green: a restart picks it up. |
