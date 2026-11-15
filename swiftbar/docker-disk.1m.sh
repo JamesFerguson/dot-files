@@ -56,6 +56,8 @@ TOTAL=$((IMAGE_SIZES + CONTAINER_SIZES + VOLUME_SIZES + BUILD_SIZES))
 
 echo "🐳: $(humanize ${TOTAL})"
 echo "---"
+echo "Docker disk usage"
+echo "---"
 echo "images: $(echo "${DOCKER_DF}" | sed -n 1p)"
 echo "containers: $(echo "${DOCKER_DF}" | sed -n 2p)"
 echo "volumes: $(echo "${DOCKER_DF}" | sed -n 3p)"

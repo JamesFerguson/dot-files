@@ -83,6 +83,8 @@ else
     echo "| sfimage=checkmark.circle"
 fi
 echo "---"
+echo "Jobs"
+echo "---"
 [ -z "$bad_rows$ok_rows" ] && echo "No jobs have reported yet | symbolize=false"
 printf '%s' "$bad_rows"
 [ -n "$bad_rows" ] && [ -n "$ok_rows" ] && echo "---"

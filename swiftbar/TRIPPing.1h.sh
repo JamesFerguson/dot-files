@@ -35,6 +35,8 @@ TRACEROUTE=$(traceroute 1.1.1.1 2>/dev/null)
 
 # GUI
 echo "---"
+echo "TRIPPing"
+echo "---"
 echo ":arrows_counterclockwise: Refresh... | color=black refresh=true"
 echo "---"
 echo "Public IPs: | color=red"

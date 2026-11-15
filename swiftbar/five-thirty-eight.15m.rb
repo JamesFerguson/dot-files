@@ -36,6 +36,8 @@ republicanName = ":imp: #{table[0]["candidate_inc"]}"
 thirdParty = table[0]["candidate_3rd"]
 thirdPartyName = "🤦 #{thirdParty}"
 puts "---"
+puts "Election Tracker"
+puts "---"
 puts "Chance of Winning:"
 puts "#{democratName}: #{d_pct}%"
 puts "#{republicanName}: #{r_pct}%"

@@ -20,6 +20,8 @@ cutoff=5
 
 echo "PI"
 echo "---"
+echo "PredictIt"
+echo "---"
 
 getData () {
     market=$1
