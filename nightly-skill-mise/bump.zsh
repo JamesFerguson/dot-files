@@ -3,7 +3,7 @@
 # Waypoint's Updates tab runs it (and streams the output); it's as happy run by hand.
 #
 #   bump.zsh formula <name>...        brew upgrade, then restart any running brew service
-#                                     whose version changed, then brew cleanup
+#                                     whose version changed, then clean up their old versions
 #   bump.zsh cask <name>...           brew upgrade --cask. Only in a terminal you're watching:
 #                                     consent and admin prompts can wedge the whole UI
 #   bump.zsh mise <tool@version>...   mise install, pin in ~/.tool-versions, then that tool's
@@ -53,8 +53,8 @@ bump_formula() {
     step "brew services restart ${line%% *} (now ${line#* })"
     brew services restart "${line%% *}" || fail "restart ${line%% *}"
   done
-  step "brew cleanup"
-  brew cleanup || fail "brew cleanup"
+  step "brew cleanup $*"
+  brew cleanup "$@" || fail "brew cleanup $*"
 }
 
 bump_cask() {
