@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.waypoint</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <!-- Waypoint's dev server (~/code/waypoint), so code changes still reload. It shells out to gh, acli, claude and pr-task, which all find their logins on their own. -->
+    <string>export PATH="$HOME/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 WAYPOINT_LOG_LEVEL=info; cd "$HOME/code/waypoint" || exit 1; exec mise exec -- mix phx.server >> "$HOME/Library/Logs/waypoint.log" 2>&amp;1</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- Restarts it if it dies, so killing it is also how to restart it. -->
+  <key>KeepAlive</key>
+  <true/>
+</dict>
+</plist>
