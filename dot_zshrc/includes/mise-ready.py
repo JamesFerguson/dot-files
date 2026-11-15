@@ -25,6 +25,10 @@ If nothing in range has soaked, the tool stays on current. The status says *why*
 
 stdout: `<tool>\t<version>` per READY tool (feed straight to `mise use`).
 stderr: one decision line per outdated tool.
+--json: instead, one JSON array on stdout of every outdated tool's decision,
+        {tool, current, bump, status, version, early, detail}, for Waypoint's Updates
+        tab. `early` is the newest in-range version whatever its age (what an early
+        upgrade of a cooling or undated tool takes), or null.
 env:    MISE_COOLDOWN_DAYS (default 10).
         MISE_COOLDOWN_SKIP  space/comma-separated tools to leave entirely manual.
 """
@@ -87,7 +91,7 @@ def mise_json(args):
 
 
 def choose(current, bump, remote):
-    """Return (version|None, detail, status). status in ready/cooling/undated/held."""
+    """Return (version|None, detail, status, early|None). status in ready/cooling/undated/held."""
     ck, bk = vkey(current), vkey(bump)
     cmaj, cvar = major(current), variant(current)
     cands = []  # (vkey, version, timestamp|None) within range, same major+variant, release
@@ -104,23 +108,24 @@ def choose(current, bump, remote):
     if not cands:
         # bump exists but nothing in range survives the major/variant guard
         if major(bump) != cmaj:
-            return None, f'bump {bump} crosses major {cmaj}->{major(bump)}', 'held'
+            return None, f'bump {bump} crosses major {cmaj}->{major(bump)}', 'held', None
         if variant(bump) != cvar:
-            return None, f'bump {bump} is a different build ({variant(bump) or "plain"})', 'held'
-        return None, f'no in-range version below bump {bump}', 'held'
+            return None, f'bump {bump} is a different build ({variant(bump) or "plain"})', 'held', None
+        return None, f'no in-range version below bump {bump}', 'held', None
+    early = max(cands, key=lambda x: x[0])[1]
     dated = [(vk, v, ts) for vk, v, ts in cands if ts]
     if not dated:
-        return None, f"mise registry has no dates for {current}..{bump}", 'undated'
+        return None, f"mise registry has no dates for {current}..{bump}", 'undated', early
     ready = [(vk, v, ts) for vk, v, ts in dated if (NOW - ts).days >= COOLDOWN]
     if ready:
         vk, v, ts = max(ready, key=lambda x: x[0])
         tag = 'bump' if vk == bk else f'< bump {bump}'
-        return v, f'{(NOW - ts).days}d old, {tag}', 'ready'
+        return v, f'{(NOW - ts).days}d old, {tag}', 'ready', early
     days_left = max(1, COOLDOWN - max((NOW - ts).days for _, _, ts in dated))
-    return None, f'{days_left}d left', 'cooling'
+    return None, f'{days_left}d left', 'cooling', early
 
 
-def main():
+def decisions():
     outdated = mise_json(['outdated', '--bump', '--json']) or {}
     for tool, info in sorted(outdated.items()):
         current = info.get('current') or ''
@@ -128,13 +133,26 @@ def main():
         if not bump or not current:
             continue
         if tool in SKIP:
-            print(f'  SKIP     {tool:12} {current} -> bump {bump}  (MISE_COOLDOWN_SKIP)', file=sys.stderr)
+            yield dict(tool=tool, current=current, bump=bump, status='skip', version=None,
+                       early=None, detail='MISE_COOLDOWN_SKIP')
             continue
         remote = mise_json(['ls-remote', '--json', tool]) or []
-        chosen, detail, status = choose(current, bump, remote)
-        if status == 'ready':
-            print(f'{tool}\t{chosen}')
-            print(f'  READY    {tool:12} {current} -> {chosen}  ({detail})', file=sys.stderr)
+        chosen, detail, status, early = choose(current, bump, remote)
+        yield dict(tool=tool, current=current, bump=bump, status=status, version=chosen,
+                   early=early, detail=detail)
+
+
+def main():
+    if '--json' in sys.argv[1:]:
+        print(json.dumps(list(decisions())))
+        return
+    for d in decisions():
+        tool, current, bump, status, detail = d['tool'], d['current'], d['bump'], d['status'], d['detail']
+        if status == 'skip':
+            print(f'  SKIP     {tool:12} {current} -> bump {bump}  ({detail})', file=sys.stderr)
+        elif status == 'ready':
+            print(f'{tool}\t{d["version"]}')
+            print(f'  READY    {tool:12} {current} -> {d["version"]}  ({detail})', file=sys.stderr)
         elif status == 'cooling':
             print(f'  COOLING  {tool:12} {current} -> bump {bump}  ({detail})', file=sys.stderr)
         elif status == 'undated':
