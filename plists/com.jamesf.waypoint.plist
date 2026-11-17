@@ -8,8 +8,8 @@
   <array>
     <string>/bin/zsh</string>
     <string>-fc</string>
-    <!-- Waypoint's dev server (~/code/waypoint), so code changes still reload. It shells out to gh, acli, claude and pr-task, which all find their logins on their own. -->
-    <string>export PATH="$HOME/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 WAYPOINT_LOG_LEVEL=info; cd "$HOME/code/waypoint" || exit 1; exec mise exec -- mix phx.server >> "$HOME/Library/Logs/waypoint.log" 2>&amp;1</string>
+    <!-- Stable Waypoint: the release bin/promote built from the newest v* tag, at https://waypoint.test (port 4000). env holds DATABASE_URL, SECRET_KEY_BASE and the rest. It shells out to gh, acli, claude and pr-task, which all find their logins on their own. -->
+    <string>export PATH="$HOME/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; set -a; source "$HOME/.local/share/waypoint/env" || exit 1; set +a; exec "$HOME/.local/share/waypoint/current/bin/waypoint" start >> "$HOME/Library/Logs/waypoint.log" 2>&amp;1</string>
   </array>
   <key>RunAtLoad</key>
   <true/>

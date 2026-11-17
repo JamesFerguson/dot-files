@@ -99,6 +99,8 @@ if (( ON_WORK_LAPTOP )); then
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.keep-awake-at-home.plist $HOME/Library/LaunchAgents/com.jamesf.keep-awake-at-home.plist
   # Waypoint, the open-PR dashboard (~/code/waypoint), at https://waypoint.test (its README has the setup)
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.waypoint.plist $HOME/Library/LaunchAgents/com.jamesf.waypoint.plist
+  ln -fs $DOT_FILES_DIR/plists/com.jamesf.waypoint-staging.plist $HOME/Library/LaunchAgents/com.jamesf.waypoint-staging.plist
+  ln -fs $DOT_FILES_DIR/plists/com.jamesf.waypoint-promote.plist $HOME/Library/LaunchAgents/com.jamesf.waypoint-promote.plist
 fi
 # future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
 # rules-changes: register of instruction edits, sent to every session as a twice-daily digest via future_claude

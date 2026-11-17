@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.waypoint-promote</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <!-- Ships the newest v* tag to stable Waypoint (bin/promote does nothing if stable's on it already). -->
+    <string>exec "$HOME/code/waypoint/bin/promote" >> "$HOME/Library/Logs/waypoint-promote.log" 2>&amp;1</string>
+  </array>
+  <!-- A new tag is a new file here. Also runs at login, which catches a tag made while it wasn't loaded. -->
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/james.ferguson/code/waypoint/.git/refs/tags</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
