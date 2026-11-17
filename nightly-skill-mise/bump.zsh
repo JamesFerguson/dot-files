@@ -90,9 +90,38 @@ bump_cask() {
 # A cask's care from cask-care.tsv, or nothing.
 care() { awk -F'\t' -v name="$1" '$1 == name { print $2 }' "$HERE/cask-care.tsv" }
 
+# The app a cask installs, e.g. Notion.app, or nothing.
+cask_app() {
+  brew info --cask --json=v2 "$1" | jq -r '[.casks[0].artifacts[] | objects | .app // empty] | flatten | first // empty'
+}
+
+# Electron apps update themselves through ShipIt, which waits with a staged update until the app
+# quits. If brew is what quits it, ShipIt swaps the app out mid-upgrade and the upgrade fails
+# halfway (Notion, 17 Nov), so quit it first and let ShipIt finish.
+settle_updater() {
+  local app=$1 id label
+  integer i
+  [[ -n $app && -d /Applications/$app ]] || return 0
+  id=$(defaults read "/Applications/$app/Contents/Info.plist" CFBundleIdentifier 2>/dev/null) || return 0
+  label="$id.ShipIt"
+  updater_waiting "$label" || return 0
+  step "quit ${app%.app} and let its own updater install first"
+  osascript -e "if application id \"$id\" is running then tell application id \"$id\" to quit"
+  for i in {1..60}; do
+    updater_waiting "$label" || { print -r -- "  done"; return 0 }
+    sleep 1
+  done
+  fail "${app%.app}'s own updater was still running after a minute"
+  return 1
+}
+
+# A ShipIt launchd job with a pid is one waiting to install.
+updater_waiting() { launchctl list | awk -v label="$1" '$3 == label && $1 != "-" { found = 1 } END { exit !found }' }
+
 upgrade_cask() {
   local cask=$1 log
   integer status_
+  settle_updater "$(cask_app "$cask")" || return 1
   log=$(mktemp -t bump-cask)
   step "brew upgrade --cask $cask ${2:-}"
   brew upgrade --cask "$cask" 2>&1 | tee "$log"
@@ -116,7 +145,7 @@ upgrade_input_hook() {
   local cask=$1 pane=$2 list=$3 app name reply pid
   local -a before
   integer running=0 i
-  app=$(brew info --cask --json=v2 "$cask" | jq -r '[.casks[0].artifacts[] | objects | .app // empty] | flatten | first // empty')
+  app=$(cask_app "$cask")
   name=${app%.app}
   if [[ -n $app ]] && pgrep -qf "/Applications/$app/Contents/MacOS/"; then
     running=1
