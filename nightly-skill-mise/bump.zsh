@@ -4,8 +4,9 @@
 #
 #   bump.zsh formula <name>...        brew upgrade, then restart any running brew service
 #                                     whose version changed, then clean up their old versions
-#   bump.zsh cask <name>...           brew upgrade --cask. Only in a terminal you're watching:
-#                                     consent and admin prompts can wedge the whole UI
+#   bump.zsh cask <name>...           brew upgrade --cask, one at a time. Only in a terminal
+#                                     you're watching: consent and admin prompts can wedge the
+#                                     whole UI. cask-care.tsv lists the casks that need more
 #   bump.zsh mise <tool@version>...   mise install, pin in ~/.tool-versions, then that tool's
 #                                     toolchain (below), and warn when the pin doesn't take
 #   bump.zsh rubygems <ruby>...       gem update --system for those mise rubies
@@ -57,13 +58,97 @@ bump_formula() {
   brew cleanup "$@" || fail "brew cleanup $*"
 }
 
+# One cask at a time, with a pause between, so macOS's consent and admin prompts come one at a
+# time too. The casks in cask-care.tsv get their own handling.
 bump_cask() {
   if [[ ! -t 0 ]]; then
     print -r -- "Casks only upgrade in a terminal you're watching: consent and admin prompts can wedge the UI."
     exit 2
   fi
-  step "brew upgrade --cask $*"
-  brew upgrade --cask "$@" || fail "brew upgrade --cask $*"
+  local cask reply
+  integer i=0
+  for cask in "$@"; do
+    if (( i++ )); then
+      print; print -rn -- "Next: $cask. Pausing 10s for macOS to settle; return goes now, Ctrl-C stops. "
+      read -rs -t 10 reply; print
+    fi
+    case $(care "$cask") in
+      accessibility) upgrade_input_hook "$cask" Privacy_Accessibility Accessibility ;;
+      input-monitoring) upgrade_input_hook "$cask" Privacy_ListenEvent "Input Monitoring" ;;
+      terminal-app)
+        if [[ ${TERM_PROGRAM:-} == iTerm.app ]]; then
+          fail "$cask: run it from Terminal.app, since upgrading iTerm takes down this window"
+        else
+          upgrade_cask "$cask" "($i of $#)"
+        fi
+        ;;
+      *) upgrade_cask "$cask" "($i of $#)" ;;
+    esac
+  done
+}
+
+# A cask's care from cask-care.tsv, or nothing.
+care() { awk -F'\t' -v name="$1" '$1 == name { print $2 }' "$HERE/cask-care.tsv" }
+
+upgrade_cask() {
+  local cask=$1 log
+  integer status_
+  log=$(mktemp -t bump-cask)
+  step "brew upgrade --cask $cask ${2:-}"
+  brew upgrade --cask "$cask" 2>&1 | tee "$log"
+  status_=${pipestatus[1]}
+  if (( status_ )); then
+    fail "brew upgrade --cask $cask"
+    # brew checks it can write inside the app before replacing it, and macOS refuses unless
+    # this terminal has App Management.
+    if grep -q 'homebrew-write-test' "$log"; then
+      print -r -- "  This terminal needs App Management to replace apps. Turn it on in the pane I've opened, then run it again."
+      open "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles"
+    fi
+  fi
+  rm -f "$log"
+  (( ! status_ ))
+}
+
+# A cask that hooks keyboard or mouse input loses its grant when its binary changes. So: quit it,
+# upgrade it, have you grant it again, and only then relaunch it, watching for a re-prompt.
+upgrade_input_hook() {
+  local cask=$1 pane=$2 list=$3 app name reply pid
+  local -a before
+  integer running=0 i
+  app=$(brew info --cask --json=v2 "$cask" | jq -r '[.casks[0].artifacts[] | objects | .app // empty] | flatten | first // empty')
+  name=${app%.app}
+  if [[ -n $app ]] && pgrep -qf "/Applications/$app/Contents/MacOS/"; then
+    running=1
+    step "quit $name"
+    pkill -f "/Applications/$app/Contents/MacOS/"
+  fi
+  upgrade_cask "$cask" || return
+
+  open "x-apple.systempreferences:com.apple.preference.security?$pane"
+  print
+  print -r -- "In the $list list I've opened, remove ${name:-$cask} with −, then add it back with + from /Applications (switching it off and on also works), so the grant is for the new binary."
+  print -rn -- "Press return when that's done. "
+  read -r reply
+  if (( ! running )); then
+    print -r -- "  ${name:-$cask} wasn't running, so it stays closed."
+    return
+  fi
+
+  before=(${(f)"$(pgrep -x universalAccessAuthWarn)"})
+  step "open $name"
+  open -a "/Applications/$app" || { fail "open $name"; return }
+  for i in {1..30}; do
+    sleep 1
+    for pid in ${(f)"$(pgrep -x universalAccessAuthWarn)"}; do
+      if (( ! ${before[(Ie)$pid]} )); then
+        print -r -- "  $name asked for $list again. Answer its prompt. If clicks stop working, run: pkill -f '/Applications/$app/Contents/MacOS/'"
+        fail "$name re-prompted for $list"
+        return
+      fi
+    done
+  done
+  print -r -- "  $name is running and hasn't asked again."
 }
 
 # The version mise resolves for a tool from $HOME.

@@ -1,0 +1,15 @@
+# Casks that don't go in a batch upgrade. Waypoint's Updates tab lists them apart from the rest,
+# and bump.zsh walks you through each one.
+#   accessibility, input-monitoring  hooks keyboard or mouse input. A new binary loses its grant, and
+#                                    an unanswered re-prompt can wedge every click (21 Oct, 1 Nov)
+#   admin                            asks for an admin password
+#   terminal-app                     runs in Terminal.app rather than iTerm
+# name	care	why
+hiddenbar	accessibility	Hooks the menu bar, so its new binary needs Accessibility granted again
+karabiner-elements	input-monitoring	Remaps the keyboard, so its new binary needs Input Monitoring granted again, and its installer asks for an admin password
+macmediakeyforwarder	accessibility	Hooks the media keys, so its new binary needs Accessibility granted again. Its unanswered re-prompt wedged every click on 21 Oct
+raycast	accessibility	Hooks the keyboard, so its new binary needs Accessibility granted again. Its re-prompt wedged the trackpad after a reboot on 1 Nov
+rectangle	accessibility	Moves windows, so its new binary needs Accessibility granted again
+docker-desktop	admin	Asks for an admin password for its privileged helper
+temurin@11	admin	A pkg install, which asks for an admin password
+iterm2	terminal-app	Runs in Terminal.app, since upgrading iTerm takes down the iTerm window running it. Terminal.app needs App Management for it
