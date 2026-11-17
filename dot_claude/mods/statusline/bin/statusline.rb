@@ -256,7 +256,9 @@ end
 parts = []
 
 if on?('repo') && !repo.empty?
-  branch_part = branch.empty? ? '' : "#{BOLD}#{GREEN} #{branch}#{RESET}"
+  dirty = !branch.empty? && !`git -C #{cwd.shellescape} --no-optional-locks status --porcelain 2>/dev/null`.empty?
+  branch_color = dirty ? RED : GREEN
+  branch_part = branch.empty? ? '' : "#{BOLD}#{branch_color} #{branch}#{dirty ? '*' : ''}#{RESET}"
   parts << "#{YELLOW}[#{BOLD}#{repo}#{branch_part}#{YELLOW}]#{RESET}"
 end
 
