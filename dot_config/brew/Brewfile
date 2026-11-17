@@ -45,7 +45,6 @@ brew 'git'
 brew 'git-delta'    # better git diffs with syntax highlighting
 brew 'gitleaks'     # scan git repos for secrets
 brew 'gpg'          # commit signing and secret encryption
-brew 'herdr'        # manage multiple LLM conversations in tmux-like sessions
 brew 'httpie'       # curl with a nicer interface
 brew 'jq'           # JSON parser
 brew 'mas'          # Mac App Store CLI, crippled by Apple
