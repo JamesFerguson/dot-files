@@ -73,8 +73,8 @@ bump_cask() {
       read -rs -t 10 reply; print
     fi
     case $(care "$cask") in
-      accessibility) upgrade_input_hook "$cask" Privacy_Accessibility Accessibility ;;
-      input-monitoring) upgrade_input_hook "$cask" Privacy_ListenEvent "Input Monitoring" ;;
+      accessibility) upgrade_input_hook "$cask" Privacy_Accessibility ;;
+      input-monitoring) upgrade_input_hook "$cask" Privacy_ListenEvent ;;
       terminal-app)
         if [[ ${TERM_PROGRAM:-} == iTerm.app ]]; then
           fail "$cask: run it from Terminal.app, since upgrading iTerm takes down this window"
@@ -89,6 +89,17 @@ bump_cask() {
 
 # A cask's care from cask-care.tsv, or nothing.
 care() { awk -F'\t' -v name="$1" '$1 == name { print $2 }' "$HERE/cask-care.tsv" }
+
+# The heading System Settings shows over a privacy list on this macOS, e.g. "Allow applications to
+# monitor keyboard input" for Privacy_ListenEvent. Apple renames these panes between versions, so
+# read it from Settings' own search terms rather than naming it here.
+privacy_list() {
+  local terms=/System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex/Contents/Resources/en.lproj/PrivacySecurity.searchTerms
+  local title
+  title=$(plutil -convert json -o - "$terms" 2>/dev/null \
+    | jq -r --arg k "$1" '[paths(type == "string") as $p | select($p[0] == $k and $p[-1] == "title") | getpath($p)] | first // empty')
+  print -r -- "${title:-$1}"
+}
 
 # The app a cask installs, e.g. Notion.app, or nothing.
 cask_app() {
@@ -131,7 +142,7 @@ upgrade_cask() {
     # brew checks it can write inside the app before replacing it, and macOS refuses unless
     # this terminal has App Management.
     if grep -q 'homebrew-write-test' "$log"; then
-      print -r -- "  This terminal needs App Management to replace apps. Turn it on in the pane I've opened, then run it again."
+      print -r -- "  This terminal needs permission to replace apps. Turn it on under \"$(privacy_list Privacy_AppBundles)\" in the pane I've opened, then run it again."
       open "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles"
     fi
   fi
@@ -142,9 +153,10 @@ upgrade_cask() {
 # A cask that hooks keyboard or mouse input loses its grant when its binary changes. So: quit it,
 # upgrade it, have you grant it again, and only then relaunch it, watching for a re-prompt.
 upgrade_input_hook() {
-  local cask=$1 pane=$2 list=$3 app name reply pid
+  local cask=$1 pane=$2 list app name reply pid
   local -a before
   integer running=0 i
+  list=$(privacy_list "$pane")
   app=$(cask_app "$cask")
   name=${app%.app}
   if [[ -n $app ]] && pgrep -qf "/Applications/$app/Contents/MacOS/"; then
@@ -156,7 +168,7 @@ upgrade_input_hook() {
 
   open "x-apple.systempreferences:com.apple.preference.security?$pane"
   print
-  print -r -- "In the $list list I've opened, remove ${name:-$cask} with −, then add it back with + from /Applications (switching it off and on also works), so the grant is for the new binary."
+  print -r -- "In the \"$list\" list I've opened, remove ${name:-$cask} with −, then add it back with + from /Applications (switching it off and on also works), so the grant is for the new binary."
   print -rn -- "Press return when that's done. "
   read -r reply
   if (( ! running )); then
@@ -171,8 +183,8 @@ upgrade_input_hook() {
     sleep 1
     for pid in ${(f)"$(pgrep -x universalAccessAuthWarn)"}; do
       if (( ! ${before[(Ie)$pid]} )); then
-        print -r -- "  $name asked for $list again. Answer its prompt. If clicks stop working, run: pkill -f '/Applications/$app/Contents/MacOS/'"
-        fail "$name re-prompted for $list"
+        print -r -- "  $name asked for the \"$list\" permission again. Answer its prompt. If clicks stop working, run: pkill -f '/Applications/$app/Contents/MacOS/'"
+        fail "$name re-prompted for the \"$list\" permission"
         return
       fi
     done
