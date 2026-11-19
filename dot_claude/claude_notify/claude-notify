@@ -4,37 +4,105 @@
 # Posts a macOS notification that goes somewhere useful when clicked, and optionally speaks a few
 # words. A click opens --open's URL, or brings iTerm forward when there's no link.
 #
-#   claude-notify --title SUBJECT --message BODY [--open URL] [--say WORDS]
+#   claude-notify --title SUBJECT --message BODY [--level urgent|warn|info] [--open URL] [--say WORDS]
+#   claude-notify --setup
 #
-# The title shows as "Claude: SUBJECT". --say is spoken as is, so keep it to the topic and how
-# serious it is ("Urgent: gateway incident"); the detail belongs in --message.
+# The title leads with the level's emoji: 🚨 urgent, ⚠️ warn, 🔔 info (the default). --say is
+# spoken as is, so keep it to the topic and how serious it is ("Urgent: gateway incident"); the
+# detail belongs in --message.
 #
-# Uses terminal-notifier (brew install terminal-notifier) from PATH. Without it, falls back to
-# osascript, whose notifications open Script Editor when clicked.
+# Notifications come from two copies of terminal-notifier's app that --setup builds in
+# ~/Applications: "Claude Urgent" for urgent, which James sets to Alerts so they stay on screen
+# until dismissed, and "Claude Notify" for the rest, left as banners. macOS sets that style per app, never
+# per notification. Without the copies it uses terminal-notifier (brew install terminal-notifier)
+# from PATH, then osascript, whose notifications open Script Editor when clicked.
 
+require 'fileutils'
 require 'optparse'
+require 'shellwords'
 
 ITERM = 'com.googlecode.iterm2'
+LEVELS = { 'urgent' => '🚨', 'warn' => '⚠️', 'info' => '🔔' }.freeze
+APPS = {
+  'Claude Notify' => 'com.jamesf.claude-notify',
+  'Claude Urgent' => 'com.jamesf.claude-notify-urgent'
+}.freeze
 
 def on_path(name)
   ENV.fetch('PATH', '').split(':').map { |d| File.join(d, name) }.find { |p| File.executable?(p) }
 end
 
-opts = {}
+def apps_dir
+  ENV.fetch('CLAUDE_NOTIFY_APPS', File.expand_path('~/Applications'))
+end
+
+def app_binary(name)
+  bin = File.join(apps_dir, "#{name}.app", 'Contents', 'MacOS', 'terminal-notifier')
+  bin if File.executable?(bin)
+end
+
+def run!(*cmd, **opts)
+  system(*cmd, exception: true, **opts)
+end
+
+# Copies terminal-notifier's app under each name in APPS, with its own bundle id, re-signed ad hoc
+# (the copy's Info.plist no longer matches the original signature). Sending from each copy makes
+# macOS ask James to allow its notifications; the send waits for his answer, so it runs detached.
+def setup
+  APPS.each do |name, id|
+    app = File.join(apps_dir, "#{name}.app")
+    next unless File.exist?(app)
+
+    found = `plutil -extract CFBundleIdentifier raw #{File.join(app, 'Contents', 'Info.plist').shellescape} 2>/dev/null`.strip
+    abort("claude-notify: #{app} is someone else's app (#{found.empty? ? 'no bundle id' : found}), not replacing it") if found != id
+  end
+
+  wrapper = on_path('terminal-notifier') or abort('claude-notify: brew install terminal-notifier first')
+  source = File.join(File.dirname(File.realpath(wrapper)), '..', 'terminal-notifier.app')
+  abort("claude-notify: no terminal-notifier.app beside #{wrapper}") unless File.directory?(source)
+
+  FileUtils.mkdir_p(apps_dir)
+  APPS.each do |name, id|
+    app = File.join(apps_dir, "#{name}.app")
+    FileUtils.rm_rf(app)
+    FileUtils.cp_r(source, app)
+    plist = File.join(app, 'Contents', 'Info.plist')
+    run!('plutil', '-replace', 'CFBundleIdentifier', '-string', id, plist)
+    run!('plutil', '-replace', 'CFBundleName', '-string', name, plist)
+    run!('plutil', '-replace', 'CFBundleDisplayName', '-string', name, plist)
+    run!('codesign', '--force', '--deep', '--sign', '-', app, err: File::NULL)
+    Process.detach(spawn(app_binary(name), '-title', "#{name} is set up",
+                         '-message', 'Allow its notifications if macOS asks.', %i[out err] => File::NULL))
+    puts "#{app} (#{id})"
+  end
+end
+
+opts = { level: 'info' }
 parser = OptionParser.new do |o|
-  o.banner = 'Usage: claude-notify --title SUBJECT --message BODY [--open URL] [--say WORDS]'
+  o.banner = 'Usage: claude-notify --title SUBJECT --message BODY [--level urgent|warn|info] ' \
+             "[--open URL] [--say WORDS]\n       claude-notify --setup"
   o.on('--title SUBJECT') { |v| opts[:title] = v }
   o.on('--message BODY') { |v| opts[:message] = v }
+  o.on('--level LEVEL') { |v| opts[:level] = v }
   o.on('--open URL') { |v| opts[:open] = v }
   o.on('--say WORDS') { |v| opts[:say] = v }
+  o.on('--setup') { opts[:setup] = true }
 end
 parser.parse!
 
+if opts[:setup]
+  setup
+  exit
+end
+
 missing = %i[title message].reject { |k| opts[k] }
 abort("claude-notify: missing #{missing.map { |k| "--#{k}" }.join(' and ')}\n#{parser.banner}") if missing.any?
+emoji = LEVELS.fetch(opts[:level]) { abort("claude-notify: --level is urgent, warn or info, not #{opts[:level]}") }
 
-title = "Claude: #{opts[:title]}"
-if (notifier = on_path('terminal-notifier'))
+app = app_binary(opts[:level] == 'urgent' ? 'Claude Urgent' : 'Claude Notify')
+# The Claude apps name themselves in the notification's header; terminal-notifier and osascript don't.
+title = app ? "#{emoji} #{opts[:title]}" : "#{emoji} Claude: #{opts[:title]}"
+if (notifier = app || on_path('terminal-notifier'))
   click = opts[:open] ? ['-open', opts[:open]] : ['-activate', ITERM]
   system(notifier, '-title', title, '-message', opts[:message], '-sound', 'Submarine', *click)
 else

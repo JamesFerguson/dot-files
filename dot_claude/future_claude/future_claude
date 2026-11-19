@@ -39,7 +39,7 @@ OUTCOMES = { 'HANDED_BACK' => 'handed_back', 'DONE_MYSELF' => 'ran_headless', 'F
 def usage
   <<~USAGE
     Usage:
-      future_claude add --at TIME (--notify TEXT [--say TEXT] [--open URL] | --command SHELL |
+      future_claude add --at TIME (--notify TEXT [--say TEXT] [--open URL] [--level LEVEL] | --command SHELL |
                                    --prompt TEXT [--origin SESSION | --headless])
                         [--every INTERVAL [--weekdays] [--hours HH-HH] [--until TIME]] [--title TITLE] [--cwd DIR]
                         [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
@@ -184,6 +184,7 @@ def add(argv)
     o.on('--notify TEXT') { |v| opts['notify'] = v }
     o.on('--say TEXT') { |v| opts['say'] = v }
     o.on('--open URL') { |v| opts['open'] = v }
+    o.on('--level LEVEL') { |v| opts['level'] = v }
     o.on('--prompt TEXT') { |v| opts['prompt'] = v }
     o.on('--command SHELL') { |v| opts['command'] = v }
     o.on('--origin SESSION') { |v| opts['origin'] = v }
@@ -268,16 +269,17 @@ def rm(id)
   puts "removed #{id}"
 end
 
-def notify(body, subject, spoken: nil, open: nil)
+def notify(body, subject, spoken: nil, open: nil, level: nil)
   extra = []
   extra += ['--say', spoken] if spoken
   extra += ['--open', open] if open
+  extra += ['--level', level] if level
   system('claude-notify', '--title', subject, '--message', body, *extra)
 end
 
 def run_notify(job)
   subject = job['title'] || 'reminder'
-  notify(job['notify'], subject, spoken: job['say'] || "Reminder: #{subject}", open: job['open'])
+  notify(job['notify'], subject, spoken: job['say'] || "Reminder: #{subject}", open: job['open'], level: job['level'])
   { 'outcome' => 'notified' }
 end
 
@@ -389,7 +391,7 @@ def report(job, result)
 
   what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
   notify("Job #{job['id']} #{what}: #{job_text(job)[0, 80]} — future_claude show #{job['id']}",
-         job['title'] || 'scheduled task')
+         job['title'] || 'scheduled task', level: 'warn')
 end
 
 def run_due

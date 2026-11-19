@@ -105,7 +105,8 @@ fi
 # future_claude: durable scheduled reminders/prompts that Claude sessions hand off to (dot_claude/future_claude/README.md)
 # rules-changes: register of instruction edits, sent to every session as a twice-daily digest via future_claude
 # claude-bg: hands a script's last step (publishing an Artifact, an investigation) to a background Claude session
-# claude-notify: a notification that opens a link (or iTerm) when clicked, via terminal-notifier
+# claude-notify: a notification that opens a link (or iTerm) when clicked, via terminal-notifier;
+#   run `claude-notify --setup` once to build the Claude Notify and Claude Urgent apps it sends from
 # Where ~/bin is a link to the repo's bin/ (polaris), the repo's own relative links in bin/ already cover these.
 if [[ ! -L ~/bin ]]; then
   mkdir -p ~/bin

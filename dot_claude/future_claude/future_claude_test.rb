@@ -110,6 +110,13 @@ class FutureClaudeTest < Minitest::Test
     assert_match(%r{claude-notify .*--open https://github.com/fatzebra/gateway/pull/1}, calls)
   end
 
+  def test_a_notify_job_passes_its_level_on
+    fc!('add', '--at', '-1m', '--notify', 'Cert window closes at 5pm', '--level', 'urgent')
+    fc!('run')
+
+    assert_match(/claude-notify .*--level urgent/, calls)
+  end
+
   def test_run_does_not_fire_a_job_twice
     fc!('add', '--at', '-1m', '--notify', 'Once')
     fc!('run')
@@ -246,7 +253,7 @@ class FutureClaudeTest < Minitest::Test
 
     assert_equal 'failed', job(id)['status']
     assert_equal 4, job(id)['exit']
-    assert_match(/claude-notify --title Purchase stats --message .*failed/, calls)
+    assert_match(/claude-notify --title Purchase stats --message .*failed.* --level warn/, calls)
   end
 
   def test_a_command_job_past_its_timeout_is_killed_and_marked_failed

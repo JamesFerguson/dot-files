@@ -3,9 +3,10 @@
 James can be away from a session for days, so a line in a reply is not an alert. A certification window was lost to a "heads-up" he read five days later.
 
 When a reply carries something with a clock on it (an incident, a deadline, a decision needed before a cutoff, a watch that fired), put the detail in the reply **and**:
-- **Emergency:** alert now with `claude-notify --title '<subject>' --message '<body>' --open '<url>' --say '<spoken>'`.
-- **Otherwise:** schedule a delayed alert that restates the deadline, `future_claude add --at +30m --title '<subject>' --notify '<body>' [--open '<url>'] [--say '<spoken>']`. If he's already back, it's harmless.
+- **Emergency:** alert now with `claude-notify --level urgent --title '<subject>' --message '<body>' --open '<url>' --say '<spoken>'`.
+- **Otherwise:** schedule a delayed alert that restates the deadline, `future_claude add --at +30m --level warn --title '<subject>' --notify '<body>' [--open '<url>'] [--say '<spoken>']`. If he's already back, it's harmless.
 
+- **`--level` sets the emoji the title leads with, and whether it stays on screen:** `urgent` 🚨 for an incident or a cutoff within hours (it stays until he dismisses it), `warn` ⚠️ for something he must act on today, `info` 🔔 (the default) for news with no deadline. Don't inflate a level: a sticky alert that isn't urgent teaches him to dismiss them unread.
 - **`--say` is two to four words:** how serious it is, then the topic. "Urgent: gateway incident", "Deadline: eftpos cert", "New Relic MCP down". No names, numbers or sentences; the detail goes in the notification and the reply.
 - **`--open` is where he'd act:** the PR, ticket, artifact, Slack thread or dashboard. Without one, a click brings iTerm forward. Never raw `osascript` for these: its notifications open Script Editor when clicked.
 
