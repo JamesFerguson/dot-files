@@ -8,8 +8,9 @@ or not the session that queued them is open.
 ## Use
 
 ```sh
-# A reminder: speaks --say (or the body) and posts a notification.
-future_claude add --at '2026-10-27 09:47' --title 'Enrolment due' --notify 'Enrol the Mac today' --say 'Enrol the Mac today'
+# A reminder: posts a notification (a click opens --open, or brings iTerm forward) and speaks --say,
+# or "Reminder: <title>" without it. Keep --say to the topic and how serious it is.
+future_claude add --at '2026-10-27 09:47' --title 'Enrolment due' --notify 'Enrol the Mac today' --say 'Deadline: enrolment'
 
 # Work for later. Queued from a Claude session's Bash call, it's handed back to that session.
 future_claude add --at +2h --prompt 'Check whether the deploy finished and tell James'

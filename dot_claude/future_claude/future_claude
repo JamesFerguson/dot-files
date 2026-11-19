@@ -39,7 +39,7 @@ OUTCOMES = { 'HANDED_BACK' => 'handed_back', 'DONE_MYSELF' => 'ran_headless', 'F
 def usage
   <<~USAGE
     Usage:
-      future_claude add --at TIME (--notify TEXT [--say TEXT] | --command SHELL |
+      future_claude add --at TIME (--notify TEXT [--say TEXT] [--open URL] | --command SHELL |
                                    --prompt TEXT [--origin SESSION | --headless])
                         [--every INTERVAL [--weekdays] [--hours HH-HH] [--until TIME]] [--title TITLE] [--cwd DIR]
                         [--permission-mode MODE] [--model MODEL] [--timeout SECONDS] [--by WHO]
@@ -183,6 +183,7 @@ def add(argv)
     o.on('--at TIME') { |v| opts['at'] = parse_time(v) }
     o.on('--notify TEXT') { |v| opts['notify'] = v }
     o.on('--say TEXT') { |v| opts['say'] = v }
+    o.on('--open URL') { |v| opts['open'] = v }
     o.on('--prompt TEXT') { |v| opts['prompt'] = v }
     o.on('--command SHELL') { |v| opts['command'] = v }
     o.on('--origin SESSION') { |v| opts['origin'] = v }
@@ -267,15 +268,16 @@ def rm(id)
   puts "removed #{id}"
 end
 
-def notify(body, title, spoken = nil)
-  system('say', spoken) if spoken
-  system('osascript', '-e', 'on run argv', '-e',
-         'display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"',
-         '-e', 'end run', body, title)
+def notify(body, subject, spoken: nil, open: nil)
+  extra = []
+  extra += ['--say', spoken] if spoken
+  extra += ['--open', open] if open
+  system('claude-notify', '--title', subject, '--message', body, *extra)
 end
 
 def run_notify(job)
-  notify(job['notify'], "Claude: #{job['title'] || 'reminder'}", job['say'] || job['notify'])
+  subject = job['title'] || 'reminder'
+  notify(job['notify'], subject, spoken: job['say'] || "Reminder: #{subject}", open: job['open'])
   { 'outcome' => 'notified' }
 end
 
@@ -387,7 +389,7 @@ def report(job, result)
 
   what = result['failed'] ? 'failed' : 'ran headless (origin session not found)'
   notify("Job #{job['id']} #{what}: #{job_text(job)[0, 80]} — future_claude show #{job['id']}",
-         "Claude: #{job['title'] || 'scheduled task'}")
+         job['title'] || 'scheduled task')
 end
 
 def run_due

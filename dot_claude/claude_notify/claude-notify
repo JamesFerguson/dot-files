@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Posts a macOS notification that goes somewhere useful when clicked, and optionally speaks a few
+# words. A click opens --open's URL, or brings iTerm forward when there's no link.
+#
+#   claude-notify --title SUBJECT --message BODY [--open URL] [--say WORDS]
+#
+# The title shows as "Claude: SUBJECT". --say is spoken as is, so keep it to the topic and how
+# serious it is ("Urgent: gateway incident"); the detail belongs in --message.
+#
+# Uses terminal-notifier (brew install terminal-notifier) from PATH. Without it, falls back to
+# osascript, whose notifications open Script Editor when clicked.
+
+require 'optparse'
+
+ITERM = 'com.googlecode.iterm2'
+
+def on_path(name)
+  ENV.fetch('PATH', '').split(':').map { |d| File.join(d, name) }.find { |p| File.executable?(p) }
+end
+
+opts = {}
+parser = OptionParser.new do |o|
+  o.banner = 'Usage: claude-notify --title SUBJECT --message BODY [--open URL] [--say WORDS]'
+  o.on('--title SUBJECT') { |v| opts[:title] = v }
+  o.on('--message BODY') { |v| opts[:message] = v }
+  o.on('--open URL') { |v| opts[:open] = v }
+  o.on('--say WORDS') { |v| opts[:say] = v }
+end
+parser.parse!
+
+missing = %i[title message].reject { |k| opts[k] }
+abort("claude-notify: missing #{missing.map { |k| "--#{k}" }.join(' and ')}\n#{parser.banner}") if missing.any?
+
+title = "Claude: #{opts[:title]}"
+if (notifier = on_path('terminal-notifier'))
+  click = opts[:open] ? ['-open', opts[:open]] : ['-activate', ITERM]
+  system(notifier, '-title', title, '-message', opts[:message], '-sound', 'Submarine', *click)
+else
+  system('osascript', '-e', 'on run argv', '-e',
+         'display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"',
+         '-e', 'end run', opts[:message], title)
+end
+system('say', opts[:say]) if opts[:say]

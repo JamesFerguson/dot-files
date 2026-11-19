@@ -1,5 +1,5 @@
 # Run: ruby dot_claude/future_claude/future_claude_test.rb
-# Drives the CLI as a subprocess against a temp queue, with say/osascript/claude swapped for recorders.
+# Drives the CLI as a subprocess against a temp queue, with say/osascript/claude-notify/claude swapped for recorders.
 require 'minitest/autorun'
 require 'tmpdir'
 require 'json'
@@ -15,6 +15,7 @@ class FutureClaudeTest < Minitest::Test
     @recorder = write_exe('recorder', "#!/bin/sh\nprintf '%s\\n' \"$(basename \"$0\") $*\" >> #{@calls}\n")
     FileUtils.ln_s(@recorder, File.join(@dir, 'say'))
     FileUtils.ln_s(@recorder, File.join(@dir, 'osascript'))
+    FileUtils.ln_s(@recorder, File.join(@dir, 'claude-notify'))
     fake_claude('echo "did the thing"; echo HANDED_BACK')
     fake_pmset('CPU Graphics Audio Network')
   end
@@ -66,8 +67,8 @@ class FutureClaudeTest < Minitest::Test
 
     fc!('run')
 
-    assert_includes calls, 'say Enrol now'
-    assert_match(/osascript .*Enrol the Mac Claude: MDM/, calls)
+    assert_includes calls, '--say Enrol now'
+    assert_match(/claude-notify --title MDM --message Enrol the Mac --say Enrol now/, calls)
     refute_includes calls, 'Later'
     assert_equal 'done', job(due)['status']
     assert_equal 'pending', job(later)['status']
@@ -94,11 +95,26 @@ class FutureClaudeTest < Minitest::Test
     assert_equal 'done', job(id)['status']
   end
 
+  def test_a_notify_job_without_say_speaks_only_its_title
+    fc!('add', '--at', '-1m', '--notify', 'Enrol the Mac before 5pm or it locks', '--title', 'MDM')
+    fc!('run')
+
+    assert_includes calls, '--say Reminder: MDM'
+    refute_includes calls, '--say Enrol'
+  end
+
+  def test_a_notify_job_opens_its_link_on_click
+    fc!('add', '--at', '-1m', '--notify', 'Review the PR', '--open', 'https://github.com/fatzebra/gateway/pull/1')
+    fc!('run')
+
+    assert_match(%r{claude-notify .*--open https://github.com/fatzebra/gateway/pull/1}, calls)
+  end
+
   def test_run_does_not_fire_a_job_twice
     fc!('add', '--at', '-1m', '--notify', 'Once')
     fc!('run')
     fc!('run')
-    assert_equal 1, calls.scan('say Once').size
+    assert_equal 1, calls.scan('--message Once').size
   end
 
   def test_a_prompt_job_with_an_origin_tells_claude_to_hand_back_to_that_session
@@ -111,7 +127,7 @@ class FutureClaudeTest < Minitest::Test
     assert_includes prompt, id
     assert_equal 'done', job(id)['status']
     assert_equal 'handed_back', job(id)['outcome']
-    refute_includes calls, 'osascript', 'a hand-back needs no notification'
+    refute_includes calls, 'claude-notify', 'a hand-back needs no notification'
   end
 
   def test_a_prompt_job_queued_from_a_session_hands_back_to_that_sessions_address_by_default
@@ -138,7 +154,7 @@ class FutureClaudeTest < Minitest::Test
     fc!('run')
 
     assert_equal 'ran_headless', job(id)['outcome']
-    assert_match(/osascript .*#{id}/, calls)
+    assert_match(/claude-notify .*#{id}/, calls)
   end
 
   def test_a_headless_job_that_succeeds_makes_no_noise
@@ -147,7 +163,7 @@ class FutureClaudeTest < Minitest::Test
     fc!('run')
 
     assert_equal 'done', job(id)['status']
-    refute_includes calls, 'osascript'
+    refute_includes calls, 'claude-notify'
   end
 
   def test_a_key_already_pending_returns_that_job_instead_of_adding_another
@@ -187,7 +203,7 @@ class FutureClaudeTest < Minitest::Test
 
     assert_equal 'failed', job(id)['status']
     assert_equal 3, job(id)['exit']
-    assert_match(/osascript .*failed/, calls)
+    assert_match(/claude-notify .*failed/, calls)
     assert_includes File.read(job(id)['log']), 'boom'
   end
 
@@ -230,7 +246,7 @@ class FutureClaudeTest < Minitest::Test
 
     assert_equal 'failed', job(id)['status']
     assert_equal 4, job(id)['exit']
-    assert_match(/osascript .*failed.*Claude: Purchase stats/, calls)
+    assert_match(/claude-notify --title Purchase stats --message .*failed/, calls)
   end
 
   def test_a_command_job_past_its_timeout_is_killed_and_marked_failed
@@ -267,7 +283,7 @@ class FutureClaudeTest < Minitest::Test
     at = job(id)['at']
     fc!('run')
 
-    assert_equal 1, calls.scan('say Hourly').size
+    assert_equal 1, calls.scan('--message Hourly').size
     assert_equal 'pending', job(id)['status']
     assert_equal at + 3600, job(id)['at']
     assert_equal 1, job(id)['runs']
@@ -279,7 +295,7 @@ class FutureClaudeTest < Minitest::Test
     at = job(id)['at']
     fc!('run')
 
-    assert_equal 1, calls.scan('say Hourly').size
+    assert_equal 1, calls.scan('--message Hourly').size
     assert_equal at + 4 * 3600, job(id)['at']
   end
 
@@ -344,7 +360,7 @@ class FutureClaudeTest < Minitest::Test
     fc!('run')
 
     assert_equal 'done', job(id)['status']
-    assert_includes calls, 'say Last'
+    assert_includes calls, '--message Last'
   end
 
   def test_a_failed_run_of_a_repeating_job_still_reschedules_it
@@ -354,14 +370,14 @@ class FutureClaudeTest < Minitest::Test
 
     assert_equal 'pending', job(id)['status']
     assert_equal 'failed', job(id)['last_status']
-    assert_match(/osascript .*failed/, calls)
+    assert_match(/claude-notify .*failed/, calls)
   end
 
   def test_a_repeating_prompt_job_that_ran_headless_does_not_notify_every_time
     fake_claude('echo DONE_MYSELF')
     fc!('add', '--at', '-1m', '--every', '1h', '--prompt', 'Check', '--origin', 'gone-session')
     fc!('run')
-    refute_includes calls, 'osascript'
+    refute_includes calls, 'claude-notify'
   end
 
   def test_a_repeating_job_whose_runner_died_is_rescheduled_not_ended
