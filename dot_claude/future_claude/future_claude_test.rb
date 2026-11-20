@@ -274,6 +274,13 @@ class FutureClaudeTest < Minitest::Test
     assert_empty calls
   end
 
+  def test_a_repeating_job_can_stop_itself_with_its_own_id
+    id = fc!('add', '--at', '-1m', '--every', '1h', '--command', "#{SCRIPT} rm \"$FUTURE_CLAUDE_JOB_ID\"").strip
+    fc!('run')
+
+    assert_nil job(id)
+  end
+
   def test_a_repeating_job_is_listed_with_its_interval
     fc!('add', '--at', '+1h', '--every', '1d', '--notify', 'Daily')
     assert_includes fc!('list'), 'every 1d'

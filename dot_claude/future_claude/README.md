@@ -42,7 +42,8 @@ future_claude add --at '2026-10-27 13:00' --every 1d --weekdays --headless --pro
   a run that spans a sleep isn't killed for it. While a job runs, `caffeinate -i` holds off idle sleep.
 - `--weekdays` moves a Saturday or Sunday slot on to Monday. `--hours 06-18` moves a slot outside
   06:00 to 18:00 on to the next 06:00, for jobs that only matter while James is working.
-  `--until TIME` ends the series. `future_claude rm <id>` stops it.
+  `--until TIME` ends the series. `future_claude rm <id>` stops it, and a run can stop its own series
+  with `future_claude rm "$FUTURE_CLAUDE_JOB_ID"` (a check that has passed, say).
 - A failed run still reschedules, and notifies. A repeating prompt job that runs headless because its
   origin session has gone doesn't notify, since that's the usual case.
 - A hand-back by socket only lasts as long as the session that queued the job. To hand back to a

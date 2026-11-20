@@ -338,9 +338,11 @@ def job_log(job)
 end
 
 # Runs args in their own process group with output to log. Returns the exit status, or nil after
-# killing the group at the job's timeout.
+# killing the group at the job's timeout. FUTURE_CLAUDE_JOB_ID lets a repeating job remove itself
+# once it has nothing left to do.
 def spawn_logged(args, cwd, job, log)
-  pid = Process.spawn(*args, chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
+  pid = Process.spawn({ 'FUTURE_CLAUDE_JOB_ID' => job['id'] }, *args,
+                      chdir: cwd, in: File::NULL, out: [log, 'w'], err: [:child, :out], pgroup: true)
   keep_awake_while(pid)
   deadline = awake_seconds + (job['timeout'] || DEFAULT_TIMEOUT)
   until (status = Process.waitpid2(pid, Process::WNOHANG)&.last)
