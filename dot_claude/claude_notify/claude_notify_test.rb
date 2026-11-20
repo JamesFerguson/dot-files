@@ -71,6 +71,12 @@ class ClaudeNotifyTest < Minitest::Test
     assert_match(/\AClaude Notify -title ⚠️ Deadline /, calls.last)
   end
 
+  def test_an_app_with_notifications_turned_off_falls_back_to_terminal_notifier
+    fake_app('Claude Notify', exit_status: 3)
+    notify!('--title', 'Deadline', '--message', 'Enrol', '--level', 'warn')
+    assert_match(/\Aterminal-notifier -title ⚠️ Claude: Deadline /, calls.last)
+  end
+
   def test_setup_never_replaces_an_app_it_did_not_build
     plist = File.join(@apps, 'Claude Notify.app', 'Contents', 'Info.plist')
     FileUtils.mkdir_p(File.dirname(plist))
@@ -108,10 +114,10 @@ class ClaudeNotifyTest < Minitest::Test
     assert status.success?, "claude-notify failed: #{out}#{err}"
   end
 
-  def fake_app(name)
+  def fake_app(name, exit_status: 0)
     bin = File.join(@apps, "#{name}.app", 'Contents', 'MacOS', 'terminal-notifier')
     FileUtils.mkdir_p(File.dirname(bin))
-    File.write(bin, "#!/bin/sh\nprintf '%s\\n' \"#{name} $*\" >> #{@calls}\n")
+    File.write(bin, "#!/bin/sh\nprintf '%s\\n' \"#{name} $*\" >> #{@calls}\nexit #{exit_status}\n")
     File.chmod(0o755, bin)
   end
 

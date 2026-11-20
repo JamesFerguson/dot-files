@@ -100,14 +100,17 @@ abort("claude-notify: missing #{missing.map { |k| "--#{k}" }.join(' and ')}\n#{p
 emoji = LEVELS.fetch(opts[:level]) { abort("claude-notify: --level is urgent, warn or info, not #{opts[:level]}") }
 
 app = app_binary(opts[:level] == 'urgent' ? 'Claude Urgent' : 'Claude Notify')
+tn = on_path('terminal-notifier')
+click = opts[:open] ? ['-open', opts[:open]] : ['-activate', ITERM]
 # The Claude apps name themselves in the notification's header; terminal-notifier and osascript don't.
-title = app ? "#{emoji} #{opts[:title]}" : "#{emoji} Claude: #{opts[:title]}"
-if (notifier = app || on_path('terminal-notifier'))
-  click = opts[:open] ? ['-open', opts[:open]] : ['-activate', ITERM]
-  system(notifier, '-title', title, '-message', opts[:message], '-sound', 'Submarine', *click)
-else
+# Each sender fails (exit 3) while its notifications are turned off, so the next one gets a go.
+sent = [[app, '%s %s'], [tn, '%s Claude: %s']].any? do |bin, format|
+  bin && system(bin, '-title', format(format, emoji, opts[:title]), '-message', opts[:message],
+                '-sound', 'Submarine', *click, %i[out err] => File::NULL)
+end
+unless sent
   system('osascript', '-e', 'on run argv', '-e',
          'display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"',
-         '-e', 'end run', opts[:message], title)
+         '-e', 'end run', opts[:message], "#{emoji} Claude: #{opts[:title]}")
 end
 system('say', opts[:say]) if opts[:say]
