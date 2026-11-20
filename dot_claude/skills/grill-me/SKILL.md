@@ -7,4 +7,6 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Ask the questions one at a time.
 
+Number each question with your best estimate of the total so far, e.g. "Q7 (of 10)". When a branch opens up more questions, raise the total and say so in a line ("Q8 (of 12, up from 10: the migration splits into two questions)"). Give the best count you have at the time rather than holding it back until it's certain.
+
 If a question can be answered by exploring the codebase, explore the codebase instead.
