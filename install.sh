@@ -114,6 +114,8 @@ if [[ ! -L ~/bin ]]; then
   ln -fs $DOT_FILES_DIR/dot_claude/rules_changes/rules-changes ~/bin/rules-changes
   ln -fs $DOT_FILES_DIR/dot_claude/claude_bg/claude-bg ~/bin/claude-bg
   ln -fs $DOT_FILES_DIR/dot_claude/claude_notify/claude-notify ~/bin/claude-notify
+  # job-status: records a scheduled job's outcome for the SwiftBar Jobs plugin (swiftbar/jobs.5m.sh)
+  ln -fs $DOT_FILES_DIR/bin/job-status ~/bin/job-status
 fi
 ln -fs $DOT_FILES_DIR/plists/com.jamesf.future-claude.plist $HOME/Library/LaunchAgents/com.jamesf.future-claude.plist
 

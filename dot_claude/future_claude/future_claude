@@ -13,7 +13,9 @@
 #
 # With --every, a job repeats: after each run it goes back to pending at its next slot. Slots step on
 # from the scheduled time, so a daily 09:00 job stays at 09:00 and a Mac asleep through several slots
-# fires once on wake.
+# fires once on wake. Each run of a repeating command or prompt job is recorded with job-status, so
+# the SwiftBar Jobs menu shows it red after a failed run, and amber once it's gone longer than its
+# schedule allows without a good one.
 #
 # A sleeping Mac wakes for half a minute every few minutes (a dark wake: network up, display off) and
 # launchd runs its due ticks then. Jobs wait for a full wake instead: a job started in a dark wake is
@@ -264,8 +266,13 @@ def show(id)
 end
 
 def rm(id)
-  removed = with_queue { |jobs| jobs.reject! { |j| j['id'] == id } }
+  gone = nil
+  removed = with_queue do |jobs|
+    gone = jobs.find { |j| j['id'] == id }
+    jobs.reject! { |j| j['id'] == id }
+  end
   die("no job #{id}") unless removed
+  forget_status(gone)
   puts "removed #{id}"
 end
 
@@ -386,6 +393,37 @@ def run_command(job)
   { 'log' => log, 'exit' => status.exitstatus, 'outcome' => "exited_#{status.exitstatus}", 'failed' => !status.success? }
 end
 
+# The repeating job's name in job-status (dot-files bin/job-status and swiftbar/jobs.5m.sh).
+def status_name(job)
+  "future_claude-#{(job['key'] || job['id']).gsub(/[^A-Za-z0-9._-]/, '-')}"
+end
+
+# How long the job can go without a good run before it's late: one interval, plus the weekend and
+# the hours outside its window that it skips, plus an hour for a slow or late run.
+def max_age(job)
+  unit = job['every'][-1]
+  seconds = job['every'].to_i * (UNIT_SECONDS[unit] || UNIT_DAYS.fetch(unit) * 86_400)
+  seconds += 2 * 86_400 if job['weekdays']
+  if job['hours']
+    open, close = job['hours'].split('-').map(&:to_i)
+    seconds += (24 - close + open) * 3600
+  end
+  seconds + 3600
+end
+
+def record_status(job, result)
+  return unless job['every'] && job['kind'] != 'notify'
+
+  args = [status_name(job), result['failed'] ? 'fail' : 'ok', result['outcome'].to_s, '--title', job['title'] || job_text(job)[0, 60],
+          '--max-age', max_age(job).to_s, '--quiet']
+  args += ['--log', result['log']] if result['log']
+  system('job-status', *args, out: File::NULL, err: File::NULL)
+end
+
+def forget_status(job)
+  system('job-status', status_name(job), 'forget', out: File::NULL, err: File::NULL) if job['every']
+end
+
 def report(job, result)
   return if job['kind'] == 'notify' || result['outcome'] == 'handed_back'
   # A headless job succeeding is the plan, and a repeating job's origin is often long gone: no news.
@@ -420,6 +458,8 @@ def run_due
       reschedule(j, Time.now.to_i, status, result['outcome']) if j['every']
     end
     report(job, result)
+    record_status(job, result)
+    forget_status(job) if with_queue { |js| js.find { |j| j['id'] == job['id'] } }&.fetch('status') == 'done'
     puts "#{Time.now.strftime('%F %T')} #{job['id']} #{job['kind']} → #{result['outcome']}"
   end
 end

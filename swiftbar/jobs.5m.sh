@@ -28,9 +28,9 @@ when() { echo "$(date -r "$1" '+%a %-d %b %H:%M') ($(dur $(( NOW - $1 ))) ago)";
 # Menu text can't contain SwiftBar's | separator
 clean() { printf '%s' "${1//|/¦}"; }
 
+# claude-notify, not osascript: a click on osascript's notification opens Script Editor.
 notify() {
-    osascript -e 'on run argv' -e 'display notification (item 2 of argv) with title (item 1 of argv) sound name "Basso"' -e 'end run' \
-        "$1" "$2" &>/dev/null
+    PATH="$HOME/bin:$PATH" claude-notify --level warn --title "$1" --message "$2" &>/dev/null
 }
 
 problems=0; bad_rows=""; ok_rows=""

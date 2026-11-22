@@ -16,6 +16,7 @@ class FutureClaudeTest < Minitest::Test
     FileUtils.ln_s(@recorder, File.join(@dir, 'say'))
     FileUtils.ln_s(@recorder, File.join(@dir, 'osascript'))
     FileUtils.ln_s(@recorder, File.join(@dir, 'claude-notify'))
+    FileUtils.ln_s(@recorder, File.join(@dir, 'job-status'))
     fake_claude('echo "did the thing"; echo HANDED_BACK')
     fake_pmset('CPU Graphics Audio Network')
   end
@@ -271,7 +272,30 @@ class FutureClaudeTest < Minitest::Test
 
     assert_equal 'pending', job(id)['status']
     assert_equal 'exited_0', job(id)['last_outcome']
-    assert_empty calls
+    refute_match(/claude-notify/, calls)
+  end
+
+  def test_each_run_of_a_repeating_job_is_recorded_for_the_jobs_menu
+    fc!('add', '--at', '-1m', '--every', '1d', '--weekdays', '--command', 'exit 1', '--title', 'Bundle audit', '--key', 'bundle-audit-main')
+    fc!('add', '--at', '-1m', '--every', '10m', '--hours', '07-22', '--command', 'true', '--title', 'Merges')
+    fc!('add', '--at', '-1m', '--command', 'true', '--title', 'Once')
+    fc!('run')
+
+    one_day = 86_400 + 2 * 86_400 + 3600
+    assert_match(/^job-status future_claude-bundle-audit-main fail exited_1 --title Bundle audit --max-age #{one_day} --quiet --log /, calls)
+    assert_match(/^job-status future_claude-[0-9a-f]{6} ok exited_0 --title Merges --max-age #{600 + 9 * 3600 + 3600} --quiet/, calls)
+    refute_match(/Once/, calls.lines.grep(/^job-status/).join)
+  end
+
+  def test_a_repeating_job_leaves_the_jobs_menu_when_it_ends_or_is_removed
+    ended = fc!('add', '--at', '-1m', '--every', '1d', '--until', '+1h', '--command', 'true', '--key', 'ended').strip
+    removed = fc!('add', '--at', '+1h', '--every', '1d', '--command', 'true', '--key', 'removed').strip
+    fc!('run')
+    fc!('rm', removed)
+
+    assert_equal 'done', job(ended)['status']
+    assert_match(/^job-status future_claude-ended forget$/, calls)
+    assert_match(/^job-status future_claude-removed forget$/, calls)
   end
 
   def test_a_repeating_job_can_stop_itself_with_its_own_id

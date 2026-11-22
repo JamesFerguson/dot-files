@@ -1,5 +1,6 @@
 better_errors
 binding_of_caller
+bundler-audit
 irb_hacks
 launchy
 pry-remote

@@ -46,6 +46,11 @@ future_claude add --at '2026-10-27 13:00' --every 1d --weekdays --headless --pro
   with `future_claude rm "$FUTURE_CLAUDE_JOB_ID"` (a check that has passed, say).
 - A failed run still reschedules, and notifies. A repeating prompt job that runs headless because its
   origin session has gone doesn't notify, since that's the usual case.
+- Each run of a repeating command or prompt job goes to `job-status` (`bin/job-status`), so it shows in
+  the SwiftBar Jobs menu (`swiftbar/jobs.5m.sh`) as `future_claude-<key or id>`: red after a failed
+  run, amber once it's gone longer than its schedule allows without a good one (one interval, plus the
+  weekend for `--weekdays` and the hours outside `--hours`, plus an hour). A job that ends or is
+  removed leaves the menu.
 - A hand-back by socket only lasts as long as the session that queued the job. To hand back to a
   long-lived session, use `--origin <name>`, which survives a resume. Otherwise use `--headless`.
 - `show` has the last run's log only; each run overwrites it.
