@@ -10,25 +10,53 @@
 #   curl -s http://192.168.178.1:49000/tr64desc.xml | grep -o -m1 '[0-9A-F]\{12\}</UDN>' | cut -c1-12 \
 #     > ~/.config/keep-awake/home-router-id
 #
-# DRY_RUN=1 prints the decision without starting caffeinate; END_TIME=HH:MM and DAY_OF_WEEK=1-7
-# override the clock for testing.
+# macOS also wakes fully for a few seconds with nobody there (a notification, network upkeep),
+# often with the lid shut. Those wakes run the hook too, so it only goes ahead once someone
+# touches the keyboard or trackpad after the wake.
+#
+# DRY_RUN=1 prints the decision without starting caffeinate. START_TIME=HH:MM, END_TIME=HH:MM,
+# DAY_OF_WEEK=1-7 and INPUT_WAIT_SECS override the defaults for testing.
 
+START_TIME=${START_TIME:-06:00}
 END_TIME=${END_TIME:-17:20}
+INPUT_WAIT_SECS=${INPUT_WAIT_SECS:-600}
 ID_FILE="$HOME/.config/keep-awake/home-router-id"
 PID_FILE="/tmp/keep-awake-at-home.pid"
-log() { echo "keep-awake: $*"; }
+WAITER_PID_FILE="/tmp/keep-awake-at-home.waiter.pid"
+# A dry run leaves the real caffeinate alone.
+[[ -n $DRY_RUN ]] && PID_FILE+=.dry-run WAITER_PID_FILE+=.dry-run
+log() { echo "keep-awake $(date +%H:%M:%S): $*"; }
+at() { date -j -f '%H:%M:%S' "$1:00" +%s; }
 
-# A fresh wake replaces whatever an earlier wake started.
-[[ -f $PID_FILE ]] && kill "$(cat "$PID_FILE")" 2>/dev/null && rm -f "$PID_FILE"
+# A fresh wake replaces whatever an earlier wake started: its caffeinate, and a run that went
+# back to sleep while still waiting for input.
+for f in "$PID_FILE" "$WAITER_PID_FILE"; do
+  [[ -f $f ]] && kill "$(cat "$f")" 2>/dev/null
+  rm -f "$f"
+done
+echo $$ > "$WAITER_PID_FILE"
+trap '[[ $(cat "$WAITER_PID_FILE" 2>/dev/null) == "$$" ]] && rm -f "$WAITER_PID_FILE"' EXIT
 
 (( ${DAY_OF_WEEK:-$(date +%u)} <= 5 )) || { log "weekend, skipping"; exit 0; }
 
-now=$(date +%s)
-end=$(date -j -f '%H:%M:%S' "$END_TIME:00" +%s)
-(( end > now )) || { log "past $END_TIME, skipping"; exit 0; }
+woke=$(date +%s)
+(( woke >= $(at "$START_TIME") )) || { log "before $START_TIME, skipping"; exit 0; }
+(( woke < $(at "$END_TIME") )) || { log "past $END_TIME, skipping"; exit 0; }
 
 home_id=$(cat "$ID_FILE" 2>/dev/null)
 [[ -n $home_id ]] || { log "no $ID_FILE, skipping"; exit 0; }
+
+# Seconds since the last keyboard or trackpad event.
+hid_idle() { /usr/sbin/ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print int($NF / 1e9); exit}'; }
+
+# Input in the first few seconds doesn't count: the wake itself can reset the idle timer.
+until (( $(hid_idle) < $(date +%s) - woke - 5 )); do
+  if (( $(date +%s) - woke >= INPUT_WAIT_SECS )); then
+    log "no keyboard or trackpad input in ${INPUT_WAIT_SECS}s since the wake, skipping"
+    exit 0
+  fi
+  sleep 5
+done
 
 # Wi-Fi can take a while to rejoin after wake, so keep asking the router for a minute.
 at_home=0
@@ -41,7 +69,7 @@ for _ in {1..12}; do
 done
 (( at_home )) || { log "not on the home network, skipping"; exit 0; }
 
-secs=$(( end - $(date +%s) ))
+secs=$(( $(at "$END_TIME") - $(date +%s) ))
 if [[ -n $DRY_RUN ]]; then
   log "would keep awake for ${secs}s (until $END_TIME)"
   exit 0
