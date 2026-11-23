@@ -137,6 +137,11 @@ ln -fs "$DOT_FILES_DIR/vscode/settings.json" "$VSCODE_SETTINGS"
 # tweaks
 $DOT_FILES_DIR/tweaks/tweaks.sh
 
+# herdr-core runs the Herdr app's terminals (Brewfile: herdr-app). Homebrew doesn't package it, so
+# use the vendor's installer, which puts herdr-core and hc in ~/.local/bin. The app updates it after.
+[[ -x ~/.local/bin/herdr-core ]] || command -v herdr-core &>/dev/null \
+  || curl -fsSL https://releases.herdr.dev/core/install.sh | sh
+
 # Personal LaunchAgents (home mac only — polaris-specific services)
 if (( ON_HOME_LAPTOP )); then
   for plist in \
