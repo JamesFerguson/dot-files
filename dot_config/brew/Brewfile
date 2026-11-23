@@ -72,7 +72,7 @@ cask 'docker-desktop'
 cask 'firefox'
 cask 'font-fira-code'
 cask 'font-victor-mono'
-# google-chrome: Fat Zebra's device management installs and updates it, so brew leaves it alone
+cask 'google-chrome'    # installs it on a new Mac; Fat Zebra's device management updates it
 cask 'iterm2'
 cask 'karabiner-elements'
 cask 'macvim-app'
