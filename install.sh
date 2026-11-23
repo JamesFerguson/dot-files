@@ -97,6 +97,8 @@ if (( ON_WORK_LAPTOP )); then
   # Work-from-home hours log (sleepwatcher/wfh_summary.py); its path is the work checkout's
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.wfh-heartbeat.plist $HOME/Library/LaunchAgents/com.jamesf.wfh-heartbeat.plist
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.keep-awake-at-home.plist $HOME/Library/LaunchAgents/com.jamesf.keep-awake-at-home.plist
+  # Daily backup of ~/.claude's skills, rules and CLAUDE.md to the private claude-config repo
+  ln -fs $DOT_FILES_DIR/plists/com.jamesf.claude-config-backup.plist $HOME/Library/LaunchAgents/com.jamesf.claude-config-backup.plist
   # Waypoint, the open-PR dashboard (~/code/waypoint), at https://waypoint.test (its README has the setup)
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.waypoint.plist $HOME/Library/LaunchAgents/com.jamesf.waypoint.plist
   ln -fs $DOT_FILES_DIR/plists/com.jamesf.waypoint-staging.plist $HOME/Library/LaunchAgents/com.jamesf.waypoint-staging.plist

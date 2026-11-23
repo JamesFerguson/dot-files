@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jamesf.claude-config-backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-fc</string>
+    <string>export PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin" LANG=en_AU.UTF-8 LC_ALL=en_AU.UTF-8; cd "$HOME" || exit 1; { date; /bin/zsh -f "$HOME/code/personal/dot-files/nightly-skill-mise/backup-claude-config.zsh"; } >> "$HOME/Library/Logs/claude-config-backup.log" 2>&amp;1</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>17</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+</dict>
+</plist>
