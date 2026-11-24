@@ -176,6 +176,11 @@ module Xbar
     SEP_STR = '---'
     PARAM_SEP = '|'
 
+    # The menu's own text colour, light,dark. SwiftBar 2.1.1 greys out a
+    # submenu row with no action once it patches the row on a refresh
+    # (swiftbar/SwiftBar#512, fixed in 2.1.2), but a colour gives it one.
+    TEXT_COLOR = '#242424,#dcdcdc'
+
     def initialize(nested_level = 0)
       @nested_level = nested_level
     end
@@ -183,7 +188,11 @@ module Xbar
     def item(label = nil, **props)
       return if label.nil? || label.empty?
 
-      props = normalize_props(props.dup)
+      props = props.dup
+      if block_given? && !(props.keys & %i[color shell rpc href]).any?
+        props[:color] = TEXT_COLOR
+      end
+      props = normalize_props(props)
       alt = props.delete(:alt)
       nested_items = props.delete(:nested) || :both
 
@@ -651,7 +660,7 @@ module Brew
       printer.sep
       printer.item("Formulas (#{formulas.size}):")
       formulas.each do |formula|
-        printer.item(package_label(formula)) do |printer|
+        printer.item(package_label(formula), color: package_color(formula)) do |printer|
           print_upgrade(printer, formula, 'formula')
           printer.sep
           printer.item("→ Installed: #{formula.installed_versions.join(', ')}")
@@ -685,7 +694,7 @@ module Brew
       printer.sep
       printer.item("Casks (#{casks.size}):")
       casks.each do |cask|
-        printer.item(package_label(cask)) do |printer|
+        printer.item(package_label(cask), color: package_color(cask)) do |printer|
           print_upgrade(printer, cask, 'cask')
           printer.sep
           printer.item("→ Installed: #{cask.installed_versions.join(', ')}")
@@ -705,6 +714,18 @@ module Brew
             )
           end
         end
+      end
+    end
+
+    # Like Waypoint's status chips: left out of the nightly in orange, ready in
+    # the menu's text colour, cooling and undated dimmed.
+    def package_color(package)
+      if nightly_exclude?(package.name)
+        '#c45c00,#ff9f0a'
+      elsif status(package.name) == :ready
+        Xbar::Printer::TEXT_COLOR
+      else
+        '#8e8e93,#8e8e93'
       end
     end
 
