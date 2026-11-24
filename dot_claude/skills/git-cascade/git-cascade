@@ -1,0 +1,273 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# git-cascade: commit to one branch of a stack and carry the change up every
+# branch stacked on it. See SKILL.md beside this file.
+
+require 'open3'
+require 'optparse'
+
+module GitCascade
+  PROTECTED = %w[main master develop].freeze
+  MAX_DESCENDANTS = 10
+
+  class Failure < StandardError; end
+
+  # Thin wrapper over the git CLI for one repo.
+  class Git
+    def initialize(dir)
+      @dir = dir
+    end
+
+    def run(*args, allow_failure: false)
+      out, err, status = Open3.capture3('git', '-C', @dir, *args)
+      raise Failure, "git #{args.join(' ')} failed:\n#{err}#{out}" unless status.success? || allow_failure
+
+      [out, err, status]
+    end
+
+    def out(*args) = run(*args).first.strip
+    def ok?(*args) = run(*args, allow_failure: true).last.success?
+    def sha(ref) = out('rev-parse', '--verify', "#{ref}^{commit}")
+    def current_branch = out('branch', '--show-current')
+    def branch?(name) = ok?('show-ref', '--verify', '--quiet', "refs/heads/#{name}")
+    def ancestor?(a, b) = ok?('merge-base', '--is-ancestor', a, b)
+    def count(from, to) = out('rev-list', '--count', "#{from}..#{to}").to_i
+
+    def git_dir = File.expand_path(out('rev-parse', '--git-dir'), @dir)
+
+    def in_progress
+      gd = git_dir
+      %w[rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD].find { |f| File.exist?(File.join(gd, f)) }
+    end
+
+    # No context lines, so a neighbour's edit to nearby lines doesn't change it.
+    def patch_id(from, to)
+      diff = out('diff', '--binary', '-U0', from, to)
+      return '' if diff.empty?
+
+      id, _status = Open3.capture2('git', '-C', @dir, 'patch-id', '--stable', stdin_data: "#{diff}\n")
+      id.split.first.to_s
+    end
+
+    # Branches checked out in some other worktree than this one.
+    def branches_in_other_worktrees
+      here = File.realpath(out('rev-parse', '--show-toplevel'))
+      out('worktree', 'list', '--porcelain').split("\n\n").filter_map do |entry|
+        path = entry[/^worktree (.+)$/, 1]
+        branch = entry[%r{^branch refs/heads/(.+)$}, 1]
+        branch if branch && File.realpath(path) != here
+      rescue Errno::ENOENT
+        nil
+      end
+    end
+
+    def upstream_remote(branch)
+      remote = out('config', '--get', "branch.#{branch}.remote") if ok?('config', '--get', "branch.#{branch}.remote")
+      remote unless remote.nil? || remote.empty? || remote == '.'
+    end
+  end
+
+  # Finds the stack above a commit and moves it onto a new one.
+  class Stack
+    attr_reader :git, :base, :old_base, :descendants, :old_tips
+
+    def initialize(git, base, old_base)
+      @git = git
+      @base = base
+      @old_base = old_base
+      @descendants = git.out('for-each-ref', '--format=%(refname:short)', '--contains', old_base, 'refs/heads')
+                        .split("\n").reject { |b| b == base }
+      @old_tips = @descendants.to_h { |b| [b, git.sha(b)] }
+    end
+
+    def check!
+      bad = descendants & PROTECTED
+      raise Failure, "refusing: #{bad.join(', ')} would be rebased (#{old_base[0, 9]} is in it)" if bad.any?
+      if descendants.size > MAX_DESCENDANTS
+        raise Failure, "refusing: #{descendants.size} branches contain #{old_base[0, 9]}; that's not a stack"
+      end
+
+      busy = descendants & git.branches_in_other_worktrees
+      return if busy.empty?
+
+      raise Failure, "refusing: #{busy.join(', ')} checked out in another worktree, so rebase can't move it"
+    end
+
+    # The branches no other descendant sits on; rebasing each with
+    # --update-refs moves the ones beneath it too.
+    def tops
+      descendants.reject { |b| descendants.any? { |o| o != b && git.ancestor?(old_tips[b], old_tips[o]) } }
+    end
+
+    def move!(log)
+      tops.each do |top|
+        log.call("rebasing #{top} (and the branches under it) onto #{base}")
+        _, err, status = git.run('rebase', '--quiet', '--update-refs', '--onto', base, old_base, top,
+                                 allow_failure: true)
+        next if status.success?
+
+        git.run('rebase', '--abort', allow_failure: true)
+        raise Failure, "rebase of #{top} stopped, so it was aborted and #{top} is unchanged:\n#{err}" \
+                       "Resolve by hand: git rebase --update-refs --onto #{base} #{old_base} #{top}"
+      end
+    end
+
+    # Every descendant must keep its own commits and gain exactly the base's
+    # change. Returns problems, empty when all is well.
+    def verify
+      new_base = git.sha(base)
+      expected = git.patch_id(old_base, new_base)
+      descendants.flat_map do |b|
+        problems = []
+        before = git.count(old_base, old_tips[b])
+        after = git.count(new_base, b)
+        problems << "#{b}: had #{before} commits above #{base}, now #{after}" if before != after
+        problems << "#{b}: not on top of #{base}" unless git.ancestor?(new_base, b)
+        if git.patch_id(old_tips[b], b) != expected
+          problems << "#{b}: changed by more or less than #{base}'s change; " \
+                      "check git range-diff #{old_base}..#{old_tips[b][0, 9]} #{new_base[0, 9]}..#{b}"
+        end
+        problems
+      end
+    end
+  end
+
+  # The command-line entry point.
+  class CLI
+    USAGE = <<~TEXT
+      usage:
+        git-cascade commit BRANCH (-m MSG | -F FILE) [--push] [-C DIR] PATH...
+        git-cascade restack BRANCH [--from OLD_TIP] [--push] [-C DIR]
+        git-cascade show BRANCH [-C DIR]
+    TEXT
+
+    def initialize(argv, out: $stdout)
+      @argv = argv.dup
+      @out = out
+      @opts = { dir: Dir.pwd }
+    end
+
+    def run
+      command = @argv.shift
+      parse!
+      @git = Git.new(@opts[:dir])
+      case command
+      when 'commit' then commit
+      when 'restack' then restack
+      when 'show' then show
+      else raise Failure, USAGE
+      end
+      0
+    rescue Failure, OptionParser::ParseError => e
+      @out.puts "git-cascade: #{e.message}"
+      1
+    end
+
+    private
+
+    def parse!
+      OptionParser.new do |o|
+        o.on('-m MSG') { |v| @opts[:message] = v }
+        o.on('-F FILE') { |v| @opts[:message_file] = v }
+        o.on('--from OLD') { |v| @opts[:from] = v }
+        o.on('--push') { @opts[:push] = true }
+        o.on('-C DIR') { |v| @opts[:dir] = v }
+      end.parse!(@argv)
+      @branch = @argv.shift or raise Failure, USAGE
+      @paths = @argv
+    end
+
+    def log(msg) = @out.puts("» #{msg}")
+
+    def preflight!
+      raise Failure, "#{@branch} is not a local branch" unless @git.branch?(@branch)
+      raise Failure, "refusing to commit straight to #{@branch}" if PROTECTED.include?(@branch)
+      busy = @git.in_progress
+      raise Failure, "a #{busy} is in progress; finish it first" if busy
+    end
+
+    def commit
+      preflight!
+      raise Failure, 'name the paths to commit' if @paths.empty?
+      raise Failure, 'give a message with -m or -F' unless @opts[:message] || @opts[:message_file]
+
+      staged = @git.out('diff', '--cached', '--name-only').split("\n")
+      stray = staged - @git.out('ls-files', '--', *@paths).split("\n") - @paths
+      raise Failure, "other files are already staged: #{stray.join(', ')}" if stray.any?
+
+      switch_to_branch
+      stack = Stack.new(@git, @branch, @git.sha(@branch))
+      stack.check!
+      @git.run('add', '--', *@paths)
+      raise Failure, 'nothing to commit in those paths' if @git.ok?('diff', '--cached', '--quiet')
+
+      msg_args = @opts[:message] ? ['-m', @opts[:message]] : ['-F', @opts[:message_file]]
+      @git.run('commit', '--quiet', *msg_args)
+      log("committed #{@git.sha(@branch)[0, 9]} on #{@branch}")
+      cascade(stack)
+    end
+
+    def restack
+      preflight!
+      old = @opts[:from] || "#{@branch}@{1}"
+      old_sha = @git.sha(old)
+      raise Failure, "#{old} is #{@branch} itself; nothing moved" if old_sha == @git.sha(@branch)
+
+      log("restacking what sat on #{old_sha[0, 9]} (#{old}) onto #{@branch}")
+      stack = Stack.new(@git, @branch, old_sha)
+      stack.check!
+      cascade(stack)
+    end
+
+    def show
+      raise Failure, "#{@branch} is not a local branch" unless @git.branch?(@branch)
+
+      stack = Stack.new(@git, @branch, @git.sha(@branch))
+      @out.puts "#{@branch} #{stack.old_base[0, 9]}"
+      stack.descendants.each { |b| @out.puts "  #{b} #{stack.old_tips[b][0, 9]} (+#{@git.count(@branch, b)})" }
+    end
+
+    # Edits made on another branch of the stack carry over; git refuses if
+    # they'd be overwritten, and then nothing has happened yet.
+    def switch_to_branch
+      current = @git.current_branch
+      return if current == @branch
+
+      log("switching from #{current.empty? ? 'a detached HEAD' : current} to #{@branch}; uncommitted edits come along")
+      @git.run('checkout', '--quiet', @branch)
+    end
+
+    def cascade(stack)
+      if stack.descendants.empty?
+        log("nothing is stacked on #{@branch}")
+      else
+        stack.move!(method(:log))
+        @git.run('checkout', '--quiet', @branch)
+        problems = stack.verify
+        raise Failure, "the cascade looks wrong, so nothing was pushed:\n  #{problems.join("\n  ")}" if problems.any?
+
+        stack.descendants.each { |b| log("#{b} #{stack.old_tips[b][0, 9]} → #{@git.sha(b)[0, 9]}") }
+      end
+      push([@branch, *stack.descendants]) if @opts[:push]
+      log("left on #{@branch}")
+    end
+
+    def push(branches)
+      by_remote = branches.group_by { |b| @git.upstream_remote(b) }
+      by_remote.delete(nil)&.each { |b| log("not pushing #{b}: it has no upstream") }
+      by_remote.each do |remote, bs|
+        @git.run('push', '--quiet', '--force-with-lease', remote, *bs)
+        @git.run('fetch', '--quiet', remote)
+        bs.each do |b|
+          same = @git.sha(b) == @git.sha("#{remote}/#{b}")
+          raise Failure, "#{b} doesn't match #{remote}/#{b} after the push" unless same
+
+          log("pushed #{b} to #{remote}")
+        end
+      end
+    end
+  end
+end
+
+exit GitCascade::CLI.new(ARGV).run if $PROGRAM_NAME == __FILE__
