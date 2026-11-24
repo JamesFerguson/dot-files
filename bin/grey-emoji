@@ -1,0 +1,19 @@
+#!/usr/bin/env swift
+import AppKit
+import CoreImage
+// Renders an emoji at 2x and desaturates it, for a menu bar icon.
+//
+//   grey-emoji 🍻 18 out.png && base64 -i out.png
+let args = CommandLine.arguments
+let points = CGFloat(Double(args[2])!), px = Int(points * 2)
+let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8,
+  samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+let text = NSAttributedString(string: args[1], attributes: [.font: NSFont(name: "Apple Color Emoji", size: CGFloat(px) * 0.8)!])
+let size = text.size()
+text.draw(at: NSPoint(x: (CGFloat(px) - size.width) / 2, y: (CGFloat(px) - size.height) / 2))
+NSGraphicsContext.restoreGraphicsState()
+let mono = CIImage(bitmapImageRep: rep)!.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 0])
+let out = NSBitmapImageRep(ciImage: mono)
+try! out.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: args[3]))

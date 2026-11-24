@@ -385,11 +385,14 @@ module Brew
                          'and sets the deadline'
     }.freeze
 
+    # The menu bar icon when nothing is ready: 🍻 in greyscale, at 2x (bin/grey-emoji).
+    IDLE_ICON = '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'
+
     def run
       brew_check(printer)
       brew_update
 
-      printer.item(menu_label, dropdown: false)
+      print_menu_title
       printer.sep
       printer.item('Brew Updates️') do |printer|
         print_settings(printer)
@@ -573,12 +576,19 @@ module Brew
       # to be due to another update process is already running.
     end
 
-    def menu_label
+    def print_menu_title
       outdated = formulas + casks
-      return "#{prefix}⚠️" if cooldown.nil? && outdated.any?
-
       ready = outdated.count { |p| ready?(p) }
-      ready.positive? ? "#{prefix}↑#{ready}" : prefix
+
+      if cooldown.nil? && outdated.any?
+        printer.item("#{prefix}⚠️", dropdown: false)
+      elsif ready.positive?
+        printer.item("#{prefix}↑#{ready}", dropdown: false)
+      else
+        printer.item(
+          ' ', image: IDLE_ICON, width: 18, height: 18, dropdown: false
+        )
+      end
     end
 
     def status_label
