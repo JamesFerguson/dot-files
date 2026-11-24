@@ -176,11 +176,6 @@ module Xbar
     SEP_STR = '---'
     PARAM_SEP = '|'
 
-    # The menu's own text colour, light,dark. SwiftBar 2.1.1 greys out a
-    # submenu row with no action once it patches the row on a refresh
-    # (swiftbar/SwiftBar#512, fixed in 2.1.2), but a colour gives it one.
-    TEXT_COLOR = '#242424,#dcdcdc'
-
     def initialize(nested_level = 0)
       @nested_level = nested_level
     end
@@ -188,9 +183,12 @@ module Xbar
     def item(label = nil, **props)
       return if label.nil? || label.empty?
 
-      props = props.dup
-      if block_given? && !(props.keys & %i[color shell rpc href]).any?
-        props[:color] = TEXT_COLOR
+      props = props.compact
+      # SwiftBar 2.1.1 greys out a submenu row with no action once a refresh
+      # patches it (swiftbar/SwiftBar#512, fixed in 2.1.2). It counts
+      # href="." as an action, and a click on it does nothing.
+      if block_given? && (props.keys & %i[color shell rpc href]).empty?
+        props[:href] = '.'
       end
       props = normalize_props(props)
       alt = props.delete(:alt)
@@ -718,14 +716,13 @@ module Brew
     end
 
     # Like Waypoint's status chips: left out of the nightly in orange, ready in
-    # the menu's text colour, cooling and undated dimmed.
+    # the menu's own text colour (nil), cooling and undated dimmed. One colour
+    # each, as they read on light and dark menus alike.
     def package_color(package)
       if nightly_exclude?(package.name)
-        '#c45c00,#ff9f0a'
-      elsif status(package.name) == :ready
-        Xbar::Printer::TEXT_COLOR
-      else
-        '#8e8e93,#8e8e93'
+        '#f28c00'
+      elsif status(package.name) != :ready
+        '#8e8e93'
       end
     end
 
