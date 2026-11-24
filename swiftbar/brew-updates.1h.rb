@@ -369,11 +369,27 @@ module Brew
   class FormulaUpdates < Common
     prefix '🍻'
 
+    # The nightly's cooldown, which Waypoint reads too.
+    BREW_READY = File.join(
+      Dir.home, 'code/personal/dot-files/nightly-skill-mise/brew-ready.zsh'
+    )
+
+    # The nightly leaves these out of its brew upgrades (system-update.zsh's
+    # EXCLUDE, and Waypoint's Scan @excluded).
+    NIGHTLY_EXCLUDE = {
+      'firefox' => '',
+      'visual-studio-code' => '',
+      'claude' => '',
+      'claude-code' => ', since upgrading it kills backgrounded Claude sessions',
+      'google-chrome' => ", since Fat Zebra's device management updates it " \
+                         'and sets the deadline'
+    }.freeze
+
     def run
       brew_check(printer)
       brew_update
 
-      printer.item("#{prefix}↑#{formulas.size + casks.size}", dropdown: false)
+      printer.item(menu_label, dropdown: false)
       printer.sep
       printer.item('Brew Updates️') do |printer|
         print_settings(printer)
@@ -383,46 +399,18 @@ module Brew
         printer.item('⏳ Refresh', alt: '⏳ Refresh (⌘R)', refresh: true)
 
         printer.sep
-        all_formulas = formulas.reject { |f| upgrade_all_exclude?(f.name) }
-        all_casks = casks.reject { |c| upgrade_all_exclude?(c.name) }
-        excluded = (formulas - all_formulas) + (casks - all_casks)
+        all_formulas = formulas.select { |f| ready?(f) }
+        excluded = (formulas + casks).select { |p| left_out?(p.name) }
 
-        if all_formulas.size.positive? && all_casks.size.positive?
-          cmds = []
-          if all_formulas.size.positive?
-            cmds += [brew_path, 'upgrade', '--formula'] +
-                    all_formulas.map(&:name)
-          end
-
-          if all_casks.size.positive?
-            cmds << '&&' if cmds.size.positive?
-            cmds += [brew_path, 'upgrade', '--cask'] +
-                    all_casks.map(&:name)
-          end
-
-          printer.item(
-            "⬆️ Upgrade All (#{all_formulas.size + all_casks.size})",
-            terminal: true, refresh: true,
-            shell: (cmds + post_commands).flatten
-          )
-        end
+        # Formulae only: a bulk cask upgrade stacks the App Management
+        # prompts that wedge the UI, so casks go one at a time, watched.
         if all_formulas.size.positive?
           names = all_formulas.map(&:name)
           printer.item(
-            "⬆️ Upgrade All Formulas (#{all_formulas.size})",
+            "⬆️ Upgrade Ready Formulas (#{all_formulas.size})",
             terminal: true, refresh: true,
             shell: [
               brew_path, 'upgrade', '--formula'
-            ] + names + post_commands
-          )
-        end
-        if all_casks.size.positive?
-          names = all_casks.map(&:name)
-          printer.item(
-            "⬆️ Upgrade All Casks (#{all_casks.size})",
-            terminal: true, refresh: true,
-            shell: [
-              brew_path, 'upgrade', '--cask'
             ] + names + post_commands
           )
         end
@@ -500,6 +488,76 @@ module Brew
       upgrade_all_exclude.include?(name)
     end
 
+    def nightly_exclude?(name)
+      NIGHTLY_EXCLUDE.key?(name)
+    end
+
+    def left_out?(name)
+      nightly_exclude?(name) || upgrade_all_exclude?(name)
+    end
+
+    # brew-ready.zsh's verdicts as name => [status, days], or nil when the
+    # check failed, so a broken check can't pass for "nothing to do".
+    def cooldown
+      return @cooldown if defined?(@cooldown)
+
+      @cooldown = cmd({ 'BREW_READY_TSV' => '1' }, BREW_READY)
+                  .each_line.to_h do |line|
+        name, _latest, status, days = line.chomp.split("\t")
+        [name, [status, days.to_i]]
+      end
+    rescue Xbar::CommandError, SystemCallError
+      @cooldown = nil
+    end
+
+    # :ready, :cooling, or :undated when there's no release date to go by.
+    def status(name)
+      case cooldown&.dig(name, 0)
+      when 'READY' then :ready
+      when 'COOLING' then :cooling
+      else :undated
+      end
+    end
+
+    def detail(name)
+      days = cooldown&.dig(name, 1)
+
+      case status(name)
+      when :ready then "#{days}d old"
+      when :cooling then "#{days}d left"
+      else 'no release date'
+      end
+    end
+
+    def ready?(package)
+      status(package.name) == :ready && !left_out?(package.name)
+    end
+
+    def status_text(name)
+      return 'left out of the nightly' if nightly_exclude?(name)
+
+      case status(name)
+      when :ready then "ready · #{detail(name)}"
+      when :cooling then "cooling · #{detail(name)}"
+      else 'no release date'
+      end
+    end
+
+    def upgrade_question(package)
+      name = package.name
+
+      if nightly_exclude?(name)
+        "The nightly leaves #{name} out#{NIGHTLY_EXCLUDE[name]}. " \
+          'Force the upgrade?'
+      elsif status(name) == :cooling
+        "#{name} #{package.latest_version} is still cooling " \
+          "(#{detail(name)}). Upgrade it early?"
+      elsif status(name) == :undated
+        "There's no release date for #{name} #{package.latest_version}, " \
+          'so no cooldown to go by. Upgrade it?'
+      end
+    end
+
     def upgrade_all_exclude
       @upgrade_all_exclude ||= config.as_set('VAR_UPGRADE_ALL_EXCLUDE')
     end
@@ -515,12 +573,30 @@ module Brew
       # to be due to another update process is already running.
     end
 
-    def status_label
-      label = []
-      label << "#{formulas.size} formulas" if formulas.size.positive?
-      label << "#{casks.size} casks" if casks.size.positive?
-      label << "#{pinned.size} pinned" if pinned.size.positive?
+    def menu_label
+      outdated = formulas + casks
+      return "#{prefix}⚠️" if cooldown.nil? && outdated.any?
 
+      ready = outdated.count { |p| ready?(p) }
+      ready.positive? ? "#{prefix}↑#{ready}" : prefix
+    end
+
+    def status_label
+      outdated = formulas + casks
+      if cooldown.nil? && outdated.any?
+        return "cooldown check failed: #{File.basename(BREW_READY)}"
+      end
+
+      others = outdated.reject { |p| left_out?(p.name) }
+      counts = {
+        'ready' => others.count { |p| status(p.name) == :ready },
+        'cooling' => others.count { |p| status(p.name) == :cooling },
+        'with no release date' => others.count { |p| status(p.name) == :undated },
+        'left out' => outdated.count { |p| left_out?(p.name) },
+        'pinned' => pinned.size
+      }
+
+      label = counts.select { |_, n| n.positive? }.map { |what, n| "#{n} #{what}" }
       label = ['no updates available'] if label.empty?
       label.join(', ')
     end
@@ -565,21 +641,12 @@ module Brew
       printer.sep
       printer.item("Formulas (#{formulas.size}):")
       formulas.each do |formula|
-        name = formula.name
-        name += ' ⤫' if upgrade_all_exclude?(name)
-        printer.item(name) do |printer|
-          printer.item(
-            '⬆️ Upgrade',
-            alt: '⬆️ Upgrade ' \
-                 "(#{formula.current_version} → #{formula.latest_version})",
-            terminal: true, refresh: true,
-            shell: [
-              brew_path, 'upgrade', '--formula', formula.name
-            ] + post_commands
-          )
+        printer.item(package_label(formula)) do |printer|
+          print_upgrade(printer, formula, 'formula')
           printer.sep
           printer.item("→ Installed: #{formula.installed_versions.join(', ')}")
           printer.item("↑ Latest: #{formula.latest_version}")
+          printer.item("⏳ #{status_text(formula.name)}")
           printer.sep
           printer.item(
             '📌 Pin',
@@ -587,19 +654,7 @@ module Brew
             terminal: false, refresh: true,
             shell: [brew_path, 'pin', formula.name]
           )
-          if upgrade_all_exclude?(formula.name)
-            printer.item(
-              '✅ Upgrade All: Exclude',
-              terminal: false, refresh: true,
-              rpc: ['include_upgrade_all', formula.name]
-            )
-          else
-            printer.item(
-              '☑️ Upgrade All: Exclude ',
-              terminal: false, refresh: true,
-              rpc: ['exclude_upgrade_all', formula.name]
-            )
-          end
+          print_exclude_toggle(printer, formula)
           printer.item('🚫 Uninstall') do |printer|
             printer.item('Are you sure?')
             printer.item(
@@ -620,35 +675,14 @@ module Brew
       printer.sep
       printer.item("Casks (#{casks.size}):")
       casks.each do |cask|
-        name = cask.name
-        name += ' ⤫' if upgrade_all_exclude?(name)
-        printer.item(name) do |printer|
-          printer.item(
-            '⬆️ Upgrade',
-            alt: '⬆️ Upgrade '\
-                 "(#{cask.current_version} → #{cask.latest_version})",
-            terminal: true, refresh: true,
-            shell: [
-              brew_path, 'upgrade', '--cask', cask.name
-            ] + post_commands
-          )
+        printer.item(package_label(cask)) do |printer|
+          print_upgrade(printer, cask, 'cask')
           printer.sep
           printer.item("→ Installed: #{cask.installed_versions.join(', ')}")
           printer.item("↑ Latest: #{cask.latest_version}")
+          printer.item("⏳ #{status_text(cask.name)}")
           printer.sep
-          if upgrade_all_exclude?(cask.name)
-            printer.item(
-              '✅ Upgrade All: Exclude',
-              terminal: false, refresh: true,
-              rpc: ['include_upgrade_all', cask.name]
-            )
-          else
-            printer.item(
-              '☑️ Upgrade All: Exclude',
-              terminal: false, refresh: true,
-              rpc: ['exclude_upgrade_all', cask.name]
-            )
-          end
+          print_exclude_toggle(printer, cask)
           printer.item('🚫 Uninstall') do |printer|
             printer.item('Are you sure?')
             printer.sep
@@ -661,6 +695,58 @@ module Brew
             )
           end
         end
+      end
+    end
+
+    def package_label(package)
+      name = package.name
+      return "#{name} ⤫" if left_out?(name)
+
+      case status(name)
+      when :cooling then "#{name} ⏳ #{detail(name)}"
+      when :undated then "#{name} ?"
+      else name
+      end
+    end
+
+    # Like Waypoint's buttons: a ready package upgrades straight away; a
+    # cooling, undated or left-out one asks first.
+    def print_upgrade(printer, package, kind)
+      shell = [brew_path, 'upgrade', "--#{kind}", package.name] + post_commands
+      versions = "(#{package.current_version} → #{package.latest_version})"
+      question = upgrade_question(package) unless ready?(package)
+
+      if question.nil?
+        printer.item(
+          '⬆️ Upgrade', alt: "⬆️ Upgrade #{versions}",
+                       terminal: true, refresh: true, shell: shell
+        )
+        return
+      end
+
+      label = nightly_exclude?(package.name) ? 'Force upgrade' : 'Upgrade early'
+      printer.item("⬆️ #{label}", alt: "⬆️ #{label} #{versions}") do |printer|
+        printer.item(question)
+        printer.sep
+        printer.item('Yes', terminal: true, refresh: true, shell: shell)
+      end
+    end
+
+    def print_exclude_toggle(printer, package)
+      if nightly_exclude?(package.name)
+        printer.item('⤫ Left out of the nightly')
+      elsif upgrade_all_exclude?(package.name)
+        printer.item(
+          '✅ Upgrade All: Exclude',
+          terminal: false, refresh: true,
+          rpc: ['include_upgrade_all', package.name]
+        )
+      else
+        printer.item(
+          '☑️ Upgrade All: Exclude',
+          terminal: false, refresh: true,
+          rpc: ['exclude_upgrade_all', package.name]
+        )
       end
     end
 
