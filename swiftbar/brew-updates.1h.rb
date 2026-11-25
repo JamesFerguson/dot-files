@@ -657,7 +657,7 @@ module Brew
 
       printer.sep
       printer.item("Formulas (#{formulas.size}):")
-      formulas.each do |formula|
+      ready_first(formulas).each do |formula|
         printer.item(package_label(formula), color: package_color(formula)) do |printer|
           print_upgrade(printer, formula, 'formula')
           printer.sep
@@ -691,7 +691,7 @@ module Brew
 
       printer.sep
       printer.item("Casks (#{casks.size}):")
-      casks.each do |cask|
+      ready_first(casks).each do |cask|
         printer.item(package_label(cask), color: package_color(cask)) do |printer|
           print_upgrade(printer, cask, 'cask')
           printer.sep
@@ -716,14 +716,22 @@ module Brew
     end
 
     # Like Waypoint's status chips: left out of the nightly in orange, ready in
-    # the menu's own text colour (nil), cooling and undated dimmed. One colour
-    # each, as they read on light and dark menus alike.
+    # green, cooling and undated dimmed, and anything else (a ready package
+    # left out of Upgrade All) in the menu's own text colour. One colour each,
+    # as they read on light and dark menus alike.
     def package_color(package)
       if nightly_exclude?(package.name)
         '#f28c00'
+      elsif ready?(package)
+        '#34c759'
       elsif status(package.name) != :ready
         '#8e8e93'
       end
+    end
+
+    # What can go now at the top, then by name, as Waypoint lists them.
+    def ready_first(packages)
+      packages.sort_by { |p| [ready?(p) ? 0 : 1, p.name] }
     end
 
     def package_label(package)
